@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Models
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          String    @default("VIEWER") // ADMIN, INVESTOR, VIEWER
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  investor      Investor?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Investor {
+  id                 String   @id @default(cuid())
+  userId             String?  @unique
+  name               String
+  contactInfo        String?
+  notes              String?
+  bankAccountDetails String?
+  marginPercentage   Float    @default(50.0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User?    @relation(fields: [userId], references: [id])
+  units              Unit[]
+  paymentHistories   PaymentHistory[]
+}
+
+model Unit {
+  id          String     @id @default(cuid())
+  investorId  String
+  name        String
+  plateNumber String?    @unique
+  code        String     @unique
+  imageUrl    String?    // Foto unit
+  status      String     @default("AVAILABLE") // AVAILABLE, SOLD, MAINTENANCE
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  investor    Investor   @relation(fields: [investorId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                    String            @id @default(cuid())
+  unitId                String
+  transactionCode       String            @unique
+  buyDate               DateTime
+  buyPrice              Float
+  initialInvestorCapital Float?           // Modal awal dari pemodal (jika berbeda dari buyPrice)
+  initialManagerCapital  Float?           // Modal awal dari pengelola
+  sellDate              DateTime?
+  sellPrice             Float?
+  status                String            @default("ON_PROCESS") // ON_PROCESS, COMPLETED, CANCELLED
+  profitStatus          String?           // PROFIT, LOSS, BREAK_EVEN
+  lossBearer            String?           // INVESTOR, MANAGER, SHARED
+  paymentStatus         String            @default("UNPAID") // UNPAID, PARTIAL, PAID
+
+  notes                 String?
+  buyProofImageUrl      String?
+  buyProofDescription   String?
+  sellProofImageUrl     String?
+  sellProofDescription  String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  unit                  Unit              @relation(fields: [unitId], references: [id])
+  costs                 Cost[]
+  profitSharing         ProfitSharing?
+  paymentHistories      PaymentHistory[]
+  proofs                TransactionProof[]
+}
+
+model TransactionProof {
+  id            String   @id @default(cuid())
+  transactionId String
+  proofType     String   // BUY, SELL
+  imageUrl      String
+  description   String?
+  createdAt     DateTime @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model Cost {
+  id            String   @id @default(cuid())
+  transactionId String
+  costType      String   // INSPECTION, TRANSPORT, ...
+  payer         String   // INVESTOR, MANAGER
+  amount        Float
+  description   String?
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  proofs        CostProof[]
+}
+
+model CostProof {
+  id          String   @id @default(cuid())
+  costId      String
+  imageUrl    String
+  description String?
+  createdAt   DateTime @default(now())
+
+  cost        Cost     @relation(fields: [costId], references: [id], onDelete: Cascade)
+}
+
+model ProfitSharing {
+  id                     String   @id @default(cuid())
+  transactionId          String   @unique
+  totalCapitalInvestor   Float
+  totalCapitalManager    Float
+  totalCapital           Float
+  netMargin              Float
+  investorSharePercentage Float
+  managerSharePercentage  Float
+  investorProfitAmount   Float
+  managerProfitAmount    Float
+  calculatedAt           DateTime @default(now())
+
+  transaction            Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model PaymentHistory {
+  id            String        @id @default(cuid())
+  transactionId String?
+  investorId    String
+  amount        Float
+  paymentDate   DateTime      @default(now())
+  method        String        // TRANSFER, CASH
+  proofImageUrl String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id])
+  investor      Investor      @relation(fields: [investorId], references: [id])
+}
