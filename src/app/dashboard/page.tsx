@@ -34,6 +34,7 @@ interface MonthlyStat {
     totalMargin: number
     investorShare: number
     managerShare: number
+    unitsSold: number
 }
 
 interface UnitStatusStat {
@@ -331,6 +332,43 @@ export default function DashboardPage() {
                                     <Tooltip />
                                     <Legend />
                                 </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                {/* Monthly Units Sold Chart */}
+                <Card className="col-span-7">
+                    <CardHeader>
+                        <CardTitle>Tren Penjualan Unit Bulanan</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.monthlyStats}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#888888"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        stroke="#888888"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(value) => `${value}`}
+                                    />
+                                    <Tooltip
+                                        formatter={(value: number) => [`${value} Unit`, "Terjual"]}
+                                        labelStyle={{ color: 'black' }}
+                                    />
+                                    <Bar dataKey="unitsSold" name="Unit Terjual" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={50} />
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>

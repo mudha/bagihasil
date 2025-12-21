@@ -165,7 +165,7 @@ export default function TransactionDetailPage() {
                                 <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                             )}
                         </h2>
-                        <p className="text-muted-foreground flex items-center gap-2">
+                        <div className="text-muted-foreground flex items-center gap-2">
                             {transaction.unit.imageUrl && (
                                 <div
                                     className="h-8 w-8 rounded overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
@@ -189,7 +189,7 @@ export default function TransactionDetailPage() {
                             >
                                 <Camera className="h-4 w-4 text-slate-500" />
                             </Button>
-                        </p>
+                        </div>
                     </div>
                 </div>
                 <div className="flex gap-2 items-center">

@@ -117,14 +117,14 @@ export async function GET(req: Request) {
         }
     })
 
-    const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number }>()
+    const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number }>()
 
     // Initialize last 12 months with 0 to ensure continuous graph
     for (let i = 0; i < 12; i++) {
         const d = new Date()
         d.setMonth(d.getMonth() - i)
         const key = d.toLocaleString('default', { month: 'short', year: 'numeric' }) // e.g., "Dec 2025"
-        monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0 })
+        monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0 })
     }
 
     monthlyProfits.forEach(profit => {
@@ -138,12 +138,14 @@ export async function GET(req: Request) {
             current.totalMargin += profit.netMargin
             current.investorShare += profit.investorProfitAmount
             current.managerShare += profit.managerProfitAmount
+            current.unitsSold += 1
         } else {
             monthlyStatsMap.set(key, {
                 month: key,
                 totalMargin: profit.netMargin,
                 investorShare: profit.investorProfitAmount,
-                managerShare: profit.managerProfitAmount
+                managerShare: profit.managerProfitAmount,
+                unitsSold: 1
             })
         }
     })
