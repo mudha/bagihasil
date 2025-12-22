@@ -1,5 +1,8 @@
-import { auth } from "@/lib/auth"
+import NextAuth from "next-auth"
+import { authConfig } from "./lib/auth.config"
 import { NextResponse } from "next/server"
+
+const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
     const isLoggedIn = !!req.auth
@@ -13,7 +16,7 @@ export default auth((req) => {
     const isDashboardRoute = nextUrl.pathname.startsWith("/dashboard")
 
     if (isApiAuthRoute) {
-        return undefined // null? in middleware returning undefined/void lets it pass
+        return undefined
     }
 
     if (isPublicRoute) {
@@ -32,7 +35,6 @@ export default auth((req) => {
 
     if (isLoggedIn && isDashboardRoute) {
         // Check if route is exactly /dashboard/investor or a sub-route of it
-        // This prevents matching /dashboard/investors (plural) which is an admin route
         const isInvestorRoute = nextUrl.pathname === "/dashboard/investor" || nextUrl.pathname.startsWith("/dashboard/investor/")
 
         // Investor trying to access non-investor dashboard pages
@@ -40,10 +42,8 @@ export default auth((req) => {
             return NextResponse.redirect(new URL("/dashboard/investor", nextUrl))
         }
 
-        // Non-investor (Admin/Viewer) trying to access investor pages?
-        // Maybe let them? Or restrict? Let's restrict to keep it clean.
+        // Non-investor (Admin/Viewer) trying to access investor pages
         if (role !== "INVESTOR" && isInvestorRoute) {
-            // Redirect Admin back to main dashboard
             return NextResponse.redirect(new URL("/dashboard", nextUrl))
         }
     }
