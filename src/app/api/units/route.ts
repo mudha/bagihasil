@@ -9,6 +9,7 @@ const unitSchema = z.object({
     plateNumber: z.string().min(1),
     code: z.string().min(1),
     imageUrl: z.string().optional().nullable(),
+    taxDueDate: z.coerce.date().optional().nullable(),
     status: z.enum(["AVAILABLE", "SOLD", "MAINTENANCE"]).optional().default("AVAILABLE"),
 })
 

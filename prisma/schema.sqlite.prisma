@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // Models
@@ -79,7 +78,6 @@ model Unit {
   plateNumber String?    @unique
   code        String     @unique
   imageUrl    String?    // Foto unit
-  taxDueDate  DateTime?  // Jatuh tempo pajak
   status      String     @default("AVAILABLE") // AVAILABLE, SOLD, MAINTENANCE
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
