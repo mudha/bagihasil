@@ -28,11 +28,13 @@ import { DollarSign } from "lucide-react"
 
 const sellSchema = z.object({
     sellDate: z.string().min(1, "Tanggal jual harus diisi"),
-    sellPrice: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val),
-    investorSharePercentage: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val),
-    managerSharePercentage: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val),
+    sellPrice: z.number().min(0, "Harga laku harus lebih dari 0"),
+    investorSharePercentage: z.number().min(0).max(100),
+    managerSharePercentage: z.number().min(0).max(100),
     notes: z.string().optional(),
 })
+
+type SellFormValues = z.infer<typeof sellSchema>
 
 interface FinalizeTransactionDialogProps {
     transactionId: string
@@ -46,7 +48,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
 
-    const form = useForm<z.infer<typeof sellSchema>>({
+    const form = useForm<SellFormValues>({
         resolver: zodResolver(sellSchema),
         defaultValues: {
             sellDate: new Date().toISOString().split('T')[0],

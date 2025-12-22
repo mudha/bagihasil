@@ -39,8 +39,10 @@ const investorSchema = z.object({
     contactInfo: z.string().optional(),
     bankAccountDetails: z.string().optional(),
     notes: z.string().optional(),
-    marginPercentage: z.coerce.number().default(50),
+    marginPercentage: z.number().min(0).max(100),
 })
+
+type InvestorFormValues = z.infer<typeof investorSchema>
 
 interface Investor {
     id: string
@@ -57,7 +59,7 @@ export default function InvestorsPage() {
     const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
 
-    const form = useForm<z.infer<typeof investorSchema>>({
+    const form = useForm<InvestorFormValues>({
         resolver: zodResolver(investorSchema),
         defaultValues: {
             name: "",

@@ -43,7 +43,7 @@ export function UpdateUnitImageDialog({
             let imageUrl = unit.imageUrl
 
             const newImage = images.find(img => img.file)
-            if (newImage && newImage.file) {
+            if (newImage && newImage.file && newImage.file.size > 0) {
                 const formData = new FormData()
                 formData.append('file', newImage.file)
 

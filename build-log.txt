@@ -1,0 +1,42 @@
+
+> profit_sharing_app@0.1.0 build
+> prisma generate && prisma db push && next build
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 115ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "neondb", schema "public" at "ep-still-salad-adjks95t.c-2.us-east-1.aws.neon.tech"
+
+The database is already in sync with the Prisma schema.
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[GΓ£ö Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 122ms
+
+   Γû▓ Next.js 16.0.6 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 5.4s
+   Running TypeScript ...
+Failed to compile.
+
+./src/components/transactions/ManageCostProofsDialog.tsx:68:25
+Type error: 'proof.file' is possibly 'null'.
+
+  66 |                 proofs.map(async (proof) => {
+  67 |                     // If it's a new file (size > 0), upload it
+> 68 |                     if (proof.file.size > 0) {
+     |                         ^
+  69 |                         const formData = new FormData()
+  70 |                         formData.append('file', proof.file)
+  71 |
+Next.js build worker exited with code: 1 and signal: null

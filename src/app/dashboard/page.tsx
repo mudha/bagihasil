@@ -53,6 +53,14 @@ interface RecentTransaction {
     status: string
 }
 
+interface TaxReminder {
+    id: string
+    name: string
+    plateNumber: string
+    taxDueDate: string
+    daysLeft: number
+}
+
 interface DashboardStats {
     activeUnits: number
     completedTransactions: number
@@ -64,6 +72,7 @@ interface DashboardStats {
     monthlyStats: MonthlyStat[]
     unitStatusDistribution: UnitStatusStat[]
     recentTransactions: RecentTransaction[]
+    taxReminders?: TaxReminder[]
 }
 
 export default function DashboardPage() {
@@ -95,6 +104,7 @@ export default function DashboardPage() {
                 if (!data.recentTransactions) data.recentTransactions = [];
                 if (!data.unitStatusDistribution) data.unitStatusDistribution = [];
                 if (!data.monthlyStats) data.monthlyStats = [];
+                if (!data.taxReminders) data.taxReminders = [];
 
                 setStats(data)
                 setError(null)
@@ -265,6 +275,38 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Tax Reminders */}
+            {stats.taxReminders && stats.taxReminders.length > 0 && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800">
+                            <TrendingUp className="h-4 w-4" />
+                            Pengingat Pajak Kendaraan
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            {stats.taxReminders.map((reminder) => (
+                                <div key={reminder.id} className="flex items-center justify-between p-2 rounded-lg border bg-white shadow-sm">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-bold">{reminder.plateNumber}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{reminder.name}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant={reminder.daysLeft <= 7 ? "destructive" : "outline"} className="text-[10px]">
+                                            {reminder.daysLeft <= 0 ? "Lewat Tempo" : `${reminder.daysLeft} Hari Lagi`}
+                                        </Badge>
+                                        <p className="text-[10px] mt-1 text-muted-foreground">
+                                            {format(new Date(reminder.taxDueDate), 'dd/MM/yy')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* Monthly Chart */}

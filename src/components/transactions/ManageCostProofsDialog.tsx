@@ -65,7 +65,7 @@ export function ManageCostProofsDialog({
             const uploadedProofs = await Promise.all(
                 proofs.map(async (proof) => {
                     // If it's a new file (size > 0), upload it
-                    if (proof.file.size > 0) {
+                    if (proof.file && proof.file.size > 0) {
                         const formData = new FormData()
                         formData.append('file', proof.file)
 

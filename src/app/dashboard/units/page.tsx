@@ -43,6 +43,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format, isPast, isWithinInterval, addDays } from "date-fns"
+import { CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -62,6 +67,7 @@ const unitSchema = z.object({
     investorId: z.string().min(1, "Pemodal wajib dipilih"),
     status: z.enum(["AVAILABLE", "SOLD", "MAINTENANCE"]).optional(),
     imageUrl: z.string().optional().nullable(),
+    taxDueDate: z.date().optional().nullable(),
 })
 
 interface Unit {
@@ -75,6 +81,7 @@ interface Unit {
         name: string
     }
     imageUrl?: string | null
+    taxDueDate?: string | Date | null
 }
 
 interface Investor {
@@ -104,6 +111,7 @@ export default function UnitsPage() {
             code: "",
             investorId: "",
             status: "AVAILABLE",
+            taxDueDate: null,
         },
     })
 
@@ -146,6 +154,7 @@ export default function UnitsPage() {
                 investorId: editingUnit.investorId,
                 status: editingUnit.status,
                 imageUrl: editingUnit.imageUrl,
+                taxDueDate: editingUnit.taxDueDate ? new Date(editingUnit.taxDueDate) : null,
             })
             if (editingUnit.imageUrl) {
                 setUnitImages([{
@@ -433,6 +442,48 @@ export default function UnitsPage() {
                                             </FormItem>
                                         )}
                                     />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="taxDueDate"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                                <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                className={cn(
+                                                                    "w-full pl-3 text-left font-normal",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                {field.value ? (
+                                                                    format(field.value, "PPP")
+                                                                ) : (
+                                                                    <span>Pilih tanggal</span>
+                                                                )}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={field.value || undefined}
+                                                            onSelect={field.onChange}
+                                                            disabled={(date) =>
+                                                                date < new Date("1900-01-01")
+                                                            }
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     {editingUnit && (
                                         <FormField
                                             control={form.control}
@@ -606,6 +657,7 @@ export default function UnitsPage() {
                                     )}
                                 </Button>
                             </TableHead>
+                            <TableHead>Pajak</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -646,6 +698,22 @@ export default function UnitsPage() {
                                     <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'}>
                                         {unit.status}
                                     </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    {unit.taxDueDate ? (
+                                        <div className={cn(
+                                            "text-sm font-medium",
+                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                isWithinInterval(new Date(unit.taxDueDate), {
+                                                    start: new Date(),
+                                                    end: addDays(new Date(), 30)
+                                                }) ? "text-amber-600" : "text-slate-600"
+                                        )}>
+                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-400 text-xs italic">N/A</span>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">

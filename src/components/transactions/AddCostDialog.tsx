@@ -131,7 +131,7 @@ export function AddCostDialog({
                 // Actually, my placeholder logic above is weak.
                 // Better check if preview starts with http or /
                 let url = img.preview
-                if (img.file.size > 0) {
+                if (img.file && img.file.size > 0) {
                     url = await uploadFile(img.file)
                 }
                 uploadedProofs.push({

@@ -28,17 +28,13 @@ import { Pencil } from "lucide-react"
 const editSchema = z.object({
     transactionCode: z.string().min(1, "Kode transaksi harus diisi"),
     buyDate: z.string().min(1, "Tanggal beli harus diisi"),
-    buyPrice: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val),
-    initialInvestorCapital: z.union([z.string(), z.number()]).optional().transform((val) => {
-        if (val === "" || val === null || val === undefined) return undefined
-        return typeof val === 'string' ? Number(val) : val
-    }),
-    initialManagerCapital: z.union([z.string(), z.number()]).optional().transform((val) => {
-        if (val === "" || val === null || val === undefined) return undefined
-        return typeof val === 'string' ? Number(val) : val
-    }),
+    buyPrice: z.number().min(0, "Harga beli harus lebih dari 0"),
+    initialInvestorCapital: z.number().optional().nullable(),
+    initialManagerCapital: z.number().optional().nullable(),
     notes: z.string().optional(),
 })
+
+type EditFormValues = z.infer<typeof editSchema>
 
 interface EditTransactionDetailsDialogProps {
     transaction: any
@@ -51,7 +47,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(transaction.buyProofImageUrl || null)
 
-    const form = useForm<z.infer<typeof editSchema>>({
+    const form = useForm<EditFormValues>({
         resolver: zodResolver(editSchema),
         defaultValues: {
             transactionCode: transaction.transactionCode,

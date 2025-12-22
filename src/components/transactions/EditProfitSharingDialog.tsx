@@ -26,12 +26,14 @@ import { toast } from "sonner"
 import { Pencil } from "lucide-react"
 
 const profitSharingSchema = z.object({
-    investorSharePercentage: z.coerce.number().min(0).max(100),
-    managerSharePercentage: z.coerce.number().min(0).max(100),
+    investorSharePercentage: z.number().min(0).max(100),
+    managerSharePercentage: z.number().min(0).max(100),
 }).refine(data => Math.abs((data.investorSharePercentage + data.managerSharePercentage) - 100) < 0.1, {
     message: "Total persentase harus 100%",
     path: ["managerSharePercentage"] // Attach error to manager share
 })
+
+type ProfitSharingFormValues = z.infer<typeof profitSharingSchema>
 
 interface EditProfitSharingDialogProps {
     transactionId: string
@@ -49,7 +51,7 @@ export function EditProfitSharingDialog({
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
-    const form = useForm<z.infer<typeof profitSharingSchema>>({
+    const form = useForm<ProfitSharingFormValues>({
         resolver: zodResolver(profitSharingSchema),
         defaultValues: {
             investorSharePercentage: currentInvestorShare,
