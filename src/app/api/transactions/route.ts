@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { db } from "@/lib/db"
+import { logActivity } from "@/lib/activity-logger"
 
 const transactionSchema = z.object({
     unitId: z.string(),
@@ -50,6 +52,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()
@@ -67,12 +71,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400 })
         }
 
-        const transaction = await prisma.transaction.create({
+        const transaction = await db.transaction.create({
             data: {
                 ...validatedData,
-                status: "ON_PROCESS"
-            }
+                status: "ON_PROCESS",
+            },
         })
+
+        // Log Activity
+        await logActivity(
+            "CREATE",
+            "TRANSACTION",
+            transaction.id,
+            `Created transaction ${transaction.transactionCode} for unit ${transaction.unitId}`
+        )
 
         return NextResponse.json(transaction)
     } catch (error) {
@@ -86,6 +98,8 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()
@@ -110,6 +124,8 @@ export async function DELETE(req: Request) {
 export async function PATCH(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()

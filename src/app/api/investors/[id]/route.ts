@@ -9,6 +9,7 @@ const investorSchema = z.object({
     notes: z.string().optional(),
     bankAccountDetails: z.string().optional(),
     marginPercentage: z.coerce.number().min(0).max(100).optional(),
+    userId: z.string().optional().nullable(),
 })
 
 export async function PUT(
@@ -17,6 +18,8 @@ export async function PUT(
 ) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const { id } = await params

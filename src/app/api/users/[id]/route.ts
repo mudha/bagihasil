@@ -1,18 +1,14 @@
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
-import { logActivity } from "@/lib/activity-logger"
+import bcrypt from "bcryptjs"
 
-const unitSchema = z.object({
-    investorId: z.string(),
-    name: z.string().min(1),
-    plateNumber: z.string().min(1),
-    code: z.string().min(1),
-    imageUrl: z.string().optional().nullable(),
-    taxDueDate: z.coerce.date().optional().nullable(),
-    status: z.enum(["AVAILABLE", "SOLD", "MAINTENANCE"]).optional().default("AVAILABLE"),
+const userUpdateSchema = z.object({
+    name: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(6).optional().nullable(),
+    role: z.enum(["ADMIN", "INVESTOR", "VIEWER"]).optional()
 })
 
 export async function PUT(
@@ -21,24 +17,37 @@ export async function PUT(
 ) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    // @ts-ignore
-    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
     // @ts-ignore
     if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const { id } = await params
         const body = await req.json()
-        const validatedData = unitSchema.parse(body)
+        const validatedData = userUpdateSchema.parse(body)
 
-        const unit = await db.unit.update({
+        const updateData: any = {
+            name: validatedData.name,
+            email: validatedData.email,
+            role: validatedData.role,
+        }
+
+        if (validatedData.password) {
+            updateData.passwordHash = await bcrypt.hash(validatedData.password, 10)
+        }
+
+        const user = await db.user.update({
             where: { id },
-            data: validatedData
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+            }
         })
 
-        await logActivity("UPDATE", "UNIT", id, `Updated unit ${unit.name} (${unit.code})`)
-
-        return NextResponse.json(unit)
+        return NextResponse.json(user)
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 })
@@ -53,16 +62,21 @@ export async function DELETE(
 ) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
     // @ts-ignore
     if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const { id } = await params
-        await db.unit.delete({
+
+        // Prevent deleting yourself
+        if (!session?.user || id === session.user.id) {
+            return NextResponse.json({ error: "Tidak dapat menghapus akun sendiri" }, { status: 400 })
+        }
+
+        await db.user.delete({
             where: { id }
         })
-
-        await logActivity("DELETE", "UNIT", id, `Deleted unit with ID ${id}`)
 
         return NextResponse.json({ success: true })
     } catch (error) {

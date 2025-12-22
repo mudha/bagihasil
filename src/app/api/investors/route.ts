@@ -12,6 +12,7 @@ const investorSchema = z.object({
         .transform(val => Number(val))
         .refine(val => val >= 0 && val <= 100, { message: "Persentase harus antara 0 - 100" })
         .default(50),
+    userId: z.string().optional().nullable(),
 })
 
 export async function GET(req: Request) {
@@ -27,6 +28,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()

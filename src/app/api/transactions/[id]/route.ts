@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { db } from "@/lib/db"
+import { logActivity } from "@/lib/activity-logger"
 
 const transactionUpdateSchema = z.object({
     unitId: z.string().optional(),
@@ -110,6 +112,8 @@ export async function PUT(
 ) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const { id } = await params
@@ -276,6 +280,16 @@ export async function PUT(
             })
         })
 
+        // Log update
+        if (result) {
+            await logActivity(
+                "UPDATE",
+                "TRANSACTION",
+                id,
+                `Updated transaction ${result.transactionCode}. Status: ${result.status}`
+            )
+        }
+
         return NextResponse.json(result)
     } catch (error) {
         console.error("Error updating transaction:", error)
@@ -295,6 +309,8 @@ export async function DELETE(
 ) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const { id } = await params
@@ -325,6 +341,9 @@ export async function DELETE(
                 data: { status: "AVAILABLE" }
             })
         }
+
+        // Log deletion
+        await logActivity("DELETE", "TRANSACTION", id, `Deleted transaction ${transaction.transactionCode}`)
 
         return NextResponse.json({ success: true })
     } catch (error) {

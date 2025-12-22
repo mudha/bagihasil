@@ -185,3 +185,14 @@ model PaymentHistory {
   transaction   Transaction?  @relation(fields: [transactionId], references: [id])
   investor      Investor      @relation(fields: [investorId], references: [id])
 }
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String   // CREATE, UPDATE, DELETE
+  entity    String   // UNIT, TRANSACTION, INVESTOR, COST
+  entityId  String
+  details   String?  // JSON string or description
+  userId    String   // User who performed the action
+  userName  String?  // Snapshot of user name
+  createdAt DateTime @default(now())
+}

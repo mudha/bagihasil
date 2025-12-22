@@ -8,11 +8,13 @@ import {
     Car,
     Users,
     FileText,
-    Settings,
-    LogOut
+    LogOut,
+    Calculator,
+    History,
+    UserCog
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 
 const routes = [
     {
@@ -39,10 +41,30 @@ const routes = [
         href: "/dashboard/investors",
         color: "text-orange-700",
     },
+    {
+        label: "Kalkulator",
+        icon: Calculator,
+        href: "/dashboard/calculator",
+        color: "text-emerald-500",
+    },
+    {
+        label: "Aktivitas",
+        icon: History,
+        href: "/dashboard/activity-logs",
+        color: "text-gray-500",
+    },
+    {
+        label: "Kelola User",
+        icon: UserCog,
+        href: "/dashboard/users",
+        color: "text-red-500",
+        adminOnly: true,
+    },
 ]
 
 export function Sidebar() {
     const pathname = usePathname()
+    const { data: session } = useSession()
 
     return (
         <div className="space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white">
@@ -53,7 +75,13 @@ export function Sidebar() {
                     </h1>
                 </Link>
                 <div className="space-y-1">
-                    {routes.map((route) => (
+                    {routes.filter(route => {
+                        if (route.adminOnly) {
+                            // @ts-ignore
+                            return session?.user?.role === "ADMIN"
+                        }
+                        return true
+                    }).map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}

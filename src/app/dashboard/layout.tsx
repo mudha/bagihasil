@@ -1,11 +1,28 @@
+"use client"
+
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Toaster } from "@/components/ui/sonner"
+import { usePathname } from "next/navigation"
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const pathname = usePathname()
+    // Explicitly check for /dashboard/investor (singular) endpoint and its sub-routes
+    // This ensures /dashboard/investors (plural) which is the admin page, is NOT treated as an investor page
+    const isInvestorPage = pathname === "/dashboard/investor" || pathname?.startsWith("/dashboard/investor/")
+
+    if (isInvestorPage) {
+        return (
+            <div className="h-full relative">
+                {children}
+                <Toaster />
+            </div>
+        )
+    }
+
     return (
         <div className="h-full relative">
             <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] bg-gray-900">
@@ -20,3 +37,4 @@ export default function DashboardLayout({
         </div>
     )
 }
+

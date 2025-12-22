@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { db } from "@/lib/db"
+import { logActivity } from "@/lib/activity-logger"
 
 const unitSchema = z.object({
     investorId: z.string(),
@@ -27,14 +29,27 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()
         const validatedData = unitSchema.parse(body)
 
-        const unit = await prisma.unit.create({
-            data: validatedData
+        const unit = await db.unit.create({
+            data: {
+                ...validatedData,
+                taxDueDate: validatedData.taxDueDate ? new Date(validatedData.taxDueDate) : null
+            },
         })
+
+        // Log Activity
+        await logActivity(
+            "CREATE",
+            "UNIT",
+            unit.id,
+            `Created unit: ${unit.name} (${unit.code})`
+        )
 
         return NextResponse.json(unit)
     } catch (error) {
@@ -48,6 +63,8 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // @ts-ignore
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     try {
         const body = await req.json()
@@ -68,3 +85,4 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }
+
