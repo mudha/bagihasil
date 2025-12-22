@@ -3,6 +3,7 @@ import { getInvestorDashboardData } from "@/lib/investor-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Package } from "lucide-react"
 import { redirect } from "next/navigation"
+import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 
 export default async function InvestorDashboardPage() {
     const session = await auth()
@@ -70,7 +71,9 @@ export default async function InvestorDashboardPage() {
                 </Card>
             </div>
 
-            {/* Recent Activity or List can go here */}
+            <div className="grid gap-4 md:grid-cols-7">
+                <InvestorMonthlyChart data={data.monthlyChartData} />
+            </div>
         </div>
     )
 }

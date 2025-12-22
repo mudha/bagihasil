@@ -70,6 +70,32 @@ export async function getInvestorDashboardData(userId: string) {
     // Total Received (Payments)
     const totalReceived = investor.paymentHistories.reduce((acc, curr) => acc + curr.amount, 0)
 
+    // Calculate Monthly Payments (Income)
+    const monthlyStats = new Map<string, number>()
+    const now = new Date()
+    const months = []
+
+    // Initialize last 6 months (including current)
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const key = d.toISOString().slice(0, 7) // YYYY-MM
+        const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+        monthlyStats.set(key, 0)
+        months.push({ key, label })
+    }
+
+    investor.paymentHistories.forEach(pay => {
+        const key = pay.paymentDate.toISOString().slice(0, 7) // YYYY-MM
+        if (monthlyStats.has(key)) {
+            monthlyStats.set(key, (monthlyStats.get(key) || 0) + pay.amount)
+        }
+    })
+
+    const monthlyChartData = months.map(m => ({
+        month: m.label,
+        income: monthlyStats.get(m.key) || 0
+    }))
+
     return {
         investor,
         stats: {
@@ -79,6 +105,7 @@ export async function getInvestorDashboardData(userId: string) {
             activeUnitsCount,
             totalUnitsCount
         },
+        monthlyChartData,
         recentTransactions: transactions.slice(0, 5) // Last 5 transactions
     }
 }

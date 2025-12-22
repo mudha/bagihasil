@@ -2,8 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { InvestmentsTable } from "./InvestmentsTable"
 
 export default async function InvestorInvestmentsPage() {
     const session = await auth()
@@ -29,7 +28,21 @@ export default async function InvestorInvestmentsPage() {
         orderBy: { createdAt: "desc" }
     })
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(val)
+    const formattedData = units.map(unit => {
+        const trx = unit.transactions[0]
+        const capital = trx ? (trx.initialInvestorCapital ?? trx.buyPrice) : 0
+        const transactionStatus = trx?.status === "ON_PROCESS" ? "Sedang Berjalan" :
+            trx?.status === "COMPLETED" ? "Terjual" : "Belum Transaksi"
+
+        return {
+            id: unit.id,
+            name: unit.name,
+            plateNumber: unit.plateNumber,
+            status: unit.status,
+            capital,
+            transactionStatus
+        }
+    })
 
     return (
         <div className="space-y-6">
@@ -39,51 +52,10 @@ export default async function InvestorInvestmentsPage() {
                     <CardTitle>Daftar Unit Didanai</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Unit</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Modal Awal</TableHead>
-                                <TableHead>Kondisi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {units.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center">Belum ada investasi</TableCell>
-                                </TableRow>
-                            ) : (
-                                units.map(unit => {
-                                    const trx = unit.transactions[0]
-                                    const capital = trx ? (trx.initialInvestorCapital ?? trx.buyPrice) : 0
-
-                                    return (
-                                        <TableRow key={unit.id}>
-                                            <TableCell className="font-medium">
-                                                {unit.name} <br />
-                                                <span className="text-xs text-muted-foreground">{unit.plateNumber}</span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={unit.status === "SOLD" ? "secondary" : "default"}>
-                                                    {unit.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {trx ? formatCurrency(capital) : "-"}
-                                            </TableCell>
-                                            <TableCell>
-                                                {trx?.status === "ON_PROCESS" ? "Sedang Berjalan" :
-                                                    trx?.status === "COMPLETED" ? "Terjual" : "Belum Transaksi"}
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
+                    <InvestmentsTable data={formattedData} />
                 </CardContent>
             </Card>
         </div>
     )
 }
+

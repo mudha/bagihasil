@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
+import { ViewImageDialog } from "@/components/ui/view-image-dialog"
 
 export default async function InvestorPaymentsPage() {
     const session = await auth()
@@ -40,13 +41,14 @@ export default async function InvestorPaymentsPage() {
                                 <TableHead>Unit</TableHead>
                                 <TableHead>Jumlah</TableHead>
                                 <TableHead>Metode</TableHead>
+                                <TableHead>Bukti</TableHead>
                                 <TableHead>Catatan</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {payments.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center">Belum ada riwayat pembayaran</TableCell>
+                                    <TableCell colSpan={6} className="text-center">Belum ada riwayat pembayaran</TableCell>
                                 </TableRow>
                             ) : (
                                 payments.map(pay => (
@@ -61,6 +63,9 @@ export default async function InvestorPaymentsPage() {
                                             {formatCurrency(pay.amount)}
                                         </TableCell>
                                         <TableCell>{pay.method}</TableCell>
+                                        <TableCell>
+                                            <ViewImageDialog imageUrl={pay.proofImageUrl || ""} />
+                                        </TableCell>
                                         <TableCell className="max-w-[200px] truncate" title={pay.notes || ""}>
                                             {pay.notes || "-"}
                                         </TableCell>
