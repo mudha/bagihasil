@@ -78,14 +78,15 @@ export async function getInvestorDashboardData(userId: string) {
     // Initialize last 6 months (including current)
     for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-        const key = d.toISOString().slice(0, 7) // YYYY-MM
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}`
         const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })
         monthlyStats.set(key, 0)
         months.push({ key, label })
     }
 
     investor.paymentHistories.forEach(pay => {
-        const key = pay.paymentDate.toISOString().slice(0, 7) // YYYY-MM
+        const d = pay.paymentDate
+        const key = `${d.getFullYear()}-${d.getMonth() + 1}`
         if (monthlyStats.has(key)) {
             monthlyStats.set(key, (monthlyStats.get(key) || 0) + pay.amount)
         }
