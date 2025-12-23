@@ -48,6 +48,7 @@ import { FileText, Paperclip, Upload, Camera } from "lucide-react"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { UpdateUnitImageDialog } from "@/components/units/UpdateUnitImageDialog"
 import { EditProfitSharingDialog } from "@/components/transactions/EditProfitSharingDialog"
+import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 
 export default function TransactionDetailPage() {
     const params = useParams()
@@ -169,7 +170,7 @@ export default function TransactionDetailPage() {
                             {transaction.unit.imageUrl && (
                                 <div
                                     className="h-8 w-8 rounded overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => window.open(transaction.unit.imageUrl, '_blank')}
+                                    onClick={() => setViewPaymentProof(transaction.unit.imageUrl)}
                                     title="Lihat Foto Unit"
                                 >
                                     <img
@@ -651,33 +652,12 @@ export default function TransactionDetailPage() {
                 onSuccess={fetchTransaction}
             />
 
-            <Dialog open={!!viewPaymentProof} onOpenChange={(open) => !open && setViewPaymentProof(null)}>
-                <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                        <DialogTitle>Bukti Transfer</DialogTitle>
-                    </DialogHeader>
-                    <div className="mt-4 break-words">
-                        {viewPaymentProof && (
-                            <div className="space-y-4">
-                                <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-100">
-                                    <img
-                                        src={viewPaymentProof}
-                                        alt="Bukti Transfer"
-                                        className="h-full w-full object-contain"
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <a href={viewPaymentProof} target="_blank" rel="noopener noreferrer">
-                                        <Button variant="outline" size="sm">
-                                            Buka di Tab Baru
-                                        </Button>
-                                    </a>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <ImagePreviewDialog
+                src={viewPaymentProof}
+                isOpen={!!viewPaymentProof}
+                onOpenChange={(open) => !open && setViewPaymentProof(null)}
+                title="Pratinjau Gambar"
+            />
         </div>
     )
 }

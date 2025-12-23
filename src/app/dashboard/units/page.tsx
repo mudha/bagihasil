@@ -59,6 +59,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 
 const unitSchema = z.object({
     name: z.string().min(1, "Nama unit wajib diisi"),
@@ -102,6 +103,7 @@ export default function UnitsPage() {
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [sortBy, setSortBy] = useState<string>("code")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     const form = useForm<z.infer<typeof unitSchema>>({
         resolver: zodResolver(unitSchema),
@@ -676,7 +678,7 @@ export default function UnitsPage() {
                                     {unit.imageUrl ? (
                                         <div
                                             className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                            onClick={() => unit.imageUrl && window.open(unit.imageUrl, '_blank')}
+                                            onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
                                         >
                                             <img
                                                 src={unit.imageUrl}
@@ -766,6 +768,12 @@ export default function UnitsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <ImagePreviewDialog
+                src={previewUrl}
+                isOpen={!!previewUrl}
+                onOpenChange={(open) => !open && setPreviewUrl(null)}
+                title="Pratinjau Foto Unit"
+            />
         </div>
     )
 }

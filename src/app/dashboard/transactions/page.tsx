@@ -54,6 +54,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 
 
 const transactionSchema = z.object({
@@ -129,6 +130,7 @@ export default function TransactionsPage() {
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [sortBy, setSortBy] = useState<string>("buyDate")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     const filteredTransactions = transactions.filter(trx => {
         const matchesSearch = (trx.transactionCode || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -773,7 +775,7 @@ export default function TransactionsPage() {
                                     {trx.unit.imageUrl ? (
                                         <div
                                             className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                            onClick={() => trx.unit.imageUrl && window.open(trx.unit.imageUrl, '_blank')}
+                                            onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
                                         >
                                             <img
                                                 src={trx.unit.imageUrl}
@@ -884,6 +886,12 @@ export default function TransactionsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <ImagePreviewDialog
+                src={previewUrl}
+                isOpen={!!previewUrl}
+                onOpenChange={(open) => !open && setPreviewUrl(null)}
+                title="Pratinjau Foto Unit"
+            />
         </div >
     )
 }

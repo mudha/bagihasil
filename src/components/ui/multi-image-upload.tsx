@@ -8,6 +8,7 @@ import { X, Upload, Plus, Image as ImageIcon } from "lucide-react"
 import { toast } from "sonner"
 import { validateImageFile, formatFileSize } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
+import { ImagePreviewDialog } from "./image-preview-dialog"
 
 export interface ImageFileWithDescription {
     id: string
@@ -25,6 +26,7 @@ interface MultipleImageUploadProps {
 
 export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImages = [], className }: MultipleImageUploadProps) {
     const [images, setImages] = useState<ImageFileWithDescription[]>(initialImages)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Sync with parent
@@ -165,7 +167,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                onClick={() => window.open(img.preview, '_blank')}
+                                onClick={() => setPreviewUrl(img.preview)}
                                 title="Lihat Gambar Full"
                             >
                                 <ImageIcon className="h-4 w-4" />
@@ -184,6 +186,13 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                     </div>
                 ))}
             </div>
+
+            <ImagePreviewDialog
+                src={previewUrl}
+                isOpen={!!previewUrl}
+                onOpenChange={(open) => !open && setPreviewUrl(null)}
+                title="Pratinjau Bukti"
+            />
 
             {images.length < maxImages && (
                 <div

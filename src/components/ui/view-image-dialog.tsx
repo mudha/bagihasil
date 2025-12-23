@@ -4,6 +4,8 @@ import {
     Dialog,
     DialogContent,
     DialogTrigger,
+    DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog"
 import { ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -26,6 +28,8 @@ export function ViewImageDialog({ imageUrl, altText = "Bukti Pembayaran" }: View
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl w-full p-0 overflow-hidden bg-transparent border-none shadow-none">
+                <DialogTitle className="sr-only">{altText}</DialogTitle>
+                <DialogDescription className="sr-only">Pratinjau gambar bukti</DialogDescription>
                 <div className="relative w-full h-auto min-h-[300px] flex items-center justify-center bg-black/50 rounded-lg p-4">
                     <Image
                         src={imageUrl}

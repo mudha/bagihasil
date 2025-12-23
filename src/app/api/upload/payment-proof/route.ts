@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
+import { v2 as cloudinary } from 'cloudinary'
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,54 +21,52 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate file type
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png']
         if (!validTypes.includes(file.type)) {
             return NextResponse.json(
-                { error: 'Tipe file tidak valid. Hanya JPG, PNG, dan PDF yang diperbolehkan.' },
+                { error: 'Tipe file tidak valid. Hanya JPG dan PNG yang diperbolehkan.' },
                 { status: 400 }
             )
         }
 
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024 // 5MB
+        // Validate file size (max 10MB for Cloudinary free tier is usually fine, but let's keep it reasonable)
+        const maxSize = 10 * 1024 * 1024 // 10MB
         if (file.size > maxSize) {
             return NextResponse.json(
-                { error: 'Ukuran file terlalu besar. Maksimal 5MB.' },
+                { error: 'Ukuran file terlalu besar. Maksimal 10MB.' },
                 { status: 400 }
             )
         }
 
-        // Generate unique filename
-        const timestamp = Date.now()
-        const randomString = Math.random().toString(36).substring(2, 8)
-        const extension = file.name.split('.').pop()
-        const filename = `proof_${timestamp}_${randomString}.${extension}`
-
-        // Create upload directory if it doesn't exist
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'payment-proofs')
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true })
-        }
-
-        // Convert file to buffer and save
+        // Convert file to buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        const filePath = path.join(uploadDir, filename)
-        await writeFile(filePath, buffer)
-
-        // Return the public URL
-        const publicUrl = `/uploads/payment-proofs/${filename}`
+        // Upload to Cloudinary using buffer
+        const uploadResult = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'profit-sharing-app/payment-proofs',
+                    resource_type: 'auto',
+                },
+                (error, result) => {
+                    if (error) reject(error)
+                    else resolve(result)
+                }
+            )
+            uploadStream.end(buffer)
+        }) as any
 
         return NextResponse.json({
             success: true,
-            url: publicUrl,
-            filename: filename
+            url: uploadResult.secure_url,
+            publicId: uploadResult.public_id,
+            filename: file.name
         })
     } catch (error) {
-        console.error('Error uploading file:', error)
+        console.error('Error uploading to Cloudinary:', error)
         return NextResponse.json(
-            { error: 'Gagal mengupload file' },
+            { error: 'Gagal mengupload file ke Cloud' },
             { status: 500 }
         )
     }

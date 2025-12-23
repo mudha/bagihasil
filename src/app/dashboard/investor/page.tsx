@@ -34,7 +34,7 @@ export default async function InvestorDashboardPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Halo, {investor.name}</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Assalamu&apos;alaikum, {investor.name}</h2>
                 <p className="text-muted-foreground">Ringkasan performa investasi Anda.</p>
             </div>
 
