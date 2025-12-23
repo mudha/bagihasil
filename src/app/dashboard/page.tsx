@@ -310,7 +310,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* Monthly Chart */}
-                <Card className="col-span-4">
+                <Card className="col-span-7">
                     <CardHeader>
                         <CardTitle>
                             Profit Bulanan {selectedInvestorId !== "all" ? `(${stats.investorStats.find(i => i.id === selectedInvestorId)?.name})` : "(Semua)"}
@@ -343,37 +343,6 @@ export default function DashboardPage() {
                                     <Bar dataKey="investorShare" name="Bagian Pemodal" stackId="a" fill="#adfa1d" radius={[0, 0, 4, 4]} />
                                     <Bar dataKey="managerShare" name="Bagian Pengelola" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} />
                                 </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Unit Status Pie Chart */}
-                <Card className="col-span-3">
-                    <CardHeader>
-                        <CardTitle>Status Unit</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={stats.unitStatusDistribution}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {stats.unitStatusDistribution?.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={['#00C49F', '#FFBB28', '#FF8042'][index % 3]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>
@@ -476,6 +445,6 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </div >
     )
 }
