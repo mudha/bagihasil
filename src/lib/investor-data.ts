@@ -70,8 +70,9 @@ export async function getInvestorDashboardData(userId: string) {
     // Total Received (Payments)
     const totalReceived = investor.paymentHistories.reduce((acc, curr) => acc + curr.amount, 0)
 
-    // Calculate Monthly Payments (Income)
-    const monthlyStats = new Map<string, number>()
+    // Calculate Monthly Stats (Income and Sales Trend)
+    const monthlyIncomeStats = new Map<string, number>()
+    const monthlySalesStats = new Map<string, number>()
     const now = new Date()
     const months = []
 
@@ -80,21 +81,36 @@ export async function getInvestorDashboardData(userId: string) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
         const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })
-        monthlyStats.set(key, 0)
+        monthlyIncomeStats.set(key, 0)
+        monthlySalesStats.set(key, 0)
         months.push({ key, label })
     }
 
-    investor.paymentHistories.forEach(pay => {
-        const d = pay.paymentDate
+    // Use Transactions for Monthly Stats (Based on PROFIT SHARING)
+    transactions.forEach(trx => {
+        if (!trx.sellDate) return
+        const d = new Date(trx.sellDate)
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
-        if (monthlyStats.has(key)) {
-            monthlyStats.set(key, (monthlyStats.get(key) || 0) + pay.amount)
+
+        // Income (Investor's Profit Share)
+        if (monthlyIncomeStats.has(key) && trx.profitSharing) {
+            monthlyIncomeStats.set(key, (monthlyIncomeStats.get(key) || 0) + trx.profitSharing.investorProfitAmount)
+        }
+
+        // Sales Trend (Count of units sold)
+        if (monthlySalesStats.has(key)) {
+            monthlySalesStats.set(key, (monthlySalesStats.get(key) || 0) + 1)
         }
     })
 
     const monthlyChartData = months.map(m => ({
         month: m.label,
-        income: monthlyStats.get(m.key) || 0
+        income: monthlyIncomeStats.get(m.key) || 0
+    }))
+
+    const monthlySalesTrend = months.map(m => ({
+        month: m.label,
+        count: monthlySalesStats.get(m.key) || 0
     }))
 
     return {
@@ -107,6 +123,7 @@ export async function getInvestorDashboardData(userId: string) {
             totalUnitsCount
         },
         monthlyChartData,
+        monthlySalesTrend,
         recentTransactions: transactions.slice(0, 5) // Last 5 transactions
     }
 }

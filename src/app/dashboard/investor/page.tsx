@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Package } from "lucide-react"
 import { redirect } from "next/navigation"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
+import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 
 export default async function InvestorDashboardPage() {
     const session = await auth()
@@ -73,6 +74,7 @@ export default async function InvestorDashboardPage() {
 
             <div className="grid gap-4 md:grid-cols-7">
                 <InvestorMonthlyChart data={data.monthlyChartData} />
+                <InvestorSalesTrendChart data={data.monthlySalesTrend} />
             </div>
         </div>
     )
