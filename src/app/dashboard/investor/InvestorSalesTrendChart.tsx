@@ -10,11 +10,12 @@ interface SalesTrendData {
 
 interface InvestorSalesTrendChartProps {
     data: SalesTrendData[]
+    className?: string
 }
 
-export function InvestorSalesTrendChart({ data }: InvestorSalesTrendChartProps) {
+export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendChartProps) {
     return (
-        <Card className="col-span-3">
+        <Card className={className}>
             <CardHeader>
                 <CardTitle>Tren Penjualan Unit (6 Bulan Terakhir)</CardTitle>
             </CardHeader>

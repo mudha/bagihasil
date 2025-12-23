@@ -10,9 +10,10 @@ interface MonthlyChartData {
 
 interface InvestorMonthlyChartProps {
     data: MonthlyChartData[]
+    className?: string
 }
 
-export function InvestorMonthlyChart({ data }: InvestorMonthlyChartProps) {
+export function InvestorMonthlyChart({ data, className }: InvestorMonthlyChartProps) {
     const formatCurrency = (val: number) => {
         // Shorten large numbers (e.g. 1.5jt)
         if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}jt`
@@ -23,7 +24,7 @@ export function InvestorMonthlyChart({ data }: InvestorMonthlyChartProps) {
     const formatTooltipCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
 
     return (
-        <Card className="col-span-4">
+        <Card className={className}>
             <CardHeader>
                 <CardTitle>Pendapatan Bulanan (6 Bulan Terakhir)</CardTitle>
             </CardHeader>
