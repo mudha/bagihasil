@@ -33,6 +33,7 @@ import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "sonner"
 import { exportInvestorReportXLSX, exportInvestorReportPDF } from "@/lib/export-utils"
+import { useSession } from "next-auth/react"
 import {
     Select,
     SelectContent,
@@ -74,6 +75,9 @@ export default function InvestorsPage() {
     const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
     const [users, setUsers] = useState<User[]>([])
+    const { data: session } = useSession()
+    // @ts-ignore
+    const isViewer = session?.user?.role === "VIEWER"
 
     const form = useForm<InvestorFormValues>({
         resolver: zodResolver(investorSchema),
@@ -218,132 +222,134 @@ export default function InvestorsPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Data Pemodal</h2>
-                <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah Pemodal
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>
-                                {editingInvestor ? "Edit Pemodal" : "Tambah Pemodal Baru"}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Nama Lengkap</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="John Doe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="contactInfo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Kontak (HP/Email)</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="08123456789" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="marginPercentage"
-                                    render={({ field }) => {
-                                        const managerShare = 100 - (Number(field.value) || 0)
-                                        return (
+                {!isViewer && (
+                    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" /> Tambah Pemodal
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    {editingInvestor ? "Edit Pemodal" : "Tambah Pemodal Baru"}
+                                </DialogTitle>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Persentase Margin Pemodal (%)</FormLabel>
+                                                <FormLabel>Nama Lengkap</FormLabel>
                                                 <FormControl>
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="50"
-                                                        {...field}
-                                                        onChange={(e) => field.onChange(Number(e.target.value))}
-                                                    />
+                                                    <Input placeholder="John Doe" {...field} />
                                                 </FormControl>
-                                                <div className="text-sm text-muted-foreground mt-1 flex justify-between">
-                                                    <span>Pemodal: {field.value || 0}%</span>
-                                                    <span className="font-semibold text-blue-600">Pengelola: {managerShare}%</span>
-                                                </div>
                                                 <FormMessage />
                                             </FormItem>
-                                        )
-                                    }}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="bankAccountDetails"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Info Rekening</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="BCA 1234567890 a.n John Doe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="notes"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Catatan</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Catatan tambahan..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="userId"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Hubungkan ke Akun Login</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                value={field.value || "none"}
-                                            >
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="contactInfo"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Kontak (HP/Email)</FormLabel>
                                                 <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Pilih Akun User" />
-                                                    </SelectTrigger>
+                                                    <Input placeholder="08123456789" {...field} />
                                                 </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="none">Belum dihubungkan</SelectItem>
-                                                    {users.map((user) => (
-                                                        <SelectItem key={user.id} value={user.id}>
-                                                            {user.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" className="w-full">
-                                    {editingInvestor ? "Update" : "Simpan"}
-                                </Button>
-                            </form>
-                        </Form>
-                    </DialogContent>
-                </Dialog>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="marginPercentage"
+                                        render={({ field }) => {
+                                            const managerShare = 100 - (Number(field.value) || 0)
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel>Persentase Margin Pemodal (%)</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="50"
+                                                            {...field}
+                                                            onChange={(e) => field.onChange(Number(e.target.value))}
+                                                        />
+                                                    </FormControl>
+                                                    <div className="text-sm text-muted-foreground mt-1 flex justify-between">
+                                                        <span>Pemodal: {field.value || 0}%</span>
+                                                        <span className="font-semibold text-blue-600">Pengelola: {managerShare}%</span>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )
+                                        }}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="bankAccountDetails"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Info Rekening</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="BCA 1234567890 a.n John Doe" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="notes"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Catatan</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Catatan tambahan..." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="userId"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Hubungkan ke Akun Login</FormLabel>
+                                                <Select
+                                                    onValueChange={field.onChange}
+                                                    value={field.value || "none"}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Pilih Akun User" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Belum dihubungkan</SelectItem>
+                                                        {users.map((user) => (
+                                                            <SelectItem key={user.id} value={user.id}>
+                                                                {user.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" className="w-full">
+                                        {editingInvestor ? "Update" : "Simpan"}
+                                    </Button>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
 
             <div className="rounded-md border">
@@ -376,13 +382,17 @@ export default function InvestorsPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(investor)}
-                                            >
-                                                <Pencil className="h-4 w-4 mr-2" /> Edit
-                                            </Button>
+                                            {!isViewer ? (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(investor)}
+                                                >
+                                                    <Pencil className="h-4 w-4 mr-2" /> Edit
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground italic">Read-only</span>
+                                            )}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button

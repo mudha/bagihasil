@@ -1,6 +1,6 @@
 "use client"
-
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -75,6 +75,10 @@ export default function UsersPage() {
     const [isOpen, setIsOpen] = useState(false)
     const [editingUser, setEditingUser] = useState<User | null>(null)
     const [deleteId, setDeleteId] = useState<string | null>(null)
+    const { data: session, status: sessionStatus } = useSession()
+
+    // @ts-ignore
+    const isAdmin = session?.user?.role === "ADMIN"
 
     const form = useForm<UserFormValues>({
         resolver: zodResolver(userSchema),
@@ -199,6 +203,21 @@ export default function UsersPage() {
             setEditingUser(null)
             form.reset()
         }
+    }
+
+    if (sessionStatus === "loading") {
+        return <div className="p-8 text-center">Memuat...</div>
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                <Shield className="w-16 h-16 text-destructive" />
+                <h2 className="text-2xl font-bold">Akses Ditolak</h2>
+                <p className="text-muted-foreground">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+                <Button onClick={() => window.location.href = "/dashboard"}>Kembali ke Dashboard</Button>
+            </div>
+        )
     }
 
     return (

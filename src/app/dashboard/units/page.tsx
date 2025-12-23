@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -91,6 +92,10 @@ interface Investor {
 }
 
 export default function UnitsPage() {
+    const { data: session } = useSession()
+    // @ts-ignore
+    const isViewer = session?.user?.role === "VIEWER"
+
     const [units, setUnits] = useState<Unit[]>([])
     const [investors, setInvestors] = useState<Investor[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -328,7 +333,7 @@ export default function UnitsPage() {
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Manajemen Unit</h2>
                 <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
+                    {selectedIds.length > 0 && !isViewer && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" size="sm">
@@ -351,170 +356,174 @@ export default function UnitsPage() {
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
-                    <ImportUnitsDialog onImportSuccess={fetchUnits} />
-                    <Dialog open={isOpen} onOpenChange={(open) => {
-                        setIsOpen(open)
-                        if (!open) setEditingUnit(null)
-                    }}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" /> Tambah Unit
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {!isViewer && (
+                        <>
+                            <ImportUnitsDialog onImportSuccess={fetchUnits} />
+                            <Dialog open={isOpen} onOpenChange={(open) => {
+                                setIsOpen(open)
+                                if (!open) setEditingUnit(null)
+                            }}>
+                                <DialogTrigger asChild>
+                                    <Button>
+                                        <Plus className="mr-2 h-4 w-4" /> Tambah Unit
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                    </DialogHeader>
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                                    <div className="mb-4">
-                                        <Label>Foto Unit (Opsional)</Label>
-                                        <div className="mt-2">
-                                            <MultipleImageUpload
-                                                initialImages={unitImages}
-                                                onImagesChange={setUnitImages}
-                                                maxImages={1}
+                                            <div className="mb-4">
+                                                <Label>Foto Unit (Opsional)</Label>
+                                                <div className="mt-2">
+                                                    <MultipleImageUpload
+                                                        initialImages={unitImages}
+                                                        onImagesChange={setUnitImages}
+                                                        maxImages={1}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Nama Unit</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Toyota Avanza 2020" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
                                             />
-                                        </div>
-                                    </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="plateNumber"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>No. Polisi</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="B 1234 ABC" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="code"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Kode Unit</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="UNT-001" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <FormField
+                                                control={form.control}
+                                                name="investorId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Pemilik Modal</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Pilih Pemodal" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {investors.map((investor) => (
+                                                                    <SelectItem key={investor.id} value={investor.id}>
+                                                                        {investor.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Nama Unit</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Toyota Avanza 2020" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="plateNumber"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>No. Polisi</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="B 1234 ABC" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
+                                            <FormField
+                                                control={form.control}
+                                                name="taxDueDate"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-col">
+                                                        <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button
+                                                                        variant={"outline"}
+                                                                        className={cn(
+                                                                            "w-full pl-3 text-left font-normal",
+                                                                            !field.value && "text-muted-foreground"
+                                                                        )}
+                                                                    >
+                                                                        {field.value ? (
+                                                                            format(field.value, "PPP")
+                                                                        ) : (
+                                                                            <span>Pilih tanggal</span>
+                                                                        )}
+                                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value || undefined}
+                                                                    onSelect={field.onChange}
+                                                                    disabled={(date) =>
+                                                                        date < new Date("1900-01-01")
+                                                                    }
+                                                                    initialFocus
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            {editingUnit && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="status"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Status</FormLabel>
+                                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Pilih Status" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                                                                    <SelectItem value="SOLD">Sold</SelectItem>
+                                                                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
                                             )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="code"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Kode Unit</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="UNT-001" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="investorId"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Pemilik Modal</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Pilih Pemodal" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {investors.map((investor) => (
-                                                            <SelectItem key={investor.id} value={investor.id}>
-                                                                {investor.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="taxDueDate"
-                                        render={({ field }) => (
-                                            <FormItem className="flex flex-col">
-                                                <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <FormControl>
-                                                            <Button
-                                                                variant={"outline"}
-                                                                className={cn(
-                                                                    "w-full pl-3 text-left font-normal",
-                                                                    !field.value && "text-muted-foreground"
-                                                                )}
-                                                            >
-                                                                {field.value ? (
-                                                                    format(field.value, "PPP")
-                                                                ) : (
-                                                                    <span>Pilih tanggal</span>
-                                                                )}
-                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                            </Button>
-                                                        </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value || undefined}
-                                                            onSelect={field.onChange}
-                                                            disabled={(date) =>
-                                                                date < new Date("1900-01-01")
-                                                            }
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    {editingUnit && (
-                                        <FormField
-                                            control={form.control}
-                                            name="status"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Status</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Pilih Status" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="AVAILABLE">Available</SelectItem>
-                                                            <SelectItem value="SOLD">Sold</SelectItem>
-                                                            <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )}
-                                    <Button type="submit" className="w-full">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                                            <Button type="submit" className="w-full">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -669,9 +678,10 @@ export default function UnitsPage() {
                                 <TableCell>
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                                         checked={selectedIds.includes(unit.id)}
                                         onChange={(e) => handleSelectOne(unit.id, e.target.checked)}
+                                        disabled={isViewer}
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -718,26 +728,30 @@ export default function UnitsPage() {
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                                setEditingUnit(unit)
-                                                setIsOpen(true)
-                                            }}
-                                        >
-                                            <Pencil className="h-4 w-4 mr-2" /> Edit
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setDeleteId(unit.id)}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash className="h-4 w-4 mr-2" /> Hapus
-                                        </Button>
-                                    </div>
+                                    {!isViewer ? (
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setEditingUnit(unit)
+                                                    setIsOpen(true)
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4 mr-2" /> Edit
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setDeleteId(unit.id)}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash className="h-4 w-4 mr-2" /> Hapus
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground italic">Read-only</span>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { logActivity } from "@/lib/activity-logger"
+import { notifyUnitSold } from "@/lib/notifications"
 
 const transactionUpdateSchema = z.object({
     unitId: z.string().optional(),
@@ -209,6 +210,13 @@ export async function PUT(
                             totalCapital: totalCapital
                         }
                     })
+
+                    // Trigger Notification
+                    try {
+                        await notifyUnitSold(fullTransaction.unit.investorId, id)
+                    } catch (error) {
+                        console.error("Failed to send notification:", error)
+                    }
                 }
             } else if (body.status === "ON_PROCESS") {
                 // Changing back to ON_PROCESS from COMPLETED

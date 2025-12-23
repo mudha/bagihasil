@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -118,6 +119,10 @@ const calculateDuration = (buyDate: string, sellDate?: string | null) => {
 }
 
 export default function TransactionsPage() {
+    const { data: session } = useSession()
+    // @ts-ignore
+    const isViewer = session?.user?.role === "VIEWER"
+
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [availableUnits, setAvailableUnits] = useState<Unit[]>([])
     const [investors, setInvestors] = useState<Investor[]>([])
@@ -372,7 +377,7 @@ export default function TransactionsPage() {
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Daftar Transaksi</h2>
                 <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
+                    {selectedIds.length > 0 && !isViewer && (
                         <>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -764,9 +769,10 @@ export default function TransactionsPage() {
                                 <TableCell>
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                                         checked={selectedIds.includes(trx.id)}
                                         onChange={(e) => handleSelectOne(trx.id, e.target.checked)}
+                                        disabled={isViewer}
                                     />
                                 </TableCell>
                                 <TableCell className="font-medium">{trx.transactionCode}</TableCell>
@@ -818,24 +824,30 @@ export default function TransactionsPage() {
                                                 <Eye className="h-4 w-4 mr-2" /> Detail
                                             </Button>
                                         </Link>
-                                        <EditStatusDialog
-                                            transaction={{
-                                                id: trx.id,
-                                                transactionCode: trx.transactionCode,
-                                                status: trx.status
-                                            }}
-                                            onSuccess={() => {
-                                                fetchTransactions()
-                                                fetchAvailableUnits()
-                                            }}
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleEdit(trx)}
-                                        >
-                                            <MoreVertical className="h-4 w-4 mr-2" /> Edit
-                                        </Button>
+                                        {!isViewer ? (
+                                            <>
+                                                <EditStatusDialog
+                                                    transaction={{
+                                                        id: trx.id,
+                                                        transactionCode: trx.transactionCode,
+                                                        status: trx.status
+                                                    }}
+                                                    onSuccess={() => {
+                                                        fetchTransactions()
+                                                        fetchAvailableUnits()
+                                                    }}
+                                                />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(trx)}
+                                                >
+                                                    <MoreVertical className="h-4 w-4 mr-2" /> Edit
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground italic">Read-only</span>
+                                        )}
                                         {trx.status === 'COMPLETED' && (
                                             <Button
                                                 variant="outline"
@@ -847,14 +859,16 @@ export default function TransactionsPage() {
                                                 {exportingTransactionId === trx.id ? "Exporting..." : "Laporan"}
                                             </Button>
                                         )}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setDeleteTransactionId(trx.id)}
-                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        >
-                                            <Trash className="h-4 w-4 mr-2" /> Hapus
-                                        </Button>
+                                        {!isViewer && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setDeleteTransactionId(trx.id)}
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash className="h-4 w-4 mr-2" /> Hapus
+                                            </Button>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>

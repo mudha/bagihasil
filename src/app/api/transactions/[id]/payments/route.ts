@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { notifyPaymentProof } from '@/lib/notifications'
 
 const paymentHistorySchema = z.object({
     transactionId: z.string(),
@@ -94,6 +95,18 @@ export async function POST(
             where: { id: transactionId },
             data: { paymentStatus }
         })
+
+        // Trigger Notification
+        try {
+            await notifyPaymentProof(
+                validatedData.investorId,
+                transactionId,
+                validatedData.amount,
+                validatedData.proofImageUrl
+            )
+        } catch (error) {
+            console.error("Failed to send notification:", error)
+        }
 
         return NextResponse.json({
             success: true,
