@@ -7,11 +7,15 @@ import { Button } from "@/components/ui/button"
 import { LayoutDashboard, Wallet, LogOut, PieChart, User } from "lucide-react"
 import { signOut } from "next-auth/react"
 
-export function InvestorSidebar() {
+interface InvestorSidebarProps {
+    className?: string
+}
+
+export function InvestorSidebar({ className }: InvestorSidebarProps) {
     const pathname = usePathname()
 
     return (
-        <div className="hidden h-full w-64 flex-col border-r bg-white p-4 dark:bg-gray-800 md:flex">
+        <div className={cn("h-full w-64 flex-col border-r bg-white p-4 dark:bg-gray-800 flex", className)}>
             <div className="flex h-14 items-center border-b px-2 font-bold text-xl mb-4">
                 <span className="text-emerald-600 mr-2">Investor</span> Portal
             </div>
