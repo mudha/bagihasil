@@ -103,7 +103,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                     ))}
                 </div>
             </div>
-            <div className="px-3 py-2">
+            <div className="px-3 py-2 mt-auto">
                 <Button
                     onClick={() => signOut()}
                     variant="ghost"
@@ -112,6 +112,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                     <LogOut className="h-5 w-5 mr-3" />
                     Logout
                 </Button>
+                <div className="mt-4 px-3 text-xs text-zinc-600">
+                    <p>Profit Share App v1.0</p>
+                    <p>&copy; 2025 Mudha</p>
+                </div>
             </div>
         </div>
     )

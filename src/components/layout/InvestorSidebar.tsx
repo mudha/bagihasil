@@ -46,7 +46,7 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                     </Button>
                 </Link>
             </div>
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 mt-auto">
                 <Button
                     variant="outline"
                     className="w-full justify-start gap-2 text-red-500 hover:text-red-600"
@@ -55,6 +55,10 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                     <LogOut className="h-4 w-4" />
                     Keluar
                 </Button>
+                <div className="mt-4 text-xs text-gray-400 text-center">
+                    <p>Investor Portal v1.0</p>
+                    <p>&copy; 2025 Mudha</p>
+                </div>
             </div>
         </div>
     )
