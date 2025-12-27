@@ -70,44 +70,87 @@ export default function ActivityLogsPage() {
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Waktu</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Aksi</TableHead>
-                                    <TableHead>Entitas</TableHead>
-                                    <TableHead>Detail</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-4">
                                 {logs.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">
-                                            Belum ada aktivitas tercatat.
-                                        </TableCell>
-                                    </TableRow>
+                                    <div className="text-center py-8 text-muted-foreground text-sm border rounded-md bg-slate-50">
+                                        Belum ada aktivitas tercatat.
+                                    </div>
                                 ) : (
                                     logs.map((log) => (
-                                        <TableRow key={log.id}>
-                                            <TableCell className="whitespace-nowrap font-medium">
-                                                {format(new Date(log.createdAt), "dd MMM HH:mm", { locale: id })}
-                                            </TableCell>
-                                            <TableCell>{log.userName || "System"}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={getActionColor(log.action) as any}>
-                                                    {log.action}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>{log.entity}</TableCell>
-                                            <TableCell className="max-w-md truncate" title={log.details}>
-                                                {log.details || "-"}
-                                            </TableCell>
-                                        </TableRow>
+                                        <div key={log.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant={getActionColor(log.action) as any} className="text-[10px] h-5 px-1.5">
+                                                        {log.action}
+                                                    </Badge>
+                                                    <span className="text-xs font-mono text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">
+                                                        {log.entity}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                                    {format(new Date(log.createdAt), "dd MMM HH:mm", { locale: id })}
+                                                </span>
+                                            </div>
+
+                                            <div className="text-sm">
+                                                <p className="line-clamp-3 text-foreground/90">{log.details || "-"}</p>
+                                            </div>
+
+                                            <div className="pt-2 border-t mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                                                <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                                    {(log.userName || "S").charAt(0).toUpperCase()}
+                                                </div>
+                                                <span>{log.userName || "System"}</span>
+                                            </div>
+                                        </div>
                                     ))
                                 )}
-                            </TableBody>
-                        </Table>
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Waktu</TableHead>
+                                            <TableHead>User</TableHead>
+                                            <TableHead>Aksi</TableHead>
+                                            <TableHead>Entitas</TableHead>
+                                            <TableHead>Detail</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {logs.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center h-24">
+                                                    Belum ada aktivitas tercatat.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            logs.map((log) => (
+                                                <TableRow key={log.id}>
+                                                    <TableCell className="whitespace-nowrap font-medium">
+                                                        {format(new Date(log.createdAt), "dd MMM HH:mm", { locale: id })}
+                                                    </TableCell>
+                                                    <TableCell>{log.userName || "System"}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={getActionColor(log.action) as any}>
+                                                            {log.action}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>{log.entity}</TableCell>
+                                                    <TableCell className="max-w-md truncate" title={log.details}>
+                                                        {log.details || "-"}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
