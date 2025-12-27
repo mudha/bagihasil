@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs"
 
 const userUpdateSchema = z.object({
     name: z.string().min(1).optional(),
-    email: z.string().email().optional(),
+    username: z.string().min(3).optional(),
+    email: z.string().email().optional().or(z.literal("")).nullable(),
     password: z.string().min(6).optional().nullable(),
     role: z.enum(["ADMIN", "INVESTOR", "VIEWER"]).optional()
 })
@@ -28,7 +29,8 @@ export async function PUT(
 
         const updateData: any = {
             name: validatedData.name,
-            email: validatedData.email,
+            username: validatedData.username,
+            email: validatedData.email && validatedData.email !== "" ? validatedData.email : null,
             role: validatedData.role,
         }
 
@@ -42,6 +44,7 @@ export async function PUT(
             select: {
                 id: true,
                 name: true,
+                username: true,
                 email: true,
                 role: true
             }

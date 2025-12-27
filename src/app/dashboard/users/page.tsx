@@ -45,16 +45,10 @@ import {
 
 const userSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
-    email: z.string().email("Email tidak valid"),
+    username: z.string().min(3, "Username minimal 3 karakter"),
+    email: z.string().email("Email tidak valid").optional().or(z.literal("")),
     password: z.string().optional().or(z.literal("")),
     role: z.enum(["ADMIN", "INVESTOR", "VIEWER"]),
-}).refine((data) => {
-    // If it's a new user (usually we'd check if we are in edit mode, but schema doesn't know context)
-    // We'll handle context-based validation in the component logic or by providing default blank for edit.
-    return true
-}, {
-    message: "Password minimal 6 karakter",
-    path: ["password"],
 })
 
 type UserFormValues = z.infer<typeof userSchema>
@@ -62,7 +56,8 @@ type UserFormValues = z.infer<typeof userSchema>
 interface User {
     id: string
     name: string
-    email: string
+    username: string | null
+    email: string | null
     role: "ADMIN" | "INVESTOR" | "VIEWER"
     createdAt: string
     investor?: {
@@ -84,6 +79,7 @@ export default function UsersPage() {
         resolver: zodResolver(userSchema),
         defaultValues: {
             name: "",
+            username: "",
             email: "",
             password: "",
             role: "VIEWER",
@@ -110,13 +106,15 @@ export default function UsersPage() {
         if (editingUser) {
             form.reset({
                 name: editingUser.name,
-                email: editingUser.email,
+                username: editingUser.username || "",
+                email: editingUser.email || "",
                 password: "", // Leave blank unless changing
                 role: editingUser.role,
             })
         } else {
             form.reset({
                 name: "",
+                username: "",
                 email: "",
                 password: "",
                 role: "VIEWER",
@@ -254,10 +252,23 @@ export default function UsersPage() {
                                 />
                                 <FormField
                                     control={form.control}
+                                    name="username"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Username</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="johndoe" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
                                     name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Email</FormLabel>
+                                            <FormLabel>Email (Opsional)</FormLabel>
                                             <FormControl>
                                                 <Input type="email" placeholder="john@example.com" {...field} />
                                             </FormControl>
@@ -314,6 +325,7 @@ export default function UsersPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Nama</TableHead>
+                            <TableHead>Username</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Terhubung ke...</TableHead>
@@ -325,7 +337,8 @@ export default function UsersPage() {
                         {users.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
+                                <TableCell className="font-mono text-sm">{user.username || "-"}</TableCell>
+                                <TableCell>{user.email || "-"}</TableCell>
                                 <TableCell>{getRoleBadge(user.role)}</TableCell>
                                 <TableCell>
                                     {user.investor ? (

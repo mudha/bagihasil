@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs"
 
 const userSchema = z.object({
     name: z.string().min(1),
-    email: z.string().email(),
+    username: z.string().min(3),
+    email: z.string().email().optional().or(z.literal("")),
     password: z.string().min(6),
     role: z.enum(["ADMIN", "INVESTOR", "VIEWER"]).default("VIEWER")
 })
@@ -22,6 +23,7 @@ export async function GET(req: Request) {
         select: {
             id: true,
             name: true,
+            username: true,
             email: true,
             role: true,
             createdAt: true,
@@ -49,13 +51,24 @@ export async function POST(req: Request) {
         const body = await req.json()
         const validatedData = userSchema.parse(body)
 
-        // Check if email already exists
-        const existingUser = await db.user.findUnique({
-            where: { email: validatedData.email }
+        // Check if username already exists
+        const existingUsername = await db.user.findUnique({
+            where: { username: validatedData.username }
         })
 
-        if (existingUser) {
-            return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 })
+        if (existingUsername) {
+            return NextResponse.json({ error: "Username sudah digunakan" }, { status: 400 })
+        }
+
+        // Check if email already exists (if provided)
+        if (validatedData.email && validatedData.email !== "") {
+            const existingEmail = await db.user.findUnique({
+                where: { email: validatedData.email }
+            })
+
+            if (existingEmail) {
+                return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 })
+            }
         }
 
         const hashedPassword = await bcrypt.hash(validatedData.password, 10)
@@ -63,13 +76,15 @@ export async function POST(req: Request) {
         const user = await db.user.create({
             data: {
                 name: validatedData.name,
-                email: validatedData.email,
+                username: validatedData.username,
+                email: validatedData.email && validatedData.email !== "" ? validatedData.email : null,
                 passwordHash: hashedPassword,
                 role: validatedData.role,
             },
             select: {
                 id: true,
                 name: true,
+                username: true,
                 email: true,
                 role: true
             }

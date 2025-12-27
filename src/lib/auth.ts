@@ -7,7 +7,7 @@ import { z } from "zod"
 import { authConfig } from "./auth.config"
 
 const loginSchema = z.object({
-    email: z.string().email(),
+    identifier: z.string().min(1),
     password: z.string().min(6),
 })
 
@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         Credentials({
             name: "Credentials",
             credentials: {
-                email: { label: "Email", type: "email" },
+                identifier: { label: "Username / Email", type: "text" },
                 password: { label: "Password", type: "password" }
             },
             authorize: async (credentials) => {
@@ -28,10 +28,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     return null
                 }
 
-                const { email, password } = parsedCredentials.data
+                const { identifier, password } = parsedCredentials.data
 
-                const user = await prisma.user.findUnique({
-                    where: { email }
+                // Try to find user by username or email
+                const user = await prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            { username: identifier },
+                            { email: identifier }
+                        ]
+                    }
                 })
 
                 if (!user || !user.passwordHash) return null
