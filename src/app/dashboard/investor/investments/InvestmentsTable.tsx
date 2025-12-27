@@ -13,6 +13,7 @@ interface InvestmentUnit {
     plateNumber: string | null
     status: string
     capital: number
+    sellPrice: number
     transactionStatus: string
 }
 
@@ -60,12 +61,12 @@ export function InvestmentsTable({ data }: InvestmentsTableProps) {
         setSortConfig({ key, direction })
     }
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(val)
+    const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2 max-w-sm">
-                <div className="relative w-full">
+            <div className="flex items-center gap-2">
+                <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari unit atau status..."
@@ -76,7 +77,49 @@ export function InvestmentsTable({ data }: InvestmentsTableProps) {
                 </div>
             </div>
 
-            <div className="rounded-md border">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {sortedData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
+                    </div>
+                ) : (
+                    sortedData.map(unit => (
+                        <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-card">
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-base">{unit.name}</h3>
+                                    <p className="text-sm text-muted-foreground">{unit.plateNumber}</p>
+                                </div>
+                                <Badge variant={unit.status === "SOLD" ? "secondary" : "default"} className="ml-2">
+                                    {unit.status}
+                                </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Modal Awal</p>
+                                    <p className="font-medium">{unit.capital > 0 ? formatCurrency(unit.capital) : "-"}</p>
+                                </div>
+                                {unit.sellPrice > 0 && (
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Harga Jual</p>
+                                        <p className="font-medium text-emerald-600">{formatCurrency(unit.sellPrice)}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="pt-2 border-t">
+                                <p className="text-xs text-muted-foreground">Kondisi</p>
+                                <p className="text-sm font-medium">{unit.transactionStatus}</p>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -99,6 +142,12 @@ export function InvestmentsTable({ data }: InvestmentsTableProps) {
                                 </Button>
                             </TableHead>
                             <TableHead>
+                                <Button variant="ghost" onClick={() => requestSort("sellPrice")} className="hover:bg-transparent px-0 font-bold">
+                                    Harga Jual
+                                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </TableHead>
+                            <TableHead>
                                 <Button variant="ghost" onClick={() => requestSort("transactionStatus")} className="hover:bg-transparent px-0 font-bold">
                                     Kondisi
                                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -109,7 +158,7 @@ export function InvestmentsTable({ data }: InvestmentsTableProps) {
                     <TableBody>
                         {sortedData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                     {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
                                 </TableCell>
                             </TableRow>
@@ -127,6 +176,9 @@ export function InvestmentsTable({ data }: InvestmentsTableProps) {
                                     </TableCell>
                                     <TableCell>
                                         {unit.capital > 0 ? formatCurrency(unit.capital) : "-"}
+                                    </TableCell>
+                                    <TableCell className="text-emerald-600 font-medium">
+                                        {unit.sellPrice > 0 ? formatCurrency(unit.sellPrice) : "-"}
                                     </TableCell>
                                     <TableCell>
                                         {unit.transactionStatus}

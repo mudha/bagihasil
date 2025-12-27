@@ -31,6 +31,7 @@ export default async function InvestorInvestmentsPage() {
     const formattedData = units.map(unit => {
         const trx = unit.transactions[0]
         const capital = trx ? (trx.initialInvestorCapital ?? trx.buyPrice) : 0
+        const sellPrice = trx?.status === "COMPLETED" ? (trx.sellPrice ?? 0) : 0
         const transactionStatus = trx?.status === "ON_PROCESS" ? "Sedang Berjalan" :
             trx?.status === "COMPLETED" ? "Terjual" : "Belum Transaksi"
 
@@ -40,6 +41,7 @@ export default async function InvestorInvestmentsPage() {
             plateNumber: unit.plateNumber,
             status: unit.status,
             capital,
+            sellPrice,
             transactionStatus
         }
     })
