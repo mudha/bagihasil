@@ -549,7 +549,100 @@ export default function UnitsPage() {
                 </Select>
             </div>
 
-            <div className="rounded-md border">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {filteredUnits.length === 0 ? (
+                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                        {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
+                    </div>
+                ) : (
+                    filteredUnits.map((unit) => (
+                        <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    <div
+                                        className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group"
+                                        onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
+                                    >
+                                        {unit.imageUrl ? (
+                                            <img
+                                                src={unit.imageUrl}
+                                                alt={unit.name}
+                                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                            />
+                                        ) : (
+                                            <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                                <span className="text-[10px]">No Img</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{unit.code}</span>
+                                            <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
+                                                {unit.status}
+                                            </Badge>
+                                        </div>
+                                        <div className="font-semibold text-base mt-1">{unit.name}</div>
+                                        <div className="text-sm text-muted-foreground">{unit.plateNumber}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t text-sm">
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
+                                    <span className="font-medium">{unit.investor.name}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-1">Jatuh Tempo Pajak</span>
+                                    {unit.taxDueDate ? (
+                                        <span className={cn(
+                                            "font-medium",
+                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                isWithinInterval(new Date(unit.taxDueDate), {
+                                                    start: new Date(),
+                                                    end: addDays(new Date(), 30)
+                                                }) ? "text-amber-600" : "text-green-600"
+                                        )}>
+                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">-</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {!isViewer && (
+                                <div className="flex gap-2 pt-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-9"
+                                        onClick={() => {
+                                            setEditingUnit(unit)
+                                            setIsOpen(true)
+                                        }}
+                                    >
+                                        <Pencil className="h-4 w-4 mr-2" /> Edit
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                        onClick={() => setDeleteId(unit.id)}
+                                    >
+                                        <Trash className="h-4 w-4 mr-2" /> Hapus
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>

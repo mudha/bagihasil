@@ -352,7 +352,98 @@ export default function InvestorsPage() {
                 )}
             </div>
 
-            <div className="rounded-md border">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {investors.length === 0 ? (
+                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                        Belum ada data pemodal.
+                    </div>
+                ) : (
+                    investors.map((investor) => {
+                        const connectedUser = users.find(u => u.id === investor.userId)
+                        return (
+                            <div key={investor.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="font-semibold text-base">{investor.name}</div>
+                                        <div className="text-sm text-muted-foreground">{investor.contactInfo || "-"}</div>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] text-muted-foreground uppercase">Margin</span>
+                                        <div className="font-bold text-lg text-emerald-600">
+                                            {investor.marginPercentage}%
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-sm border-t pt-3 mt-2 grid grid-cols-1 gap-2">
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-0.5">Info Rekening</span>
+                                        <span className="font-medium text-foreground">{investor.bankAccountDetails || "-"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-0.5">Akun Terhubung</span>
+                                        {connectedUser ? (
+                                            <span className="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                                                {connectedUser.name}
+                                            </span>
+                                        ) : (
+                                            <span className="text-muted-foreground italic text-xs">-</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
+                                    {!isViewer && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1"
+                                            onClick={() => handleEdit(investor)}
+                                        >
+                                            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                        </Button>
+                                    )}
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="flex-1"
+                                                disabled={exportingInvestor === investor.id}
+                                            >
+                                                <Download className="h-3.5 w-3.5 mr-2" />
+                                                {exportingInvestor === investor.id ? "Export..." : "Ekspor"}
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Format Laporan</DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onClick={() => handleExportXLSX(investor.id, investor.name)}
+                                                disabled={exportingInvestor === investor.id}
+                                            >
+                                                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                                <span>Ekspor Excel (XLSX)</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handleExportPDF(investor.id, investor.name)}
+                                                disabled={exportingInvestor === investor.id}
+                                            >
+                                                <FileText className="mr-2 h-4 w-4" />
+                                                <span>Ekspor PDF</span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        )
+                    })
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>

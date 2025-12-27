@@ -320,7 +320,69 @@ export default function UsersPage() {
                 </Dialog>
             </div>
 
-            <div className="rounded-md border">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {users.length === 0 ? (
+                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                        Belum ada data user.
+                    </div>
+                ) : (
+                    users.map((user) => (
+                        <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="font-semibold text-base">{user.name}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{user.username || "-"}</span>
+                                        {getRoleBadge(user.role)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="text-sm border-t pt-3 mt-2 grid grid-cols-1 gap-2">
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-0.5">Email</span>
+                                    <span className="font-medium text-foreground">{user.email || "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-0.5">Terhubung ke Investor</span>
+                                    {user.investor ? (
+                                        <span className="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded text-xs">{user.investor.name}</span>
+                                    ) : (
+                                        <span className="text-muted-foreground italic text-xs text-slate-400">-</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-0.5">Dibuat Pada</span>
+                                    <span className="text-muted-foreground">{new Date(user.createdAt).toLocaleDateString('id-ID')}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => handleEditClick(user)}
+                                >
+                                    <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                    onClick={() => setDeleteId(user.id)}
+                                >
+                                    <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
                 <Table>
                     <TableHeader>
                         <TableRow>
