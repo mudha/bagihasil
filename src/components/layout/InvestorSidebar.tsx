@@ -27,18 +27,7 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                         Dashboard
                     </Button>
                 </Link>
-                <Link href="/dashboard/investor/investments" onClick={onNavigate}>
-                    <Button variant={pathname?.startsWith("/dashboard/investor/investments") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                        <PieChart className="h-4 w-4" />
-                        Investasi Saya
-                    </Button>
-                </Link>
-                <Link href="/dashboard/investor/payments" onClick={onNavigate}>
-                    <Button variant={pathname?.startsWith("/dashboard/investor/payments") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                        <Wallet className="h-4 w-4" />
-                        Riwayat Pembayaran
-                    </Button>
-                </Link>
+
                 <Link href="/dashboard/investor/profile" onClick={onNavigate}>
                     <Button variant={pathname?.startsWith("/dashboard/investor/profile") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                         <User className="h-4 w-4" />

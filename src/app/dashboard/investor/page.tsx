@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
 import { getInvestorDashboardData } from "@/lib/investor-data"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Package } from "lucide-react"
 import { redirect } from "next/navigation"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
+import { InvestorTabs } from "./InvestorTabs"
 
 export default async function InvestorDashboardPage() {
     const session = await auth()
@@ -23,6 +25,44 @@ export default async function InvestorDashboardPage() {
 
     const { investor, stats } = data
 
+    // Fetch Investments Data
+    const units = await db.unit.findMany({
+        where: { investorId: investor.id },
+        include: {
+            transactions: {
+                where: { OR: [{ status: "ON_PROCESS" }, { status: "COMPLETED" }] },
+                orderBy: { createdAt: "desc" },
+                take: 1
+            }
+        },
+        orderBy: { createdAt: "desc" }
+    })
+
+    const investmentsData = units.map(unit => {
+        const trx = unit.transactions[0]
+        const capital = trx ? (trx.initialInvestorCapital ?? trx.buyPrice) : 0
+        const sellPrice = trx?.status === "COMPLETED" ? (trx.sellPrice ?? 0) : 0
+        const transactionStatus = trx?.status === "ON_PROCESS" ? "Sedang Berjalan" :
+            trx?.status === "COMPLETED" ? "Terjual" : "Belum Transaksi"
+
+        return {
+            id: unit.id,
+            name: unit.name,
+            plateNumber: unit.plateNumber,
+            status: unit.status,
+            capital,
+            sellPrice,
+            transactionStatus
+        }
+    })
+
+    // Fetch Payments Data
+    const payments = await db.paymentHistory.findMany({
+        where: { investorId: investor.id },
+        include: { transaction: { include: { unit: true } } },
+        orderBy: { paymentDate: "desc" }
+    })
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat("id-ID", {
             style: "currency",
@@ -32,7 +72,7 @@ export default async function InvestorDashboardPage() {
         }).format(value)
     }
 
-    return (
+    const dashboardContent = (
         <div className="space-y-6">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Assalamu&apos;alaikum, {investor.name}</h2>
@@ -81,5 +121,13 @@ export default async function InvestorDashboardPage() {
                 <InvestorSalesTrendChart data={data.monthlySalesTrend} className="lg:col-span-3" />
             </div>
         </div>
+    )
+
+    return (
+        <InvestorTabs
+            investmentsData={investmentsData}
+            paymentsData={payments}
+            dashboardContent={dashboardContent}
+        />
     )
 }
