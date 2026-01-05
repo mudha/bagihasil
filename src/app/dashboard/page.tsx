@@ -224,7 +224,7 @@ export default function DashboardPage() {
                         <Car className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.activeUnits}</div>
+                        <div className="text-lg font-bold sm:text-xl truncate">{stats.activeUnits}</div>
                         <p className="text-xs text-muted-foreground">Unit tersedia untuk dijual</p>
                     </CardContent>
                 </Card>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                         <CheckCircle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.completedTransactions}</div>
+                        <div className="text-lg font-bold sm:text-xl truncate">{stats.completedTransactions}</div>
                         <p className="text-xs text-muted-foreground">Total unit terjual</p>
                     </CardContent>
                 </Card>
@@ -244,7 +244,7 @@ export default function DashboardPage() {
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalMargin)}>
                             {formatCurrency(stats.totalMargin)}
                         </div>
                         <p className="text-xs text-muted-foreground">Total keuntungan bersih</p>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalInvestorProfit)}>
                             {formatCurrency(stats.totalInvestorProfit)}
                         </div>
                         <p className="text-xs text-muted-foreground">Total hak pemodal</p>
@@ -268,7 +268,7 @@ export default function DashboardPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalManagerProfit)}>
                             {formatCurrency(stats.totalManagerProfit)}
                         </div>
                         <p className="text-xs text-muted-foreground">Total hak pengelola</p>
