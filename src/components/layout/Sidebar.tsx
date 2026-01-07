@@ -11,6 +11,7 @@ import {
     LogOut,
     Calculator,
     History,
+    CirclePercent,
     UserCog
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -74,8 +75,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <div className="space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white">
             <div className="px-3 py-2 flex-1">
                 <Link href="/dashboard" className="flex items-center pl-3 mb-14" onClick={onNavigate}>
-                    <h1 className="text-2xl font-bold">
-                        Profit Share
+                    <div className="bg-blue-600 p-2 rounded-lg mr-3">
+                        <CirclePercent className="h-8 w-8 text-white" />
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Mudha
                     </h1>
                 </Link>
                 <div className="space-y-1">
@@ -113,7 +117,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                     Logout
                 </Button>
                 <div className="mt-4 px-3 text-xs text-zinc-600">
-                    <p>Profit Share App v1.0</p>
+                    <p>Mudha Profit Share v1.0</p>
                     <p>&copy; 2025 Mudha</p>
                 </div>
             </div>
