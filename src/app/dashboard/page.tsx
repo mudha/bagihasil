@@ -308,9 +308,9 @@ export default function DashboardPage() {
                 </Card>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                 {/* Monthly Chart */}
-                <Card className="col-span-7">
+                <Card>
                     <CardHeader>
                         <CardTitle>
                             Profit Bulanan {selectedInvestorId !== "all" ? `(${stats.investorStats.find(i => i.id === selectedInvestorId)?.name})` : "(Semua)"}
@@ -347,16 +347,14 @@ export default function DashboardPage() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* Monthly Units Sold Chart */}
-                <Card className="col-span-7">
+                <Card>
                     <CardHeader>
                         <CardTitle>Tren Penjualan Unit Bulanan</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[300px]">
+                        <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.monthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
