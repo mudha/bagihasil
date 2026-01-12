@@ -87,6 +87,13 @@ model Unit {
 
   investor    Investor   @relation(fields: [investorId], references: [id])
   transactions Transaction[]
+
+  // Structured vehicle data
+  vehicleType String?
+  brand       String?
+  model       String?
+  year        String?
+  color       String?
 }
 
 model Transaction {

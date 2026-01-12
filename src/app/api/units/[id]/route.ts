@@ -13,6 +13,11 @@ const unitSchema = z.object({
     imageUrl: z.string().optional().nullable(),
     taxDueDate: z.coerce.date().optional().nullable(),
     status: z.enum(["AVAILABLE", "SOLD", "MAINTENANCE"]).optional().default("AVAILABLE"),
+    vehicleType: z.string().optional().nullable(),
+    brand: z.string().optional().nullable(),
+    model: z.string().optional().nullable(),
+    year: z.string().optional().nullable(),
+    color: z.string().optional().nullable(),
 })
 
 export async function PUT(

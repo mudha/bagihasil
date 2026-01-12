@@ -56,6 +56,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
+import { PaginationControls } from "@/components/ui/pagination-controls"
+import { usePersistedSort } from "@/hooks/use-persisted-sort"
 
 
 const transactionSchema = z.object({
@@ -133,9 +135,12 @@ export default function TransactionsPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [exportingTransactionId, setExportingTransactionId] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
-    const [sortBy, setSortBy] = useState<string>("buyDate")
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+    const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("transactions-sort", "buyDate", "desc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
 
     const filteredTransactions = transactions.filter(trx => {
         const matchesSearch = (trx.transactionCode || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -178,12 +183,25 @@ export default function TransactionsPage() {
                 compareValue = 0
         }
 
+        // ... sorting logic ...
         return sortOrder === "asc" ? compareValue : -compareValue
     })
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage)
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    )
+
+    // Reset page to 1 on filter change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, selectedInvestorId])
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedIds(filteredTransactions.map(t => t.id))
+            setSelectedIds(paginatedTransactions.map(t => t.id))
         } else {
             setSelectedIds([])
         }
@@ -599,12 +617,12 @@ export default function TransactionsPage() {
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-                {filteredTransactions.length === 0 ? (
+                {paginatedTransactions.length === 0 ? (
                     <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
                         {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
                     </div>
                 ) : (
-                    filteredTransactions.map((trx) => (
+                    paginatedTransactions.map((trx) => (
                         <div key={trx.id} className="border rounded-lg p-4 space-y-4 bg-white dark:bg-slate-950 shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-3">
@@ -721,7 +739,7 @@ export default function TransactionsPage() {
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                    checked={filteredTransactions.length > 0 && selectedIds.length === filteredTransactions.length}
+                                    checked={paginatedTransactions.length > 0 && selectedIds.length === paginatedTransactions.length}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                 />
                             </TableHead>
@@ -880,7 +898,7 @@ export default function TransactionsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredTransactions.map((trx) => (
+                        {paginatedTransactions.map((trx) => (
                             <TableRow key={trx.id}>
                                 <TableCell>
                                     <input
@@ -989,7 +1007,7 @@ export default function TransactionsPage() {
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {filteredTransactions.length === 0 && (
+                        {paginatedTransactions.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={9} className="text-center py-4">
                                     {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
@@ -999,6 +1017,12 @@ export default function TransactionsPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             <AlertDialog open={deleteTransactionId !== null} onOpenChange={() => setDeleteTransactionId(null)}>
                 <AlertDialogContent>

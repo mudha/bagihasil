@@ -1,35 +1,59 @@
-
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        // Find the latest unit code
+        const { searchParams } = new URL(req.url)
+        const investorId = searchParams.get('investorId')
+
+        let prefix = 'UNT'
+
+        if (investorId && investorId !== 'all') {
+            const investor = await prisma.investor.findUnique({
+                where: { id: investorId },
+                select: { name: true }
+            })
+
+            if (investor && investor.name) {
+                // Get first name or first 3 chars of name
+                const nameParts = investor.name.split(' ')
+                const rawPrefix = nameParts[0].substring(0, 3).toUpperCase()
+                prefix = `UNT-${rawPrefix}`
+            }
+        }
+
+        // Find the latest unit code matching the prefix
+        // We use startsWith to find related codes
         const latestUnit = await prisma.unit.findFirst({
+            where: {
+                code: {
+                    startsWith: prefix
+                }
+            },
             orderBy: {
-                code: 'desc'
+                createdAt: 'desc'
             },
             select: {
                 code: true
             }
         })
 
-        let nextCode = 'UNT-001'
+        let nextCode = `${prefix}-001`
 
         if (latestUnit?.code) {
-            // Try standard UNT-XXX format
-            const match = latestUnit.code.match(/UNT-(\d+)/)
+            // Try to extract the number part
+            // Example: UNT-WAH-007 -> 007
+            // We look for the last sequence of digits
+            const match = latestUnit.code.match(/(\d+)$/)
+
             if (match) {
-                const sequence = parseInt(match[1])
-                nextCode = `UNT-${String(sequence + 1).padStart(3, '0')}`
-            } else {
-                // Try generic number at end
-                const numberMatch = latestUnit.code.match(/(\d+)$/)
-                if (numberMatch) {
-                    const num = parseInt(numberMatch[1])
-                    const prefix = latestUnit.code.substring(0, latestUnit.code.length - numberMatch[1].length)
-                    nextCode = `${prefix}${String(num + 1).padStart(numberMatch[1].length, '0')}`
-                }
+                const lastNumStr = match[1]
+                const lastNum = parseInt(lastNumStr)
+                const nextNum = lastNum + 1
+
+                // Preserve the padding length, default to 3
+                const padLength = Math.max(lastNumStr.length, 3)
+                nextCode = `${prefix}-${String(nextNum).padStart(padLength, '0')}`
             }
         }
 

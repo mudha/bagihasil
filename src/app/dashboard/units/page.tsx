@@ -61,6 +61,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
+import { PaginationControls } from "@/components/ui/pagination-controls"
+import { usePersistedSort } from "@/hooks/use-persisted-sort"
 
 const unitSchema = z.object({
     name: z.string().min(1, "Nama unit wajib diisi"),
@@ -70,6 +72,11 @@ const unitSchema = z.object({
     status: z.enum(["AVAILABLE", "SOLD", "MAINTENANCE"]).optional(),
     imageUrl: z.string().optional().nullable(),
     taxDueDate: z.date().optional().nullable(),
+    vehicleType: z.string().optional().nullable(),
+    brand: z.string().optional().nullable(),
+    model: z.string().optional().nullable(),
+    year: z.string().optional().nullable(),
+    color: z.string().optional().nullable(),
 })
 
 interface Unit {
@@ -84,12 +91,48 @@ interface Unit {
     }
     imageUrl?: string | null
     taxDueDate?: string | Date | null
+    vehicleType?: string | null
+    brand?: string | null
+    model?: string | null
+    year?: string | null
+    color?: string | null
 }
 
 interface Investor {
     id: string
     name: string
 }
+
+const VEHICLE_TYPES = ["Mobil", "Motor"] as const;
+
+const BRANDS = {
+    Mobil: [
+        "Toyota", "Honda", "Daihatsu", "Mitsubishi", "Suzuki", "Wuling", "Hyundai", "Nissan", "Mazda", "BMW", "Mercedes-Benz", "Lexus", "Isuzu", "Kia", "Lainnya"
+    ],
+    Motor: [
+        "Yamaha", "Honda", "Suzuki", "Kawasaki", "Vespa", "Piaggio", "BMW", "Ducati", "Harley-Davidson", "KTM", "Royal Enfield", "Lainnya"
+    ]
+};
+
+const MODELS: Record<string, Record<string, string[]>> = {
+    Mobil: {
+        Toyota: ["Avanza", "Innova", "Fortuner", "Alphard", "Veloz", "Rush", "Raize", "Agya", "Calya", "Yaris", "Camry"],
+        Honda: ["Brio", "HR-V", "BR-V", "CR-V", "Civic", "City", "Mobilio", "Jazz", "WR-V"],
+        Daihatsu: ["Xenia", "Terios", "Sigra", "Ayla", "Rocky", "Gran Max", "Luxio"],
+        Mitsubishi: ["Xpander", "Xpander Cross", "Pajero Sport", "Triton", "L300"],
+        Suzuki: ["Ertiga", "XL7", "Baleno", "Ignis", "Jimny", "S-Presso"],
+    },
+    Motor: {
+        Yamaha: ["NMAX", "XMAX", "Aerox", "Lexi", "Fazzio", "Grand Filano", "Mio", "Vixion", "R15", "R25", "MT-15", "MT-25"],
+        Honda: ["Beat", "Vario", "Scoopy", "PCX", "ADV", "Genio", "CBR150R", "CBR250RR", "CRF150L", "CB150R", "Sonic", "Supra X", "Revo"],
+        Suzuki: ["Satria F150", "GSX-R150", "Address", "Nex II"],
+        Kawasaki: ["Ninja 250", "KLX 150", "W175"],
+        Vespa: ["Primavera", "Sprint", "LX", "S"],
+    }
+};
+
+const COLORS = ["Hitam", "Putih", "Silver", "Abu-abu", "Merah", "Biru", "Cokelat", "Hijau", "Kuning", "Oranye", "Ungu", "Lainnya"];
+const YEARS = Array.from({ length: 30 }, (_, i) => (new Date().getFullYear() + 1 - i).toString());
 
 export default function UnitsPage() {
     const { data: session } = useSession()
@@ -106,9 +149,21 @@ export default function UnitsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
-    const [sortBy, setSortBy] = useState<string>("code")
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+    const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort", "code", "asc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
+
+    // Unit Form State
+    const [vehicleType, setVehicleType] = useState<string>("")
+    const [brand, setBrand] = useState<string>("")
+    const [model, setModel] = useState<string>("")
+    const [customModel, setCustomModel] = useState<string>("")
+    const [year, setYear] = useState<string>("")
+    const [color, setColor] = useState<string>("")
+    const [customColor, setCustomColor] = useState<string>("")
 
     const form = useForm<z.infer<typeof unitSchema>>({
         resolver: zodResolver(unitSchema),
@@ -119,8 +174,15 @@ export default function UnitsPage() {
             investorId: "",
             status: "AVAILABLE",
             taxDueDate: null,
+            vehicleType: null,
+            brand: null,
+            model: null,
+            year: null,
+            color: null,
         },
     })
+
+    const selectedInvestorForm = form.watch("investorId")
 
     const fetchUnits = async () => {
         const res = await fetch('/api/units')
@@ -139,9 +201,10 @@ export default function UnitsPage() {
         fetchInvestors()
     }, [])
 
+    // Fetch next code based on selected investor
     useEffect(() => {
-        if (isOpen && !editingUnit) {
-            fetch('/api/units/next-code')
+        if (isOpen && !editingUnit && selectedInvestorForm) {
+            fetch(`/api/units/next-code?investorId=${selectedInvestorForm}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.code) {
@@ -150,7 +213,7 @@ export default function UnitsPage() {
                 })
                 .catch(err => console.error("Failed to fetch next unit code", err))
         }
-    }, [isOpen, editingUnit, form])
+    }, [isOpen, editingUnit, selectedInvestorForm, form])
 
     useEffect(() => {
         if (editingUnit) {
@@ -162,7 +225,71 @@ export default function UnitsPage() {
                 status: editingUnit.status,
                 imageUrl: editingUnit.imageUrl,
                 taxDueDate: editingUnit.taxDueDate ? new Date(editingUnit.taxDueDate) : null,
+                vehicleType: editingUnit.vehicleType,
+                brand: editingUnit.brand,
+                model: editingUnit.model,
+                year: editingUnit.year,
+                color: editingUnit.color
             })
+
+            // Populate dropdown states from editingUnit OR parse from name if missing
+            let vType = editingUnit.vehicleType || ""
+            let vBrand = editingUnit.brand || ""
+            let vModel = editingUnit.model || ""
+            let vYear = editingUnit.year || ""
+            let vColor = editingUnit.color || ""
+
+            // Parsing logic for legacy data
+            if (!vBrand && editingUnit.name) {
+                const nameLower = editingUnit.name.toLowerCase()
+
+                // 1. Detect Brand & Type
+                for (const [type, brands] of Object.entries(BRANDS)) {
+                    for (const b of brands) {
+                        if (nameLower.includes(b.toLowerCase()) && b !== "Lainnya") {
+                            vBrand = b
+                            vType = type
+                            break
+                        }
+                    }
+                    if (vBrand) break
+                }
+
+                // 2. Detect Model (if Brand found)
+                if (vType && vBrand) {
+                    // @ts-ignore
+                    const possibleModels = MODELS[vType]?.[vBrand] || []
+                    for (const m of possibleModels) {
+                        if (nameLower.includes(m.toLowerCase())) {
+                            vModel = m
+                            break
+                        }
+                    }
+                }
+
+                // 3. Detect Year
+                for (const y of YEARS) {
+                    if (new RegExp(`\\b${y}\\b`).test(editingUnit.name)) {
+                        vYear = y
+                        break
+                    }
+                }
+
+                // 4. Detect Color
+                for (const c of COLORS) {
+                    if (c !== "Lainnya" && nameLower.includes(c.toLowerCase())) {
+                        vColor = c
+                        break
+                    }
+                }
+            }
+
+            setVehicleType(vType)
+            setBrand(vBrand)
+            setModel(vModel)
+            setYear(vYear)
+            setColor(vColor)
+
             if (editingUnit.imageUrl) {
                 setUnitImages([{
                     id: 'existing',
@@ -180,11 +307,53 @@ export default function UnitsPage() {
                 code: "",
                 investorId: "",
                 status: "AVAILABLE",
-                imageUrl: null
+                imageUrl: null,
+                vehicleType: null,
+                brand: null,
+                model: null,
+                year: null,
+                color: null
             })
             setUnitImages([])
+            setVehicleType("")
+            setBrand("")
+            setModel("")
+            setCustomModel("")
+            setYear("")
+            setColor("")
+            setCustomColor("")
         }
     }, [editingUnit, form])
+
+    // Update name based on selections
+    useEffect(() => {
+        if (isOpen) {
+            const selectedModelFinal = model === "Lainnya" ? customModel : model;
+            const selectedColorFinal = color === "Lainnya" ? customColor : color;
+
+            const parts = [
+                brand !== "Lainnya" ? brand : "",
+                selectedModelFinal,
+                year,
+                selectedColorFinal ? `warna ${selectedColorFinal}` : ""
+            ].filter(Boolean);
+
+            if (parts.length > 0) {
+                const generatedName = parts.join(" ");
+                // Set name if we have generated parts. 
+                // For editing, we might overwrite existing name, BUT user asked for dropdowns to be easy.
+                // So if they touch the dropdowns, it updates the name.
+                form.setValue("name", generatedName);
+
+                // Also update form values for structured data
+                form.setValue("vehicleType", vehicleType)
+                form.setValue("brand", brand)
+                form.setValue("model", selectedModelFinal)
+                form.setValue("year", year)
+                form.setValue("color", selectedColorFinal)
+            }
+        }
+    }, [vehicleType, brand, model, customModel, year, color, customColor, isOpen, form]);
 
     async function onSubmit(values: z.infer<typeof unitSchema>) {
         try {
@@ -253,7 +422,8 @@ export default function UnitsPage() {
         }
     }
 
-    const filteredUnits = units.filter(unit => {
+    // ... filtering and sorting logic
+    const filteredAndSortedUnits = units.filter(unit => {
         const matchesSearch = (unit.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             (unit.plateNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
             (unit.code || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -288,13 +458,28 @@ export default function UnitsPage() {
         return sortOrder === "asc" ? compareValue : -compareValue
     })
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredAndSortedUnits.length / itemsPerPage)
+    const paginatedUnits = filteredAndSortedUnits.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    )
+
+    // Reset pagination when filters change (handled in useEffect below)
+
+    // ... (unchanged helper functions) ...
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedIds(filteredUnits.map(u => u.id))
+            setSelectedIds(paginatedUnits.map(u => u.id))
         } else {
             setSelectedIds([])
         }
     }
+
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, selectedInvestorId])
 
     const handleSelectOne = (id: string, checked: boolean) => {
         if (checked) {
@@ -325,8 +510,6 @@ export default function UnitsPage() {
             toast.error("Terjadi kesalahan")
         }
     }
-
-    // ... existing onSubmit ...
 
     return (
         <div className="space-y-8">
@@ -368,7 +551,7 @@ export default function UnitsPage() {
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent>
+                                <DialogContent className="max-w-lg">
                                     <DialogHeader>
                                         <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                     </DialogHeader>
@@ -386,19 +569,116 @@ export default function UnitsPage() {
                                                 </div>
                                             </div>
 
-                                            <FormField
-                                                control={form.control}
-                                                name="name"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Nama Unit</FormLabel>
-                                                        <FormControl>
-                                                            <Input placeholder="Toyota Avanza 2020" {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
+                                            <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Jenis Kendaraan</Label>
+                                                        <Select value={vehicleType} onValueChange={(v) => {
+                                                            setVehicleType(v);
+                                                            if (v !== vehicleType) { // Only reset if changed
+                                                                setBrand("");
+                                                                setModel("");
+                                                            }
+                                                        }}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Jenis" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Tahun</Label>
+                                                        <Select value={year} onValueChange={setYear}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Tahun" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label>Merek</Label>
+                                                    <Select value={brand} onValueChange={(v) => {
+                                                        setBrand(v);
+                                                        if (v !== brand) setModel("");
+                                                    }} disabled={!vehicleType}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={vehicleType ? "Pilih Merek" : "Pilih Jenis dulu"} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {vehicleType && BRANDS[vehicleType as keyof typeof BRANDS]?.map(b => (
+                                                                <SelectItem key={b} value={b}>{b}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {brand && (
+                                                    <div className="space-y-2">
+                                                        <Label>Model</Label>
+                                                        <Select value={model} onValueChange={setModel}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Model" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {/* @ts-ignore */}
+                                                                {MODELS[vehicleType]?.[brand]?.map(m => (
+                                                                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                                                                ))}
+                                                                <SelectItem value="Lainnya">Lainnya / Manual input</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {model === "Lainnya" && (
+                                                            <Input
+                                                                placeholder="Ketik nama model..."
+                                                                value={customModel}
+                                                                onChange={e => setCustomModel(e.target.value)}
+                                                                className="mt-2"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 )}
-                                            />
+
+                                                <div className="space-y-2">
+                                                    <Label>Warna</Label>
+                                                    <Select value={color} onValueChange={setColor}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Pilih Warna" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {color === "Lainnya" && (
+                                                        <Input
+                                                            placeholder="Ketik warna..."
+                                                            value={customColor}
+                                                            onChange={e => setCustomColor(e.target.value)}
+                                                            className="mt-2"
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>
+                                                    <div className="text-sm font-medium mt-1">
+                                                        {form.watch("name") || "(Lengkapi form di atas)"}
+                                                    </div>
+                                                    {/* Hidden Input to ensure form validation works */}
+                                                    <input type="hidden" {...form.register("name")} />
+                                                    <input type="hidden" {...form.register("vehicleType")} />
+                                                    <input type="hidden" {...form.register("brand")} />
+                                                    <input type="hidden" {...form.register("model")} />
+                                                    <input type="hidden" {...form.register("year")} />
+                                                    <input type="hidden" {...form.register("color")} />
+                                                </div>
+                                            </div>
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <FormField
                                                     control={form.control}
@@ -420,7 +700,7 @@ export default function UnitsPage() {
                                                         <FormItem>
                                                             <FormLabel>Kode Unit</FormLabel>
                                                             <FormControl>
-                                                                <Input placeholder="UNT-001" {...field} />
+                                                                <Input placeholder="UNT-INV-001" {...field} />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -551,12 +831,12 @@ export default function UnitsPage() {
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-                {filteredUnits.length === 0 ? (
+                {paginatedUnits.length === 0 ? (
                     <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
                         {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
                     </div>
                 ) : (
-                    filteredUnits.map((unit) => (
+                    paginatedUnits.map((unit) => (
                         <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-3">
@@ -650,7 +930,7 @@ export default function UnitsPage() {
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                    checked={filteredUnits.length > 0 && selectedIds.length === filteredUnits.length}
+                                    checked={paginatedUnits.length > 0 && selectedIds.length === paginatedUnits.length}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                 />
                             </TableHead>
@@ -766,7 +1046,7 @@ export default function UnitsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredUnits.map((unit) => (
+                        {paginatedUnits.map((unit) => (
                             <TableRow key={unit.id}>
                                 <TableCell>
                                     <input
@@ -800,71 +1080,80 @@ export default function UnitsPage() {
                                 <TableCell>{unit.plateNumber}</TableCell>
                                 <TableCell>{unit.investor.name}</TableCell>
                                 <TableCell>
-                                    <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'}>
+                                    <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-sm">
                                         {unit.status}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
                                     {unit.taxDueDate ? (
-                                        <div className={cn(
-                                            "text-sm font-medium",
+                                        <span className={cn(
+                                            "font-medium",
                                             isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
                                                 isWithinInterval(new Date(unit.taxDueDate), {
                                                     start: new Date(),
                                                     end: addDays(new Date(), 30)
-                                                }) ? "text-amber-600" : "text-slate-600"
+                                                }) ? "text-amber-600" : "text-green-600"
                                         )}>
                                             {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
-                                        </div>
+                                        </span>
                                     ) : (
-                                        <span className="text-slate-400 text-xs italic">N/A</span>
+                                        <span className="text-muted-foreground italic">-</span>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    {!isViewer ? (
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setEditingUnit(unit)
-                                                    setIsOpen(true)
-                                                }}
-                                            >
-                                                <Pencil className="h-4 w-4 mr-2" /> Edit
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setDeleteId(unit.id)}
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            >
-                                                <Trash className="h-4 w-4 mr-2" /> Hapus
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground italic">Read-only</span>
+                                    {!isViewer && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setEditingUnit(unit)
+                                                        setIsOpen(true)
+                                                    }}
+                                                >
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => setDeleteId(unit.id)}
+                                                    className="text-red-600"
+                                                >
+                                                    <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     )}
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {filteredUnits.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={7} className="text-center py-4">
-                                    {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
-                                </TableCell>
-                            </TableRow>
-                        )}
                     </TableBody>
                 </Table>
             </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
+
+            <ImagePreviewDialog
+                open={!!previewUrl}
+                onOpenChange={(open) => !open && setPreviewUrl(null)}
+                imageUrl={previewUrl || ""}
+            />
 
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Apakah anda yakin?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Tindakan ini tidak dapat dibatalkan. Data unit akan dihapus permanen dari sistem.
+                            Tindakan ini tidak dapat dibatalkan. Data unit ini akan dihapus permanen dari sistem.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -875,12 +1164,6 @@ export default function UnitsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <ImagePreviewDialog
-                src={previewUrl}
-                isOpen={!!previewUrl}
-                onOpenChange={(open) => !open && setPreviewUrl(null)}
-                title="Pratinjau Foto Unit"
-            />
         </div>
     )
 }
