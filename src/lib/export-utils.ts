@@ -960,7 +960,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         if (data.payment.histories && data.payment.histories.length > 0) {
             data.payment.histories.forEach((ph: any) => {
                 if (ph.proofImageUrl) {
-                    addAttachment(`Bukti Transfer Bagi Hasil`, `Tanggal: ${format(new Date(ph.paymentDate), 'dd MMM yyyy, HH:mm')} - ${formatCurrency(ph.amount)}`, ph.proofImageUrl)
+                    addAttachment(`Bukti Transfer Bagi Hasil`, `Tanggal: ${format(new Date(ph.paymentDate), 'dd MMM yyyy')} - ${formatCurrency(ph.amount)}`, ph.proofImageUrl)
                 }
             })
         }
