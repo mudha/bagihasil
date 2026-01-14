@@ -175,6 +175,11 @@ export async function exportInvestorReportXLSX(investorId: string, investorName:
             }
         })
 
+        // Sort Data by Transaction Code (Smallest to Largest)
+        data.transactions.sort((a, b) => {
+            return a.transactionCode.localeCompare(b.transactionCode, undefined, { numeric: true })
+        })
+
         // Add Data
         data.transactions.forEach((tx, index) => {
             // Calculate total transfer (Initial Capital + Profit) roughly, or just use what we have
