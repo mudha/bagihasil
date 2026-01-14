@@ -9,7 +9,7 @@ import { notifyUnitSold } from "@/lib/notifications"
 const transactionUpdateSchema = z.object({
     unitId: z.string().optional(),
     transactionCode: z.string().min(1).optional(),
-    buyDate: z.string().transform((str) => new Date(str)).optional(),
+    buyDate: z.string().optional().transform((str) => str ? new Date(str) : undefined),
     buyPrice: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val).optional(),
     initialInvestorCapital: z.union([z.string(), z.number()]).transform((val) => {
         if (val === "" || val === null || val === undefined) return undefined
@@ -21,7 +21,7 @@ const transactionUpdateSchema = z.object({
     }).optional(),
     notes: z.string().optional(),
     status: z.enum(["ON_PROCESS", "COMPLETED"]).optional(),
-    sellDate: z.string().transform((str) => new Date(str)).optional(),
+    sellDate: z.string().optional().transform((str) => str ? new Date(str) : undefined),
     sellPrice: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val).optional(),
     investorSharePercentage: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val).optional(),
     managerSharePercentage: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val).optional(),
