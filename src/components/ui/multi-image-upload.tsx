@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { validateImageFile, formatFileSize } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
 import { ImagePreviewDialog } from "./image-preview-dialog"
+import { ImageHoverPreview } from "./image-hover-preview"
 
 export interface ImageFileWithDescription {
     id: string
@@ -138,9 +139,14 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
             <div className="grid gap-4">
                 {images.map((img, index) => (
                     <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-slate-50 relative group">
-                        <div className="w-24 h-24 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden">
-                            <img src={img.preview} alt="Preview" className="w-full h-full object-cover" />
-                        </div>
+                        <ImageHoverPreview
+                            src={img.preview}
+                            alt={img.description || img.file?.name || "Preview"}
+                            previewSize="md"
+                            className="w-24 h-24 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden"
+                        >
+                            <img src={img.preview} alt="Preview" className="w-full h-full object-cover cursor-pointer" />
+                        </ImageHoverPreview>
                         <div className="flex-1 space-y-2">
                             <div className="flex justify-between items-start">
                                 <p className="text-xs font-medium truncate max-w-[200px]" title={img.file?.name || "Existing Image"}>

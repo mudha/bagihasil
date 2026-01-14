@@ -2,9 +2,75 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        // Find the latest transaction code
+        const { searchParams } = new URL(req.url)
+        const unitId = searchParams.get('unitId')
+
+        // If unitId is provided, generate code based on unit's investor
+        if (unitId) {
+            // Get the unit with investor information
+            const unit = await prisma.unit.findUnique({
+                where: { id: unitId },
+                include: {
+                    investor: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    }
+                }
+            })
+
+            if (!unit) {
+                return NextResponse.json(
+                    { error: 'Unit tidak ditemukan' },
+                    { status: 404 }
+                )
+            }
+
+            // Generate prefix from investor name (first 3 letters of first name)
+            const nameParts = unit.investor.name.split(' ')
+            const rawPrefix = nameParts[0].substring(0, 3).toUpperCase()
+            const prefix = `TRX-${rawPrefix}`
+
+            // Find the latest transaction for this investor
+            const latestTransaction = await prisma.transaction.findFirst({
+                where: {
+                    unit: {
+                        investorId: unit.investor.id
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                select: {
+                    transactionCode: true
+                }
+            })
+
+            let nextCode = `${prefix}-0001`
+
+            if (latestTransaction?.transactionCode) {
+                // Try to extract the number part from the code
+                // Example: TRX-WAH-0007 -> 0007
+                const match = latestTransaction.transactionCode.match(/(\d+)$/)
+
+                if (match) {
+                    const lastNumStr = match[1]
+                    const lastNum = parseInt(lastNumStr)
+                    const nextNum = lastNum + 1
+
+                    // Preserve the padding length
+                    const padLength = Math.max(lastNumStr.length, 4)
+                    nextCode = `${prefix}-${String(nextNum).padStart(padLength, '0')}`
+                }
+            }
+
+            return NextResponse.json({ code: nextCode })
+        }
+
+        // Fallback: Global transaction code generation
         const latestTransaction = await prisma.transaction.findFirst({
             orderBy: {
                 transactionCode: 'desc'
@@ -27,10 +93,7 @@ export async function GET() {
                     // Same year, increment sequence
                     nextCode = `TRX-${year}-${String(sequence + 1).padStart(3, '0')}`
                 } else {
-                    // New year, restart sequence? Or continue? 
-                    // Usually restart for YYYY based codes.
-                    // But if user wants to continue globally, regex might fail if format changes.
-                    // Let's assume restart on new year for this format.
+                    // New year, restart sequence
                     nextCode = `TRX-${currentYear}-001`
                 }
             } else {

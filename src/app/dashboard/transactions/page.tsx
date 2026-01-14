@@ -104,6 +104,7 @@ interface Unit {
     investor: {
         name: string
     }
+    createdAt?: string
 }
 
 interface Investor {
@@ -119,6 +120,29 @@ const calculateDuration = (buyDate: string, sellDate?: string | null) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return `${diffDays} hari`
 }
+
+// Helper function to get duplicate information for a unit based on plate number
+const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
+    // Safety check: return no duplicate if plateNumber is missing
+    if (!currentUnit.plateNumber || !currentUnit.plateNumber.trim()) {
+        return { isDuplicate: false, purchaseNumber: 1, totalDuplicates: 1 }
+    }
+
+    const samePlateUnits = units
+        .filter(u => u.plateNumber && u.plateNumber.toLowerCase().trim() === currentUnit.plateNumber.toLowerCase().trim())
+        .sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
+
+    const index = samePlateUnits.findIndex(u => u.id === currentUnit.id)
+    const purchaseNumber = index + 1
+    const totalDuplicates = samePlateUnits.length
+
+    return {
+        isDuplicate: totalDuplicates > 1,
+        purchaseNumber,
+        totalDuplicates
+    }
+}
+
 
 export default function TransactionsPage() {
     const { data: session } = useSession()
@@ -312,6 +336,25 @@ export default function TransactionsPage() {
         }
     }, [isOpen, editingTransaction, form])
 
+    // Watch for unitId changes and update transaction code suggestion
+    useEffect(() => {
+        const subscription = form.watch((value, { name }) => {
+            if (name === 'unitId' && value.unitId && !editingTransaction) {
+                // Fetch suggested code based on selected unit
+                fetch(`/api/transactions/next-code?unitId=${value.unitId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.code) {
+                            form.setValue('transactionCode', data.code)
+                        }
+                    })
+                    .catch(err => console.error("Failed to fetch next code for unit", err))
+            }
+        })
+        return () => subscription.unsubscribe()
+    }, [form, editingTransaction])
+
+
     async function onSubmit(values: z.infer<typeof transactionSchema>) {
         try {
             const url = editingTransaction ? `/api/transactions/${editingTransaction.id}` : '/api/transactions'
@@ -478,11 +521,21 @@ export default function TransactionsPage() {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {availableUnits.map((unit) => (
-                                                            <SelectItem key={unit.id} value={unit.id}>
-                                                                {unit.name} - {unit.plateNumber}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {availableUnits.map((unit) => {
+                                                            const duplicateInfo = getDuplicateInfo(availableUnits, unit)
+                                                            return (
+                                                                <SelectItem key={unit.id} value={unit.id}>
+                                                                    <div className="flex items-center gap-2 w-full">
+                                                                        <span>{unit.name} - {unit.plateNumber}</span>
+                                                                        {duplicateInfo.isDuplicate && (
+                                                                            <Badge variant="outline" className="ml-auto text-[10px] bg-amber-50 text-amber-700 border-amber-300">
+                                                                                🔄 Pembelian ke-{duplicateInfo.purchaseNumber}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </SelectItem>
+                                                            )
+                                                        })}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />

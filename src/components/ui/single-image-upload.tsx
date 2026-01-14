@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { X, Upload, Plus, Image as ImageIcon } from "lucide-react"
 import { toast } from "sonner"
 import { validateImageFile, formatFileSize } from "@/lib/image-utils"
+import { ImageHoverPreview } from "./image-hover-preview"
 
 interface SingleImageUploadProps {
     value?: string | null
@@ -109,9 +110,14 @@ export function SingleImageUpload({ value, onChange, label = "Upload Gambar", de
                 </div>
             ) : (
                 <div className="relative border rounded-lg overflow-hidden group bg-slate-50">
-                    <div className="h-48 w-full flex items-center justify-center">
-                        <img src={preview} alt="Preview" className="h-full w-full object-contain" />
-                    </div>
+                    <ImageHoverPreview
+                        src={preview}
+                        alt={fileName || "Preview"}
+                        previewSize="lg"
+                        className="h-48 w-full flex items-center justify-center"
+                    >
+                        <img src={preview} alt="Preview" className="h-full w-full object-contain cursor-pointer" />
+                    </ImageHoverPreview>
                     <div className="absolute top-2 right-2 flex gap-2">
                         <Button
                             type="button"
