@@ -46,6 +46,7 @@ export default async function InvestorDashboardPage() {
             name: unit.name,
             plateNumber: unit.plateNumber,
             status: unit.status,
+            imageUrl: unit.imageUrl,
             capital,
             sellPrice,
             transactionStatus

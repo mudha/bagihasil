@@ -7,6 +7,8 @@ import { ArrowUpDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
+
 interface InvestmentUnit {
     id: string
     name: string
@@ -15,6 +17,7 @@ interface InvestmentUnit {
     capital: number
     sellPrice: number
     transactionStatus: string
+    imageUrl?: string | null
 }
 
 interface InvestmentsTableProps {
@@ -52,10 +55,13 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
         if (b[key] === null) return -1
         if (a[key] === null && b[key] === null) return 0
 
-        if (a[key] < b[key]) {
+        if (key === 'imageUrl') return 0 // Skip sorting by image
+
+        if (a[key]! < b[key]!) { // Added ! assertion as we handle nulls above, but typescript might complain strictly without it or better checks. 
+            // Actually simpler:
             return direction === "asc" ? -1 : 1
         }
-        if (a[key] > b[key]) {
+        if (a[key]! > b[key]!) {
             return direction === "asc" ? 1 : -1
         }
         return 0
@@ -93,31 +99,46 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     </div>
                 ) : (
                     sortedData.map(unit => (
-                        <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-card">
-                            <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-base">{unit.name}</h3>
-                                    <p className="text-sm text-muted-foreground">{unit.plateNumber}</p>
-                                </div>
-                                <Badge variant={unit.status === "SOLD" ? "secondary" : "default"} className="ml-2">
-                                    {unit.status}
-                                </Badge>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground text-xs">Modal Awal</p>
-                                    <p className="font-medium">{unit.capital > 0 ? formatCurrency(unit.capital) : "-"}</p>
-                                </div>
-                                {unit.sellPrice > 0 && (
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Harga Jual</p>
-                                        <p className="font-medium text-emerald-600">{formatCurrency(unit.sellPrice)}</p>
+                        <div key={unit.id} className="border rounded-lg p-4 bg-card">
+                            <div className="flex gap-4">
+                                {unit.imageUrl && (
+                                    <div className="relative h-24 w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border">
+                                        <ImageHoverPreview
+                                            src={unit.imageUrl}
+                                            alt={unit.name}
+                                            className="h-full w-full object-cover"
+                                            width={96}
+                                            height={96}
+                                        />
                                     </div>
                                 )}
+                                <div className="flex-1 space-y-3 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <h3 className="font-semibold text-base truncate">{unit.name}</h3>
+                                            <p className="text-sm text-muted-foreground truncate">{unit.plateNumber}</p>
+                                        </div>
+                                        <Badge variant={unit.status === "SOLD" ? "secondary" : "default"} className="flex-shrink-0">
+                                            {unit.status}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground text-xs">Modal Awal</p>
+                                            <p className="font-medium truncate">{unit.capital > 0 ? formatCurrency(unit.capital) : "-"}</p>
+                                        </div>
+                                        {unit.sellPrice > 0 && (
+                                            <div>
+                                                <p className="text-muted-foreground text-xs">Harga Jual</p>
+                                                <p className="font-medium text-emerald-600 truncate">{formatCurrency(unit.sellPrice)}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="pt-2 border-t">
+                            <div className="pt-2 border-t mt-3">
                                 <p className="text-xs text-muted-foreground">Kondisi</p>
                                 <p className="text-sm font-medium">{unit.transactionStatus}</p>
                             </div>
@@ -131,6 +152,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-[80px]">Gambar</TableHead>
                             <TableHead>
                                 <Button variant="ghost" onClick={() => requestSort("name")} className="hover:bg-transparent px-0 font-bold">
                                     Unit
@@ -166,13 +188,30 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     <TableBody>
                         {sortedData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                     {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
                                 </TableCell>
                             </TableRow>
                         ) : (
                             sortedData.map(unit => (
                                 <TableRow key={unit.id}>
+                                    <TableCell>
+                                        {unit.imageUrl ? (
+                                            <div className="h-12 w-12 rounded overflow-hidden bg-gray-100 border">
+                                                <ImageHoverPreview
+                                                    src={unit.imageUrl}
+                                                    alt={unit.name}
+                                                    className="h-full w-full object-cover"
+                                                    width={48}
+                                                    height={48}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="h-12 w-12 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                                                No Img
+                                            </div>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="font-medium">
                                         {unit.name} <br />
                                         <span className="text-xs text-muted-foreground">{unit.plateNumber}</span>
