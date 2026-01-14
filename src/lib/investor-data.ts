@@ -51,12 +51,18 @@ export async function getInvestorDashboardData(userId: string) {
         // If unit has a transaction
         const trx = unit.transactions[0] // Assuming 1 active/last trx usually
         if (trx) {
-            const capital = trx.initialInvestorCapital ?? trx.buyPrice
-            totalInvested += capital
+            // Only count capital if transaction is active (ON_PROCESS)
+            if (trx.status === "ON_PROCESS") {
+                const capital = trx.initialInvestorCapital ?? trx.buyPrice
+                totalInvested += capital
+            }
         } else {
-            // If unit just created but no transaction linked yet (unlikely in this flow but possible)
-            // We can't know capital easily without transaction data. 
-            // Maybe skip or assume 0 until transaction created.
+            // Unit without transaction yet? Assume active if status is AVAILABLE?
+            // Usually unit creation creates transaction. If not, safe to ignore or check unit status.
+            if (unit.status === "AVAILABLE") {
+                // If we knew the price, we could add it. But without transaction, price might be just in unit metadata if any.
+                // Ignoring for now to be safe.
+            }
         }
     }
 
