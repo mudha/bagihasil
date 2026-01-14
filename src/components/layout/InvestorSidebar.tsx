@@ -18,7 +18,7 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
     return (
         <div className={cn("h-full w-64 flex-col border-r bg-white p-4 dark:bg-gray-800 flex", className)}>
             <div className="flex h-14 items-center border-b px-2 font-bold text-xl mb-4">
-                <span className="text-emerald-600 mr-2">Mudha</span> Investor
+                <span className="text-emerald-600 mr-2">Mudha</span> Profit Share
             </div>
             <div className="flex-1 space-y-1">
                 <Link href="/dashboard/investor" onClick={onNavigate}>

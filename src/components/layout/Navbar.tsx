@@ -58,7 +58,7 @@ export function Navbar({ type = "admin" }: NavbarProps) {
                 </Sheet>
                 <div className="flex flex-col">
                     <span className={`font-bold text-lg leading-none ${type === "admin" ? "text-blue-600" : "text-emerald-600"}`}>
-                        {type === "admin" ? "Mudha Profit Share" : "Mudha Investor"}
+                        {type === "admin" ? "Mudha Profit Share" : "Mudha Profit Share"}
                     </span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
                         {type === "admin" ? "Administrator" : "Dashboard"}
