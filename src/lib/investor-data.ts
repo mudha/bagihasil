@@ -32,36 +32,28 @@ export async function getInvestorDashboardData(userId: string) {
 
     // Calculate Metrics
     let totalInvested = 0
+    let activeCapital = 0
     let totalProfit = 0
     const activeUnitsCount = investor.units.length
     const totalUnitsCount = await db.unit.count({ where: { investorId: investor.id } })
 
-    // Total Invested Calculation (Approximation based on buys)
-    // For a more accurate number, we might need to sum 'initialInvestorCapital' or 'buyPrice' of active units
-    // + capital of closed units.
-
-    // Let's simplify: Sum of buyPrice/Capital for ALL units this investor funded.
-    // Fetch ALL units to calculate capital
+    // Total Invested & Active Capital Calculation
     const allInvestorUnits = await db.unit.findMany({
         where: { investorId: investor.id },
         include: { transactions: true }
     })
 
     for (const unit of allInvestorUnits) {
-        // If unit has a transaction
-        const trx = unit.transactions[0] // Assuming 1 active/last trx usually
+        const trx = unit.transactions[0]
         if (trx) {
-            // Only count capital if transaction is active (ON_PROCESS)
+            const capital = trx.initialInvestorCapital ?? trx.buyPrice
+
+            // Total accumulative investment
+            totalInvested += capital
+
+            // Active capital (only ON_PROCESS)
             if (trx.status === "ON_PROCESS") {
-                const capital = trx.initialInvestorCapital ?? trx.buyPrice
-                totalInvested += capital
-            }
-        } else {
-            // Unit without transaction yet? Assume active if status is AVAILABLE?
-            // Usually unit creation creates transaction. If not, safe to ignore or check unit status.
-            if (unit.status === "AVAILABLE") {
-                // If we knew the price, we could add it. But without transaction, price might be just in unit metadata if any.
-                // Ignoring for now to be safe.
+                activeCapital += capital
             }
         }
     }
@@ -123,6 +115,7 @@ export async function getInvestorDashboardData(userId: string) {
         investor,
         stats: {
             totalInvested,
+            activeCapital,
             totalProfit,
             totalReceived,
             activeUnitsCount,
