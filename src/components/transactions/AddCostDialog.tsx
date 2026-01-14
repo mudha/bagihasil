@@ -70,7 +70,7 @@ export function AddCostDialog({
         defaultValues: {
             amount: 0,
             description: "",
-            payer: "INVESTOR",
+            payer: "MANAGER",
             costType: "",
         },
     })
@@ -102,7 +102,7 @@ export function AddCostDialog({
             form.reset({
                 amount: 0,
                 description: "",
-                payer: "INVESTOR",
+                payer: "MANAGER",
                 costType: "",
             })
             setImages([])
@@ -217,6 +217,7 @@ export function AddCostDialog({
                                                 <SelectItem value="PARKING">Parkir</SelectItem>
                                                 <SelectItem value="STAMP_DUTY">Materai</SelectItem>
                                                 <SelectItem value="BROKER">Makelar</SelectItem>
+                                                <SelectItem value="SALES">Sales</SelectItem>
                                                 <SelectItem value="OTHER">Lainnya</SelectItem>
                                             </SelectContent>
                                         </Select>
