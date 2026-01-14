@@ -98,8 +98,8 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                         {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
                     </div>
                 ) : (
-                    sortedData.map(unit => (
-                        <div key={unit.id} className="border rounded-lg p-4 bg-card">
+                    sortedData.map((unit, index) => (
+                        <div key={unit.id} className={`border rounded-lg p-4 ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}>
                             <div className="flex gap-4">
                                 {unit.imageUrl && (
                                     <div className="relative h-24 w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border">
@@ -193,8 +193,8 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            sortedData.map(unit => (
-                                <TableRow key={unit.id}>
+                            sortedData.map((unit, index) => (
+                                <TableRow key={unit.id} className={index % 2 === 0 ? "bg-white hover:bg-slate-100/50" : "bg-slate-50 hover:bg-slate-100"}>
                                     <TableCell>
                                         {unit.imageUrl ? (
                                             <div className="h-12 w-12 rounded overflow-hidden bg-gray-100 border">
