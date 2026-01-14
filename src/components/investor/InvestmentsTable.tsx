@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUpDown, Search } from "lucide-react"
@@ -19,11 +19,19 @@ interface InvestmentUnit {
 
 interface InvestmentsTableProps {
     data: InvestmentUnit[]
+    defaultFilter?: string
 }
 
-export function InvestmentsTable({ data }: InvestmentsTableProps) {
-    const [searchQuery, setSearchQuery] = useState("")
+export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableProps) {
+    const [searchQuery, setSearchQuery] = useState(defaultFilter)
     const [sortConfig, setSortConfig] = useState<{ key: keyof InvestmentUnit, direction: "asc" | "desc" } | null>(null)
+
+    // Update searchQuery when defaultFilter changes from parent
+    useEffect(() => {
+        if (defaultFilter) {
+            setSearchQuery(defaultFilter)
+        }
+    }, [defaultFilter])
 
     const filteredData = data.filter(unit => {
         const query = searchQuery.toLowerCase()
