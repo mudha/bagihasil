@@ -56,6 +56,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
+import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 
@@ -679,22 +680,27 @@ export default function TransactionsPage() {
                         <div key={trx.id} className="border rounded-lg p-4 space-y-4 bg-white dark:bg-slate-950 shadow-sm">
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-3">
-                                    <div
-                                        className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group"
-                                        onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
-                                    >
-                                        {trx.unit.imageUrl ? (
+                                    {trx.unit.imageUrl ? (
+                                        <ImageHoverPreview
+                                            src={trx.unit.imageUrl}
+                                            alt={trx.unit.name}
+                                            previewSize="lg"
+                                            className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
+                                        >
                                             <img
                                                 src={trx.unit.imageUrl}
                                                 alt={trx.unit.name}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover cursor-pointer"
+                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
                                             />
-                                        ) : (
+                                        </ImageHoverPreview>
+                                    ) : (
+                                        <div className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group">
                                             <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
                                                 <span className="text-[10px]">No Img</span>
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{trx.transactionCode}</span>
@@ -966,16 +972,19 @@ export default function TransactionsPage() {
                                 <TableCell>{trx.unit.investor.name}</TableCell>
                                 <TableCell>
                                     {trx.unit.imageUrl ? (
-                                        <div
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                            onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
+                                        <ImageHoverPreview
+                                            src={trx.unit.imageUrl}
+                                            alt={trx.unit.name}
+                                            previewSize="lg"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
                                         >
                                             <img
                                                 src={trx.unit.imageUrl}
                                                 alt={trx.unit.name}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-cover cursor-pointer"
+                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
                                             />
-                                        </div>
+                                        </ImageHoverPreview>
                                     ) : (
                                         <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
                                             <span className="text-xs">No Img</span>
