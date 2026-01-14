@@ -302,11 +302,12 @@ export async function PUT(
     } catch (error) {
         console.error("Error updating transaction:", error)
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 })
+            // Return user-friendly error message instead of raw error object
+            const errorMessage = error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+            return NextResponse.json({ error: errorMessage || "Validation error" }, { status: 400 })
         }
         return NextResponse.json({
-            error: error instanceof Error ? error.message : "Failed to update transaction",
-            stack: error instanceof Error ? error.stack : undefined
+            error: error instanceof Error ? error.message : "Failed to update transaction"
         }, { status: 500 })
     }
 }
