@@ -105,6 +105,7 @@ async function convertImageToBase64(url: string): Promise<string> {
     })
 }
 
+import ExcelJS from 'exceljs'
 import * as XLSX from 'xlsx'
 
 export async function exportInvestorReportXLSX(investorId: string, investorName: string) {
@@ -117,91 +118,127 @@ export async function exportInvestorReportXLSX(investorId: string, investorName:
 
         const data: InvestorReportData = await response.json()
 
-        // Prepare data for Excel
-        // 1. Investor Info Sheet
-        const infoData = [
-            ['INFORMASI PEMODAL'],
-            ['Nama', data.investor.name],
-            ['Kontak', data.investor.contactInfo],
-            ['Rekening', data.investor.bankAccountDetails],
-            [],
-            ['RINGKASAN'],
-            ['Total Unit Aktif', data.summary.totalActiveUnits],
-            ['Total Transaksi Selesai', data.summary.totalCompletedTransactions],
-            ['Total Modal Tertanam', data.summary.totalCapitalDeployed],
-            ['Total Profit', data.summary.totalProfit],
-            [],
-            ['Tanggal Laporan', format(new Date(), 'dd MMMM yyyy HH:mm')]
-        ]
-
-        // 2. Transactions Sheet
-        const txHeaders = [
-            'Kode Transaksi',
-            'Unit',
-            'Plat Nomor',
-            'Tanggal Beli',
-            'Tanggal Laku',
-            'Harga Beli',
-            'Harga Laku',
-            'Modal Pemodal',
-            'Biaya Pemodal',
-            'Biaya Pengelola',
-            'Total Biaya',
-            'Margin Bersih',
-            'Profit Pemodal',
-            'Status Pembayaran'
-        ]
-
-        const txRows = data.transactions.map(tx => [
-            tx.transactionCode,
-            tx.unitName,
-            tx.unitPlateNumber,
-            format(new Date(tx.buyDate), 'dd/MM/yyyy'),
-            tx.sellDate ? format(new Date(tx.sellDate), 'dd/MM/yyyy') : '-',
-            tx.buyPrice,
-            tx.sellPrice || '-',
-            tx.initialInvestorCapital,
-            tx.investorCosts,
-            tx.managerCosts,
-            tx.totalCosts,
-            tx.netMargin || '-',
-            tx.investorProfitAmount || '-',
-            tx.paymentStatus
-        ])
-
         // Create Workbook
-        const wb = XLSX.utils.book_new()
+        const workbook = new ExcelJS.Workbook()
+        const sheet = workbook.addWorksheet('Laporan')
 
-        // Add Sheets
-        const wsInfo = XLSX.utils.aoa_to_sheet(infoData)
-        const wsTx = XLSX.utils.aoa_to_sheet([txHeaders, ...txRows])
-
-        XLSX.utils.book_append_sheet(wb, wsInfo, "Ringkasan")
-        XLSX.utils.book_append_sheet(wb, wsTx, "Data Transaksi")
-
-        // Format Cells (Basic Number Formats) if possible
-        // Note: Basic XLSX write doesn't support extensive styling in community version easily
-        // But we can set column widths
-        wsTx['!cols'] = [
-            { wch: 15 }, // Kode
-            { wch: 20 }, // Unit
-            { wch: 12 }, // Plat
-            { wch: 12 }, // Tgl Beli
-            { wch: 12 }, // Tgl Jual
-            { wch: 15 }, // Harga Beli
-            { wch: 15 }, // Harga Jual
-            { wch: 15 }, // Modal
-            { wch: 12 }, // Biaya Inv
-            { wch: 12 }, // Biaya Mgr
-            { wch: 15 }, // Total Biaya
-            { wch: 15 }, // Margin
-            { wch: 15 }, // Profit
-            { wch: 15 }  // Status
+        // Define Columns
+        // Adjusted to match user's requested style broadly
+        sheet.columns = [
+            { header: 'No', key: 'no', width: 5 },
+            { header: 'Kode', key: 'code', width: 12 },
+            { header: 'Nama Unit', key: 'unit', width: 25 },
+            { header: 'No Polisi', key: 'plate', width: 12 },
+            { header: 'Tanggal Beli', key: 'buyDate', width: 14 },
+            { header: 'Tanggal Jual', key: 'sellDate', width: 14 },
+            { header: 'Harga Unit (Rp)', key: 'buyPrice', width: 18 },
+            { header: 'Harga Jual (Rp)', key: 'sellPrice', width: 18 },
+            // { header: 'Biaya Inspector (Rp)', key: 'costInspector', width: 15 }, // We don't have detailed breakdown easily available here without mapping, keeping aggregate for now
+            { header: 'Biaya Pemodal (Rp)', key: 'investorCost', width: 18 },
+            { header: 'Biaya Pengelola (Rp)', key: 'managerCost', width: 18 },
+            { header: 'Modal dari Pemodal (Rp)', key: 'investorCapital', width: 18 },
+            { header: 'Modal dari Pengelola (Rp)', key: 'managerCapital', width: 18 },
+            // { header: 'Total Modal (Rp)', key: 'totalCapital', width: 18 },
+            { header: 'Margin setelah biaya (Rp)', key: 'netMargin', width: 20 },
+            { header: 'Bagi Hasil Pemodal (Rp)', key: 'investorProfit', width: 20 },
+            { header: 'Bagi Hasil Pengelola (Rp)', key: 'managerProfit', width: 20 },
+            { header: 'Total Transfer ke Pemodal (Rp)', key: 'totalTransfer', width: 22 },
+            { header: 'Status', key: 'status', width: 15 }
         ]
 
-        // Export
+        // Add Header Row Styling (Black BG, Gold Text)
+        const headerRow = sheet.getRow(1)
+        headerRow.height = 40 // Taller header like screenshot
+
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF000000' } // Black
+            }
+            cell.font = {
+                bold: true,
+                color: { argb: 'FFFFD700' }, // Gold
+                size: 10,
+                name: 'Calibri'
+            }
+            cell.alignment = {
+                vertical: 'middle',
+                horizontal: 'center',
+                wrapText: true
+            }
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            }
+        })
+
+        // Add Data
+        data.transactions.forEach((tx, index) => {
+            // Calculate total transfer (Initial Capital + Profit) roughly, or just use what we have
+            // Total Transfer usually = Initial Capital + Profit (if capital returned) or just Profit? 
+            // In profit sharing logic, capital is usually returned.
+            const totalTransfer = (tx.initialInvestorCapital || 0) + (tx.investorProfitAmount || 0)
+
+            const row = sheet.addRow({
+                no: index + 1,
+                code: tx.transactionCode,
+                unit: tx.unitName,
+                plate: tx.unitPlateNumber,
+                buyDate: format(new Date(tx.buyDate), 'dd/MM/yyyy'),
+                sellDate: tx.sellDate ? format(new Date(tx.sellDate), 'dd/MM/yyyy') : '-',
+                buyPrice: tx.buyPrice,
+                sellPrice: tx.sellPrice || 0,
+                investorCost: tx.investorCosts,
+                managerCost: tx.managerCosts,
+                investorCapital: tx.initialInvestorCapital,
+                managerCapital: tx.initialManagerCapital,
+                netMargin: tx.netMargin || 0,
+                investorProfit: tx.investorProfitAmount || 0,
+                managerProfit: tx.managerProfitAmount || 0,
+                totalTransfer: totalTransfer,
+                status: tx.paymentStatus
+            })
+
+            // Style Data Rows
+            row.eachCell((cell, colNumber) => {
+                // Currency Formatting for columns > 6
+                if (colNumber >= 7 && colNumber <= 17) {
+                    cell.numFmt = '#,##0'
+                    cell.alignment = { horizontal: 'right' }
+                } else {
+                    cell.alignment = { horizontal: 'left' }
+                }
+
+                // Borders
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                }
+            })
+        })
+
+        // Generate Blob & Download
+        const buffer = await workbook.xlsx.writeBuffer()
+
         const fileName = `Laporan_${investorName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
-        XLSX.writeFile(wb, fileName)
+
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+
+        setTimeout(() => {
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        }, 100)
 
         return { success: true }
     } catch (error) {
