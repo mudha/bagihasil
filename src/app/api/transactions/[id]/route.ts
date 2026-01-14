@@ -11,14 +11,14 @@ const transactionUpdateSchema = z.object({
     transactionCode: z.string().min(1).optional(),
     buyDate: z.string().optional().transform((str) => str ? new Date(str) : undefined),
     buyPrice: z.union([z.string(), z.number()]).transform((val) => typeof val === 'string' ? Number(val) : val).optional(),
-    initialInvestorCapital: z.union([z.string(), z.number()]).transform((val) => {
+    initialInvestorCapital: z.union([z.string(), z.number(), z.null()]).optional().transform((val) => {
         if (val === "" || val === null || val === undefined) return undefined
         return typeof val === 'string' ? Number(val) : val
-    }).optional(),
-    initialManagerCapital: z.union([z.string(), z.number()]).transform((val) => {
+    }),
+    initialManagerCapital: z.union([z.string(), z.number(), z.null()]).optional().transform((val) => {
         if (val === "" || val === null || val === undefined) return undefined
         return typeof val === 'string' ? Number(val) : val
-    }).optional(),
+    }),
     notes: z.string().optional(),
     status: z.enum(["ON_PROCESS", "COMPLETED"]).optional(),
     sellDate: z.string().optional().transform((str) => str ? new Date(str) : undefined),

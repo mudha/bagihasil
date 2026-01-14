@@ -115,8 +115,6 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
                 buyProofDescription: imagePreview ? "Bukti Pembelian Unit" : null
             }
 
-            console.log('Sending payload:', JSON.stringify(payload, null, 2))
-
             const res = await fetch(`/api/transactions/${transaction.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -124,18 +122,16 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
             })
 
             const responseData = await res.json()
-            console.log('Response:', responseData)
 
             if (res.ok) {
                 toast.success("Transaksi berhasil diupdate")
                 setOpen(false)
                 onSuccess()
             } else {
-                console.error('API Error:', responseData)
                 toast.error(responseData.error || "Gagal mengupdate transaksi")
             }
         } catch (error) {
-            console.error('Caught error:', error)
+            console.error(error)
             toast.error("Terjadi kesalahan")
         } finally {
             setIsLoading(false)
