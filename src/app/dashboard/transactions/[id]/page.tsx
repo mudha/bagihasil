@@ -152,24 +152,24 @@ export default function TransactionDetailPage() {
 
     return (
         <div className="space-y-8 pb-20">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start md:items-center gap-4">
                     <Link href="/dashboard/transactions">
-                        <Button variant="outline" size="icon">
+                        <Button variant="outline" size="icon" className="mt-1 md:mt-0">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                     </Link>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                        <h2 className="text-xl md:text-3xl font-bold tracking-tight flex flex-wrap items-center gap-2 md:gap-3 break-all">
                             {transaction.transactionCode}
                             {transaction.status !== 'COMPLETED' && (
                                 <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                             )}
                         </h2>
-                        <div className="text-muted-foreground flex items-center gap-2">
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 mt-1">
                             {transaction.unit.imageUrl && (
                                 <div
-                                    className="h-8 w-8 rounded overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                    className="h-8 w-8 rounded overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
                                     onClick={() => setViewPaymentProof(transaction.unit.imageUrl)}
                                     title="Lihat Foto Unit"
                                 >
@@ -180,11 +180,13 @@ export default function TransactionDetailPage() {
                                     />
                                 </div>
                             )}
-                            {transaction.unit.name} - {transaction.unit.plateNumber}
+                            <span className="break-words">
+                                {transaction.unit.name} - {transaction.unit.plateNumber}
+                            </span>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-slate-200"
+                                className="h-6 w-6 p-0 hover:bg-slate-200 flex-shrink-0"
                                 onClick={() => setIsUnitImageOpen(true)}
                                 title="Update Foto Unit"
                             >
@@ -193,18 +195,19 @@ export default function TransactionDetailPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
                     {transaction.status === 'COMPLETED' && (
                         <Button
                             variant="outline"
                             onClick={handleExportPDF}
                             disabled={isExporting}
+                            className="flex-1 md:flex-none"
                         >
                             <FileText className="h-4 w-4 mr-2" />
                             {isExporting ? "Exporting..." : "Laporan PDF"}
                         </Button>
                     )}
-                    <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-lg px-4 py-1 h-10 flex items-center">
+                    <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-lg px-4 py-1 h-10 flex items-center justify-center flex-1 md:flex-none">
                         {transaction.status}
                     </Badge>
                 </div>
