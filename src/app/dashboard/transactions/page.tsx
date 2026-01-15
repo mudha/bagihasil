@@ -26,7 +26,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, Eye, MoreVertical, Trash, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -37,13 +45,7 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { ImportTransactionsDialog } from "@/components/import/ImportTransactionsDialog"
-import { EditStatusDialog } from "@/components/transactions/EditStatusDialog"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -155,6 +157,7 @@ export default function TransactionsPage() {
     const [investors, setInvestors] = useState<Investor[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [editingTransaction, setEditingTransaction] = useState<any>(null)
+    const [editingStatusTransaction, setEditingStatusTransaction] = useState<any>(null)
     const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1016,54 +1019,46 @@ export default function TransactionsPage() {
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <Link href={`/dashboard/transactions/${trx.id}`}>
-                                            <Button variant="ghost" size="sm">
-                                                <Eye className="h-4 w-4 mr-2" /> Detail
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                <Eye className="h-4 w-4" />
+                                                <span className="sr-only">Detail</span>
                                             </Button>
                                         </Link>
-                                        {!isViewer ? (
-                                            <>
-                                                <EditStatusDialog
-                                                    transaction={{
+
+                                        {!isViewer && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Aksi</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => handleEdit(trx)}>
+                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Data
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setEditingStatusTransaction({
                                                         id: trx.id,
                                                         transactionCode: trx.transactionCode,
                                                         status: trx.status
-                                                    }}
-                                                    onSuccess={() => {
-                                                        fetchTransactions()
-                                                        fetchAvailableUnits()
-                                                    }}
-                                                />
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleEdit(trx)}
-                                                >
-                                                    <MoreVertical className="h-4 w-4 mr-2" /> Edit
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground italic">Read-only</span>
-                                        )}
-                                        {trx.status === 'COMPLETED' && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleExportPDF(trx.id, trx.transactionCode)}
-                                                disabled={exportingTransactionId === trx.id}
-                                            >
-                                                <FileText className="h-4 w-4 mr-2" />
-                                                {exportingTransactionId === trx.id ? "Exporting..." : "Laporan"}
-                                            </Button>
-                                        )}
-                                        {!isViewer && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setDeleteTransactionId(trx.id)}
-                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                            >
-                                                <Trash className="h-4 w-4 mr-2" /> Hapus
-                                            </Button>
+                                                    })}>
+                                                        <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                                    </DropdownMenuItem>
+                                                    {trx.status === 'COMPLETED' && (
+                                                        <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
+                                                            <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteTransactionId(trx.id)}
+                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    >
+                                                        <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         )}
                                     </div>
                                 </TableCell>
@@ -1107,6 +1102,17 @@ export default function TransactionsPage() {
                 isOpen={!!previewUrl}
                 onOpenChange={(open) => !open && setPreviewUrl(null)}
                 title="Pratinjau Foto Unit"
+            />
+
+            <EditStatusDialog
+                transaction={editingStatusTransaction}
+                open={!!editingStatusTransaction}
+                onOpenChange={(open) => !open && setEditingStatusTransaction(null)}
+                onSuccess={() => {
+                    fetchTransactions()
+                    fetchAvailableUnits()
+                    setEditingStatusTransaction(null)
+                }}
             />
         </div >
     )

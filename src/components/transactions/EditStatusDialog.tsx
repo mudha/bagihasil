@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -26,21 +26,37 @@ interface EditStatusDialogProps {
         id: string
         transactionCode: string
         status: string
-    }
+    } | null
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
     onSuccess?: () => void
 }
 
-export function EditStatusDialog({ transaction, onSuccess }: EditStatusDialogProps) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [status, setStatus] = useState(transaction.status)
+export function EditStatusDialog({ transaction, open, onOpenChange, onSuccess }: EditStatusDialogProps) {
+    const [internalOpen, setInternalOpen] = useState(false)
+    const [status, setStatus] = useState(transaction?.status || "ON_PROCESS")
     const [isLoading, setIsLoading] = useState(false)
+
+    // Derived state for controlled vs uncontrolled
+    const isControlled = open !== undefined && onOpenChange !== undefined
+    const isOpen = isControlled ? open : internalOpen
+    const setOpen = isControlled ? onOpenChange : setInternalOpen
+
+    useEffect(() => {
+        if (transaction) {
+            setStatus(transaction.status)
+        }
+    }, [transaction, isOpen])
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
+        if (!transaction) return
+
         if (status === transaction.status) {
             toast.info("Status tidak berubah")
-            setIsOpen(false)
+            setOpen(false)
             return
         }
 
@@ -55,7 +71,7 @@ export function EditStatusDialog({ transaction, onSuccess }: EditStatusDialogPro
 
             if (res.ok) {
                 toast.success("Status transaksi berhasil diubah")
-                setIsOpen(false)
+                setOpen(false)
                 if (onSuccess) {
                     onSuccess()
                 }
@@ -70,18 +86,22 @@ export function EditStatusDialog({ transaction, onSuccess }: EditStatusDialogPro
         }
     }
 
+    if (!transaction && isControlled) return null
+
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                    <Pencil className="h-4 w-4 mr-2" /> Status
-                </Button>
-            </DialogTrigger>
+        <Dialog open={isOpen} onOpenChange={setOpen}>
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                        <Pencil className="h-4 w-4 mr-2" /> Status
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Edit Status Transaksi</DialogTitle>
                     <DialogDescription>
-                        Ubah status untuk transaksi {transaction.transactionCode}
+                        Ubah status untuk transaksi {transaction?.transactionCode}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,7 +121,7 @@ export function EditStatusDialog({ transaction, onSuccess }: EditStatusDialogPro
                         </p>
                     </div>
                     <div className="flex gap-2 justify-end">
-                        <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
+                        <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
                             Batal
                         </Button>
                         <Button type="submit" disabled={isLoading}>
