@@ -940,26 +940,33 @@ export default function UnitsPage() {
                             </div>
 
                             {!isViewer && (
-                                <div className="flex gap-2 pt-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-9"
-                                        onClick={() => {
-                                            setEditingUnit(unit)
-                                            setIsOpen(true)
-                                        }}
-                                    >
-                                        <Pencil className="h-4 w-4 mr-2" /> Edit
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                        onClick={() => setDeleteId(unit.id)}
-                                    >
-                                        <Trash className="h-4 w-4 mr-2" /> Hapus
-                                    </Button>
+                                <div className="flex justify-end pt-2 border-t mt-3">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-9">
+                                                <MoreHorizontal className="h-4 w-4 mr-2" />
+                                                Aksi
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setEditingUnit(unit)
+                                                    setIsOpen(true)
+                                                }}
+                                            >
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Unit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onClick={() => setDeleteId(unit.id)}
+                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                            >
+                                                <Trash className="mr-2 h-4 w-4" /> Hapus
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             )}
                         </div>
@@ -1165,9 +1172,9 @@ export default function UnitsPage() {
                                     {!isViewer && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Open menu</span>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                                                     <MoreHorizontal className="h-4 w-4" />
+                                                    <span className="sr-only">Open menu</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
@@ -1178,12 +1185,12 @@ export default function UnitsPage() {
                                                         setIsOpen(true)
                                                     }}
                                                 >
-                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Unit
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem
                                                     onClick={() => setDeleteId(unit.id)}
-                                                    className="text-red-600"
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                                 >
                                                     <Trash className="mr-2 h-4 w-4" /> Hapus
                                                 </DropdownMenuItem>

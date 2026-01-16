@@ -753,7 +753,7 @@ export default function TransactionsPage() {
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap gap-2 pt-2 items-center justify-end border-t">
+                            <div className="flex flex-wrap gap-2 pt-2 items-center justify-between border-t">
                                 <Link href={`/dashboard/transactions/${trx.id}`} className="flex-1">
                                     <Button variant="outline" size="sm" className="w-full h-8 text-xs">
                                         <Eye className="h-3 w-3 mr-2" /> Detail
@@ -762,16 +762,34 @@ export default function TransactionsPage() {
                                 {!isViewer && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreVertical className="h-4 w-4" />
+                                            <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                                                <MoreHorizontal className="h-3 w-3 mr-1.5" />
+                                                Aksi
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
                                             <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                Edit Transaksi
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Data
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setDeleteTransactionId(trx.id)} className="text-red-600">
-                                                Hapus Transaksi
+                                            <DropdownMenuItem onClick={() => setEditingStatusTransaction({
+                                                id: trx.id,
+                                                transactionCode: trx.transactionCode,
+                                                status: trx.status
+                                            })}>
+                                                <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                            </DropdownMenuItem>
+                                            {trx.status === 'COMPLETED' && (
+                                                <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
+                                                    <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onClick={() => setDeleteTransactionId(trx.id)}
+                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                            >
+                                                <Trash className="mr-2 h-4 w-4" /> Hapus
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -783,6 +801,7 @@ export default function TransactionsPage() {
                                         className="h-8 w-8 p-0 text-blue-600"
                                         onClick={() => handleExportPDF(trx.id, trx.transactionCode)}
                                         disabled={exportingTransactionId === trx.id}
+                                        title="Download Laporan PDF"
                                     >
                                         <FileText className="h-4 w-4" />
                                     </Button>
@@ -1029,7 +1048,7 @@ export default function TransactionsPage() {
                                         {!isViewer && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                         <span className="sr-only">Aksi</span>
                                                     </Button>
