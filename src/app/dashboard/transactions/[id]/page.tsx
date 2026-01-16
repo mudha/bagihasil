@@ -357,43 +357,42 @@ export default function TransactionDetailPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <div className="flex gap-2">
+                                                {cost.proofs && cost.proofs.length > 0 ? (
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="default"
                                                         size="sm"
-                                                        className="h-8 px-2 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
-                                                        title="Upload Bukti"
+                                                        className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                                        title="Lihat Bukti"
                                                         onClick={() => {
                                                             setProofCost(cost)
                                                             setIsProofCostOpen(true)
                                                         }}
                                                     >
-                                                        <Upload className="h-3 w-3 mr-1" />
-                                                        Upload
+                                                        <Eye className="h-3 w-3 mr-1.5" />
+                                                        Lihat Bukti
+                                                        <span className="ml-1.5 font-semibold">({cost.proofs.length})</span>
                                                     </Button>
-                                                    {cost.proofs && cost.proofs.length > 0 && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 px-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                                                            title="Lihat Bukti"
-                                                            onClick={() => {
-                                                                setProofCost(cost)
-                                                                setIsProofCostOpen(true)
-                                                            }}
-                                                        >
-                                                            <Paperclip className="h-3 w-3 mr-1" />
-                                                            Lihat Bukti
-                                                            <span className="ml-1 font-semibold">({cost.proofs.length})</span>
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                                ) : null}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 px-3 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                                                    title="Kelola Bukti"
+                                                    onClick={() => {
+                                                        setProofCost(cost)
+                                                        setIsProofCostOpen(true)
+                                                    }}
+                                                >
+                                                    <Upload className="h-3 w-3 mr-1.5" />
+                                                    Kelola
+                                                </Button>
                                                 {transaction.status !== 'COMPLETED' && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleEditCost(cost)}
+                                                            className="h-8 w-8 p-0 text-slate-600 hover:text-slate-900"
                                                         >
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
@@ -401,7 +400,7 @@ export default function TransactionDetailPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleDeleteCost(cost.id)}
-                                                            className="text-red-600 hover:text-red-700"
+                                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
@@ -455,24 +454,26 @@ export default function TransactionDetailPage() {
                 </TabsContent>
             </Tabs>
 
-            <Card className="border-slate-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
+            <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                        <FileText className="h-5 w-5 text-blue-600" />
                         Dokumen & Bukti Transaksi
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2">
-                    <div className="border rounded-lg p-4 flex items-center justify-between">
-                        <div>
-                            <p className="font-medium">Bukti Pembelian Unit</p>
-                            <p className="text-xs text-muted-foreground">Pengelola membeli dari Seller</p>
+                    <div className="border border-slate-200 rounded-lg p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <p className="font-semibold text-base text-slate-900 dark:text-slate-100">Bukti Pembelian Unit</p>
+                                <p className="text-xs text-slate-500 mt-1">Pengelola membeli dari Seller</p>
+                            </div>
                             {(() => {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
                                 if (count > 0) {
-                                    return <Badge variant="secondary" className="mt-2 text-green-600 bg-green-50">{count} Bukti Uploaded</Badge>
+                                    return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium">{count} Bukti</Badge>
                                 }
-                                return <Badge variant="outline" className="mt-2 text-slate-500">Belum Ada</Badge>
+                                return <Badge variant="outline" className="text-slate-400 border-slate-300">Belum Ada</Badge>
                             })()}
                         </div>
                         <div className="flex gap-2">
@@ -480,27 +481,29 @@ export default function TransactionDetailPage() {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="ghost" size="sm" onClick={() => setProofType('BUY')}>
-                                            <Paperclip className="mr-2 h-4 w-4" /> Lihat
+                                        <Button variant="default" size="sm" onClick={() => setProofType('BUY')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                                            <Eye className="mr-2 h-4 w-4" /> Lihat Bukti
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')}>
+                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50`}>
                                 <Upload className="mr-2 h-4 w-4" /> Kelola
                             </Button>
                         </div>
                     </div>
-                    <div className="border rounded-lg p-4 flex items-center justify-between">
-                        <div>
-                            <p className="font-medium">Bukti Pelunasan Unit</p>
-                            <p className="text-xs text-muted-foreground">Pembeli membayar ke Pengelola</p>
+                    <div className="border border-slate-200 rounded-lg p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <p className="font-semibold text-base text-slate-900 dark:text-slate-100">Bukti Pelunasan Unit</p>
+                                <p className="text-xs text-slate-500 mt-1">Pembeli membayar ke Pengelola</p>
+                            </div>
                             {(() => {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
                                 if (count > 0) {
-                                    return <Badge variant="secondary" className="mt-2 text-green-600 bg-green-50">{count} Bukti Uploaded</Badge>
+                                    return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium">{count} Bukti</Badge>
                                 }
-                                return <Badge variant="outline" className="mt-2 text-slate-500">Belum Ada</Badge>
+                                return <Badge variant="outline" className="text-slate-400 border-slate-300">Belum Ada</Badge>
                             })()}
                         </div>
                         <div className="flex gap-2">
@@ -508,13 +511,13 @@ export default function TransactionDetailPage() {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="ghost" size="sm" onClick={() => setProofType('SELL')}>
-                                            <Paperclip className="mr-2 h-4 w-4" /> Lihat
+                                        <Button variant="default" size="sm" onClick={() => setProofType('SELL')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+                                            <Eye className="mr-2 h-4 w-4" /> Lihat Bukti
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')}>
+                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50`}>
                                 <Upload className="mr-2 h-4 w-4" /> Kelola
                             </Button>
                         </div>
