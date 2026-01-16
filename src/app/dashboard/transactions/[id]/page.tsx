@@ -44,7 +44,7 @@ import { EditTransactionDetailsDialog } from "@/components/transactions/EditTran
 
 import { ManageCostProofsDialog } from "@/components/transactions/ManageCostProofsDialog"
 import { UpdateTransactionProofDialog } from "@/components/transactions/UpdateTransactionProofDialog"
-import { FileText, Paperclip, Upload, Camera } from "lucide-react"
+import { FileText, Paperclip, Upload, Camera, Eye } from "lucide-react"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { UpdateUnitImageDialog } from "@/components/units/UpdateUnitImageDialog"
 import { EditProfitSharingDialog } from "@/components/transactions/EditProfitSharingDialog"
