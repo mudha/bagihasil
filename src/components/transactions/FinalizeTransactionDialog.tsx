@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/form"
 import { SingleImageUpload } from "@/components/ui/single-image-upload"
 import { toast } from "sonner"
-import { validateImageFile } from "@/lib/image-utils"
-import { DollarSign } from "lucide-react"
+import { DollarSign, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const sellSchema = z.object({
     sellDate: z.string().min(1, "Tanggal jual harus diisi"),
@@ -47,6 +47,9 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
     const [isLoading, setIsLoading] = useState(false)
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
+
+    // Ref for AI analysis
+    const isAnalyzingRef = useRef(false)
 
     const form = useForm<SellFormValues>({
         resolver: zodResolver(sellSchema),
@@ -135,6 +138,69 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
         }
     }
 
+    const analyzeImage = async (file: File) => {
+        if (isAnalyzingRef.current) return
+
+        isAnalyzingRef.current = true
+        const toastId = toast.loading("Menganalisis bukti pelunasan...")
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const res = await fetch('/api/ai/parse-receipt', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || "Gagal analitik")
+            }
+
+            const result = await res.json()
+            if (result.success && result.data) {
+                const { amount, date, description } = result.data
+                let updated = false
+
+                // Update Sell Price if 0
+                if (amount && typeof amount === 'number') {
+                    if (form.getValues("sellPrice") === 0) {
+                        form.setValue("sellPrice", amount)
+                        updated = true
+                    }
+                }
+
+                // Update Date
+                if (date) {
+                    if (!form.getValues("sellDate")) {
+                        form.setValue("sellDate", date)
+                        updated = true
+                    }
+                }
+
+                // Update Notes
+                if (description && !form.getValues("notes")) {
+                    form.setValue("notes", description)
+                    updated = true
+                }
+
+                if (updated) {
+                    toast.success("Data pelunasan terisi otomatis!", { id: toastId })
+                } else {
+                    toast.dismiss(toastId)
+                }
+            } else {
+                toast.dismiss(toastId)
+            }
+        } catch (e) {
+            console.error(e)
+            toast.error("Gagal membaca bukti", { id: toastId })
+        } finally {
+            isAnalyzingRef.current = false
+        }
+    }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -144,7 +210,22 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onPaste={handlePaste}>
                 <DialogHeader>
-                    <DialogTitle>Finalisasi Penjualan Unit</DialogTitle>
+                    <DialogTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            Finalisasi Penjualan Unit
+                        </span>
+                        {isAnalyzingRef.current ? (
+                            <span className="text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+                                AI Menganalisis...
+                            </span>
+                        ) : (
+                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
+                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                AI Powered
+                            </span>
+                        )}
+                    </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -154,9 +235,19 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Tanggal Laku</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
+                                    <div className="relative">
+                                        <Input
+                                            type="date"
+                                            {...field}
+                                            className={cn(
+                                                "transition-all duration-500",
+                                                isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                            )}
+                                        />
+                                        {isAnalyzingRef.current && (
+                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse" />
+                                        )}
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -167,25 +258,37 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Harga Laku (Rp)</FormLabel>
-                                    <FormControl>
+                                    <div className="relative">
                                         <Input
                                             type="number"
                                             {...field}
                                             onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                            className={cn(
+                                                "transition-all duration-500",
+                                                isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                            )}
                                         />
-                                    </FormControl>
+                                        {isAnalyzingRef.current && (
+                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                                        )}
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
                         <div className="space-y-2">
+
+
                             <SingleImageUpload
                                 label="Bukti Pelunasan / Transfer"
                                 value={imagePreview}
                                 onChange={(file, preview) => {
                                     setImageFile(file)
                                     setImagePreview(preview)
+                                    if (file) {
+                                        analyzeImage(file)
+                                    }
                                 }}
                             />
                         </div>

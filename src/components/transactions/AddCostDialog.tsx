@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/form"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
 import { toast } from "sonner"
-import { Plus } from "lucide-react"
+import { Plus, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const costSchema = z.object({
     costType: z.string().min(1, "Pilih jenis biaya"),
@@ -63,7 +64,11 @@ export function AddCostDialog({
     const setIsOpen = isControlled ? setControlledOpen! : setUncontrolledOpen
 
     const [isLoading, setIsLoading] = useState(false)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [images, setImages] = useState<ImageFileWithDescription[]>([])
+
+    // Ref to track which image ID was last analyzed to prevent loops
+    const lastAnalyzedImageIdRef = useRef<string | null>(null)
 
     const form = useForm<z.infer<typeof costSchema>>({
         resolver: zodResolver(costSchema),
@@ -74,6 +79,99 @@ export function AddCostDialog({
             costType: "",
         },
     })
+
+    const analyzeImage = async (file: File, imageId: string) => {
+        if (isAnalyzing) return
+
+        setIsAnalyzing(true)
+        lastAnalyzedImageIdRef.current = imageId // Mark as analyzed immediately
+        const toastId = toast.loading("Menganalisis bukti transfer...")
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const res = await fetch('/api/ai/parse-receipt', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || "Gagal menganalisis gambar")
+            }
+
+            const result = await res.json()
+            if (result.success && result.data) {
+                const { amount, description, costType } = result.data
+
+                // Only update if confident
+                let updated = false
+
+                // Update amount if current is 0 and we found a valid amount
+                if (form.getValues("amount") === 0 && amount && typeof amount === 'number') {
+                    form.setValue("amount", amount)
+                    updated = true
+                }
+
+                // Auto-set cost type if found and not set
+                if (!form.getValues("costType") && costType) {
+                    form.setValue("costType", costType)
+                    updated = true
+                }
+
+                // Append or set description
+                if (description) {
+                    const currentDesc = form.getValues("description") || ""
+                    // Avoid duplicating if already present
+                    if (!currentDesc.includes(description)) {
+                        const newDesc = currentDesc ? `${currentDesc} - ${description}` : description
+                        form.setValue("description", newDesc)
+                        updated = true
+                    }
+                }
+
+                if (updated) {
+                    toast.success("Data berhasil diisi otomatis!", { id: toastId })
+                } else {
+                    toast.dismiss(toastId)
+                }
+            } else {
+                toast.dismiss(toastId)
+            }
+        } catch (error: any) {
+            console.error(error)
+            // Silently fail if it's just a parsing error, but log it
+            if (error.message?.includes("GEMINI_API_KEY")) {
+                toast.error("Configurasi AI (Gemini) belum benar", { id: toastId })
+            } else {
+                toast.dismiss(toastId)
+            }
+        } finally {
+            setIsAnalyzing(false)
+        }
+    }
+
+    // Effect to auto-analyze new images
+    useEffect(() => {
+        // Find a candidate image: must be a File (newly uploaded), and not the one we just analyzed
+        const newImage = images.find(img =>
+            img.file !== null &&
+            img.id !== lastAnalyzedImageIdRef.current
+        )
+
+        // Only trigger if we have a new image and the form looks "empty" (amount is 0)
+        // This prevents overwriting user data if they upload multiple images later
+        // But we update the ref immediately to avoid retrying even if we don't analyze
+        if (newImage && newImage.file) {
+            if (form.getValues("amount") === 0) {
+                analyzeImage(newImage.file, newImage.id)
+            } else {
+                // Even if we don't analyze, mark it as "seen" to prevent future triggers
+                lastAnalyzedImageIdRef.current = newImage.id
+            }
+        }
+    }, [images, form])
 
     useEffect(() => {
         if (existingCost) {
@@ -91,7 +189,7 @@ export function AddCostDialog({
             if (existingCost.proofs) {
                 setImages(existingCost.proofs.map((p: any) => ({
                     id: p.id,
-                    file: new File([], "existing_image"), // Placeholder file
+                    file: null, // Existing images have no File object
                     preview: p.imageUrl,
                     description: p.description || ""
                 })))
@@ -106,6 +204,7 @@ export function AddCostDialog({
                 costType: "",
             })
             setImages([])
+            lastAnalyzedImageIdRef.current = null // Reset analysis tracking for new form
         }
     }, [existingCost, form, isOpen])
 
@@ -187,8 +286,21 @@ export function AddCostDialog({
             )}
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>
-                        {existingCost ? "Edit Biaya Operasional" : "Input Biaya Operasional"}
+                    <DialogTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            {existingCost ? "Edit Biaya" : "Input Biaya"}
+                        </span>
+                        {isAnalyzing ? (
+                            <span className="text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+                                AI Menganalisis...
+                            </span>
+                        ) : (
+                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
+                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                AI Powered
+                            </span>
+                        )}
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
@@ -202,7 +314,7 @@ export function AddCostDialog({
                                         <FormLabel>Jenis Biaya</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className={cn(isAnalyzing && "border-blue-300 bg-blue-50/30")}>
                                                     <SelectValue placeholder="Pilih jenis biaya" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -255,11 +367,20 @@ export function AddCostDialog({
                                 <FormItem>
                                     <FormLabel>Nominal (Rp)</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            type="number"
-                                            {...field}
-                                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                                className={cn(
+                                                    "transition-all duration-500",
+                                                    isAnalyzing && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                                )}
+                                            />
+                                            {isAnalyzing && (
+                                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                                            )}
+                                        </div>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -273,7 +394,11 @@ export function AddCostDialog({
                                 <FormItem>
                                     <FormLabel>Keterangan</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Detail biaya..." {...field} />
+                                        <Input
+                                            placeholder="Detail biaya..."
+                                            {...field}
+                                            className={cn(isAnalyzing && "border-blue-300 bg-blue-50/30")}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

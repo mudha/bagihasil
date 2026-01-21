@@ -23,7 +23,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { DollarSign, Upload, X } from "lucide-react"
+import { DollarSign, Upload, X, Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { validateImageFile, formatFileSize } from "@/lib/image-utils"
 
 const paymentSchema = z.object({
@@ -95,6 +96,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     }
 
                     setImageFile(file)
+                    analyzeImage(file) // Trigger AI analysis
 
                     const reader = new FileReader()
                     reader.onloadend = () => {
@@ -119,6 +121,75 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
         }
     }, [isOpen])
 
+
+    // Ref for AI analysis
+    const isAnalyzingRef = useRef(false)
+
+    const analyzeImage = async (file: File) => {
+        if (isAnalyzingRef.current) return
+
+        isAnalyzingRef.current = true
+        const toastId = toast.loading("Menganalisis bukti pembayaran...")
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const res = await fetch('/api/ai/parse-receipt', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || "Gagal analitik")
+            }
+
+            const result = await res.json()
+            if (result.success && result.data) {
+                const { amount, date, description } = result.data
+                let updated = false
+
+                // Update Amount
+                if (amount && typeof amount === 'number') {
+                    // Always update or check if 0/empty? 
+                    // Usually payments are exact amounts from receipt.
+                    // The default value is not set (undefined/empty).
+                    // But schema default is undefined? No, defaultValues doesn't have amount.
+                    setValue("amount", amount, { shouldValidate: true })
+                    updated = true
+                }
+
+                // Update Date
+                if (date) {
+                    if (!watch("paymentDate")) {
+                        setValue("paymentDate", date, { shouldValidate: true })
+                        updated = true
+                    }
+                }
+
+                // Update Notes
+                if (description && !watch("notes")) {
+                    setValue("notes", description, { shouldValidate: true })
+                    updated = true
+                }
+
+                if (updated) {
+                    toast.success("Data pembayaran terisi otomatis!", { id: toastId })
+                } else {
+                    toast.dismiss(toastId)
+                }
+            } else {
+                toast.dismiss(toastId)
+            }
+        } catch (e) {
+            console.error(e)
+            toast.error("Gagal membaca bukti", { id: toastId })
+        } finally {
+            isAnalyzingRef.current = false
+        }
+    }
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -130,6 +201,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
         }
 
         setImageFile(file)
+        analyzeImage(file) // Trigger AI analysis
 
         const reader = new FileReader()
         reader.onloadend = () => {
@@ -229,7 +301,22 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
             </DialogTrigger>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Tambah Pembayaran</DialogTitle>
+                    <DialogTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                            Tambah Pembayaran
+                        </span>
+                        {isAnalyzingRef.current ? (
+                            <span className="text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+                                AI Menganalisis...
+                            </span>
+                        ) : (
+                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
+                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                AI Powered
+                            </span>
+                        )}
+                    </DialogTitle>
                     <DialogDescription>
                         Catat pembayaran bagi hasil kepada pemodal
                     </DialogDescription>
@@ -237,13 +324,22 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="amount">Jumlah (Rp)</Label>
-                        <Input
-                            id="amount"
-                            type="number"
-                            step="0.01"
-                            placeholder="Masukkan jumlah"
-                            {...register('amount', { valueAsNumber: true })}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="amount"
+                                type="number"
+                                step="0.01"
+                                placeholder="Masukkan jumlah"
+                                {...register('amount', { valueAsNumber: true })}
+                                className={cn(
+                                    "transition-all duration-500",
+                                    isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                )}
+                            />
+                            {isAnalyzingRef.current && (
+                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                            )}
+                        </div>
                         {errors.amount && (
                             <p className="text-sm text-red-500">{errors.amount.message}</p>
                         )}

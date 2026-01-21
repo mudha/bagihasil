@@ -84,6 +84,13 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
     }
 
     // Global paste listener
+    // Use Ref to access latest images in event listener without re-binding
+    const imagesRef = useRef(images)
+    useEffect(() => {
+        imagesRef.current = images
+    }, [images])
+
+    // Global paste listener
     useEffect(() => {
         const handleGlobalPaste = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items
@@ -95,7 +102,8 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                     hasImage = true
                     const file = items[i].getAsFile()
                     if (file) {
-                        if (images.length >= maxImages) {
+                        const currentImages = imagesRef.current
+                        if (currentImages.length >= maxImages) {
                             toast.error(`Maksimal ${maxImages} gambar`)
                             return
                         }
@@ -117,14 +125,11 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                     description: ""
                                 }
                             ])
+                            toast.success("Gambar berhasil dipaste!")
                         }
                         reader.readAsDataURL(file)
                     }
                 }
-            }
-            // Only prevent default if we actually handled an image, to allow text pasting in inputs
-            if (hasImage) {
-                // e.preventDefault() // Optional: might block other handlers, but usually fine for images
             }
         }
 
@@ -132,7 +137,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
         return () => {
             document.removeEventListener('paste', handleGlobalPaste)
         }
-    }, [images, maxImages])
+    }, [maxImages]) // removed images dependency
 
     return (
         <div className={cn("space-y-4", className)}>

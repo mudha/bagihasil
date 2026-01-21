@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
 
@@ -157,7 +158,10 @@ export function UpdateTransactionProofDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        {title}
+                        <Sparkles className="h-4 w-4 text-purple-400" />
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6">
                     <MultipleImageUpload
