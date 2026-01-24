@@ -44,6 +44,18 @@ export function InvestorTabs({
         }).format(value)
     }
 
+    const formatCompactCurrency = (value: number) => {
+        if (value >= 1_000_000_000) {
+            return new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 1, // 1 decimal place, e.g. 2,5 M
+            }).format(value / 1_000_000_000).replace("Rp", "Rp") + " M"
+        }
+        return formatCurrency(value)
+    }
+
     const handleActiveUnitsClick = () => {
         setActiveTab("investments")
         // Filter untuk unit yang statusnya belum SOLD (misal: "AVAILABLE" atau "ON_PROCESS" yg belum COMPLETED)
@@ -87,7 +99,7 @@ export function InvestorTabs({
                         </CardHeader>
                         <CardContent>
                             <div className="text-lg sm:text-xl md:text-2xl font-bold break-all">
-                                {formatCurrency(stats.totalInvested)}
+                                {formatCompactCurrency(stats.totalInvested)}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">Total riwayat modal</p>
                         </CardContent>
