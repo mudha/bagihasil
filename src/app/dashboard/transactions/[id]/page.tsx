@@ -35,7 +35,8 @@ import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { ArrowLeft, Plus, DollarSign, Pencil, Trash2 } from "lucide-react"
+import { id } from "date-fns/locale"
+import { ArrowLeft, Plus, DollarSign, Pencil, Trash2, Calendar } from "lucide-react"
 import Link from "next/link"
 import { AddPaymentDialog } from "@/components/transactions/AddPaymentDialog"
 import { AddCostDialog } from "@/components/transactions/AddCostDialog"
@@ -192,6 +193,11 @@ export default function TransactionDetailPage() {
                             >
                                 <Camera className="h-4 w-4 text-slate-500" />
                             </Button>
+                            <span className="text-slate-300 mx-1">|</span>
+                            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                                <span>{format(new Date(transaction.buyDate), 'd MMMM yyyy', { locale: id })}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
