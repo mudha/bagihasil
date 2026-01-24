@@ -49,18 +49,18 @@ export function UpdateUnitImageDialog({
 
                 // Compress image if it's too large
                 let fileToUpload = newImage.file
-                if (newImage.file.size > 1 * 1024 * 1024) { // If > 1MB, compress
+                if (newImage.file.size > 500 * 1024) { // If > 500KB, compress
                     toast.loading("Mengompres gambar...")
                     const options = {
-                        maxSizeMB: 1, // Max 1MB
-                        maxWidthOrHeight: 1920, // Max dimension
+                        maxSizeMB: 0.5, // Max 500KB
+                        maxWidthOrHeight: 1280, // Max dimension
                         useWebWorker: true,
                         fileType: 'image/jpeg' // Convert to JPEG for better compression
                     }
                     try {
                         fileToUpload = await imageCompression(newImage.file, options)
                         toast.dismiss()
-                        toast.success(`Gambar dikompres: ${(newImage.file.size / 1024 / 1024).toFixed(1)}MB → ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB`)
+                        toast.success(`Gambar dikompres: ${(newImage.file.size / 1024 / 1024).toFixed(1)}MB → ${(fileToUpload.size / 1024).toFixed(0)}KB`)
                     } catch (compressError) {
                         console.error('Compression error:', compressError)
                         toast.dismiss()
