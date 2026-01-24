@@ -185,13 +185,12 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                             </div>
                         )}
                     </div>
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                        Tidak ada data
                     </div>
-            ) : (
-            <div className="text-center py-8 text-muted-foreground">
-                Tidak ada data
-            </div>
                 )}
-        </DialogContent>
-        </Dialog >
+            </DialogContent>
+        </Dialog>
     )
 }
