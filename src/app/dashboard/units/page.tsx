@@ -577,7 +577,7 @@ export default function UnitsPage() {
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-lg">
+                                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                                     <DialogHeader>
                                         <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                     </DialogHeader>
