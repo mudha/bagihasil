@@ -29,6 +29,7 @@ interface InvestmentsTableProps {
 }
 
 export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableProps) {
+    const [searchQuery, setSearchQuery] = useState(defaultFilter)
     const [statusFilter, setStatusFilter] = useState("ALL")
     const [sortOption, setSortOption] = useState("NEWEST")
     const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
