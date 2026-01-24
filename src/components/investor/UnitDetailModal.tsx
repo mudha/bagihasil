@@ -145,49 +145,51 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                                         </span>
                                     </div>
                                 )}
+                                <span className="text-muted-foreground">Total Biaya Operasional</span>
+                                <span className="font-medium text-orange-600">
+                                    {formatCurrency(data.costs?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Profit Summary (if sold) */}
+                        {data.sellPrice > 0 && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
+                                <h5 className="font-semibold flex items-center gap-2 text-emerald-700">
+                                    <TrendingUp className="h-4 w-4" />
+                                    Bagi Hasil
+                                </h5>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">Total Biaya Operasional</span>
-                                    <span className="font-medium text-orange-600">
-                                        {formatCurrency(data.totalCost || 0)}
+                                    <span className="text-sm text-emerald-700">Profit Bersih</span>
+                                    <span className="font-bold text-emerald-700">
+                                        {formatCurrency(data.profitSharing?.netMargin || 0)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-emerald-700">
+                                        Bagian Anda ({data.profitSharing?.investorSharePercentage ?? 50}%)
+                                    </span>
+                                    <span className="font-bold text-emerald-600">
+                                        {formatCurrency(data.profitSharing?.investorProfitAmount || 0)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-emerald-600">
+                                    <span>Status Pembayaran</span>
+                                    <span className="font-semibold">
+                                        {data.payment?.paymentStatus === "PAID" ? "✅ Lunas" :
+                                            data.payment?.paymentStatus === "PARTIAL" ? "⏳ Sebagian" : "⏳ Belum Lunas"}
                                     </span>
                                 </div>
                             </div>
-
-                            {/* Profit Summary (if sold) */}
-                            {data.sellPrice > 0 && (
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
-                                    <h5 className="font-semibold flex items-center gap-2 text-emerald-700">
-                                        <TrendingUp className="h-4 w-4" />
-                                        Bagi Hasil
-                                    </h5>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-emerald-700">Profit Bersih</span>
-                                        <span className="font-bold text-emerald-700">
-                                            {formatCurrency(data.netProfit || 0)}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-emerald-700">Bagian Anda ({data.profitSharingPercentage || 50}%)</span>
-                                        <span className="font-bold text-emerald-600">
-                                            {formatCurrency(data.investorProfit || 0)}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs text-emerald-600">
-                                        <span>Status Pembayaran</span>
-                                        <span className="font-semibold">
-                                            {data.paymentStatus === "PAID" ? "✅ Lunas" : "⏳ Belum Lunas"}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
-                ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                        Tidak ada data
                     </div>
+            ) : (
+            <div className="text-center py-8 text-muted-foreground">
+                Tidak ada data
+            </div>
                 )}
-            </DialogContent>
-        </Dialog>
+        </DialogContent>
+        </Dialog >
     )
 }
