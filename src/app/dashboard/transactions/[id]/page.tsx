@@ -461,64 +461,68 @@ export default function TransactionDetailPage() {
                         Dokumen & Bukti Transaksi
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                    <div className="border border-slate-200 rounded-lg p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <p className="font-semibold text-base text-slate-900 dark:text-slate-100">Bukti Pembelian Unit</p>
-                                <p className="text-xs text-slate-500 mt-1">Pengelola membeli dari Seller</p>
+                <CardContent className="grid grid-cols-2 gap-3 md:gap-4 p-4 pt-0">
+                    <div className="border border-slate-200 rounded-lg p-3 md:p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col justify-between h-full">
+                        <div className="flex flex-col gap-2 mb-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold text-xs md:text-base text-slate-900 dark:text-slate-100 line-clamp-1">Bukti Beli</p>
+                                    <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 line-clamp-1">Dari Seller</p>
+                                </div>
+                                {(() => {
+                                    const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
+                                    if (count > 0) {
+                                        return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium text-[10px] px-1.5 h-5">{count}</Badge>
+                                    }
+                                    return <Badge variant="outline" className="text-slate-400 border-slate-300 text-[10px] px-1.5 h-5">0</Badge>
+                                })()}
                             </div>
-                            {(() => {
-                                const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
-                                if (count > 0) {
-                                    return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium">{count} Bukti</Badge>
-                                }
-                                return <Badge variant="outline" className="text-slate-400 border-slate-300">Belum Ada</Badge>
-                            })()}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5 mt-auto">
                             {(() => {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="default" size="sm" onClick={() => setProofType('BUY')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                                            <Eye className="mr-2 h-4 w-4" /> Lihat Bukti
+                                        <Button variant="default" size="sm" onClick={() => setProofType('BUY')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-7 text-[10px] md:text-xs px-2">
+                                            <Eye className="mr-1.5 h-3 w-3" /> Lihat
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50`}>
-                                <Upload className="mr-2 h-4 w-4" /> Kelola
+                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50 h-7 text-[10px] md:text-xs px-2`}>
+                                <Upload className="mr-1.5 h-3 w-3" /> {(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'Kelola' })()}
                             </Button>
                         </div>
                     </div>
-                    <div className="border border-slate-200 rounded-lg p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col">
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <p className="font-semibold text-base text-slate-900 dark:text-slate-100">Bukti Pelunasan Unit</p>
-                                <p className="text-xs text-slate-500 mt-1">Pembeli membayar ke Pengelola</p>
+                    <div className="border border-slate-200 rounded-lg p-3 md:p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col justify-between h-full">
+                        <div className="flex flex-col gap-2 mb-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold text-xs md:text-base text-slate-900 dark:text-slate-100 line-clamp-1">Bukti Lunas</p>
+                                    <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 line-clamp-1">Dari Buyer</p>
+                                </div>
+                                {(() => {
+                                    const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
+                                    if (count > 0) {
+                                        return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium text-[10px] px-1.5 h-5">{count}</Badge>
+                                    }
+                                    return <Badge variant="outline" className="text-slate-400 border-slate-300 text-[10px] px-1.5 h-5">0</Badge>
+                                })()}
                             </div>
-                            {(() => {
-                                const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
-                                if (count > 0) {
-                                    return <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-300 font-medium">{count} Bukti</Badge>
-                                }
-                                return <Badge variant="outline" className="text-slate-400 border-slate-300">Belum Ada</Badge>
-                            })()}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5 mt-auto">
                             {(() => {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="default" size="sm" onClick={() => setProofType('SELL')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                                            <Eye className="mr-2 h-4 w-4" /> Lihat Bukti
+                                        <Button variant="default" size="sm" onClick={() => setProofType('SELL')} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-7 text-[10px] md:text-xs px-2">
+                                            <Eye className="mr-1.5 h-3 w-3" /> Lihat
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50`}>
-                                <Upload className="mr-2 h-4 w-4" /> Kelola
+                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} border-blue-300 text-blue-700 hover:bg-blue-50 h-7 text-[10px] md:text-xs px-2`}>
+                                <Upload className="mr-1.5 h-3 w-3" /> {(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'Kelola' })()}
                             </Button>
                         </div>
                     </div>
