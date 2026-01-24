@@ -113,6 +113,7 @@ export function UpdateUnitImageDialog({
                             setImages(newImages)
                         }}
                         maxImages={1}
+                        uploadLabel="Upload Foto Unit"
                     />
 
                     <div className="flex justify-end gap-2">

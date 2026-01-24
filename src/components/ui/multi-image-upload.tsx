@@ -23,9 +23,10 @@ interface MultipleImageUploadProps {
     maxImages?: number
     initialImages?: ImageFileWithDescription[]
     className?: string
+    uploadLabel?: string
 }
 
-export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImages = [], className }: MultipleImageUploadProps) {
+export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImages = [], className, uploadLabel = "Upload Gambar Bukti" }: MultipleImageUploadProps) {
     const [images, setImages] = useState<ImageFileWithDescription[]>(initialImages)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -172,7 +173,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                 />
                             </div>
                         </div>
-                        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 rounded-md p-1">
+                        <div className="absolute top-1 right-1 flex gap-1 bg-white/80 rounded-md p-1 shadow-sm">
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -221,7 +222,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                     <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
                         <Plus className="h-5 w-5 text-blue-600" />
                     </div>
-                    <p className="text-sm font-medium text-slate-700">Upload Gambar Bukti</p>
+                    <p className="text-sm font-medium text-slate-700">{uploadLabel}</p>
                     <p className="text-xs text-slate-500 mt-1">
                         Klik untuk pilih atau Paste (Ctrl+V) disini
                     </p>

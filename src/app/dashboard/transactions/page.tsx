@@ -1046,39 +1046,51 @@ export default function TransactionsPage() {
                                         </Link>
 
                                         {!isViewer && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Aksi</span>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Data
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setEditingStatusTransaction({
-                                                        id: trx.id,
-                                                        transactionCode: trx.transactionCode,
-                                                        status: trx.status
-                                                    })}>
-                                                        <CheckCircle className="mr-2 h-4 w-4" /> Update Status
-                                                    </DropdownMenuItem>
-                                                    {trx.status === 'COMPLETED' && (
-                                                        <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
-                                                            <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                    onClick={() => handleEdit(trx)}
+                                                    title="Edit Data"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    <span className="sr-only">Edit</span>
+                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                            <span className="sr-only">Aksi</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                        <DropdownMenuItem onClick={() => handleEdit(trx)}>
+                                                            <Pencil className="mr-2 h-4 w-4" /> Edit Data
                                                         </DropdownMenuItem>
-                                                    )}
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => setDeleteTransactionId(trx.id)}
-                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                    >
-                                                        <Trash className="mr-2 h-4 w-4" /> Hapus
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                        <DropdownMenuItem onClick={() => setEditingStatusTransaction({
+                                                            id: trx.id,
+                                                            transactionCode: trx.transactionCode,
+                                                            status: trx.status
+                                                        })}>
+                                                            <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                                        </DropdownMenuItem>
+                                                        {trx.status === 'COMPLETED' && (
+                                                            <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
+                                                                <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => setDeleteTransactionId(trx.id)}
+                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                        >
+                                                            <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </>
                                         )}
                                     </div>
                                 </TableCell>

@@ -244,9 +244,9 @@ export default function UnitsPage() {
     useEffect(() => {
         if (editingUnit) {
             form.reset({
-                name: editingUnit.name,
-                plateNumber: editingUnit.plateNumber,
-                code: editingUnit.code,
+                name: editingUnit.name || "",
+                plateNumber: editingUnit.plateNumber || "",
+                code: editingUnit.code || "",
                 investorId: editingUnit.investorId,
                 status: editingUnit.status,
                 imageUrl: editingUnit.imageUrl,
@@ -591,6 +591,7 @@ export default function UnitsPage() {
                                                         initialImages={unitImages}
                                                         onImagesChange={setUnitImages}
                                                         maxImages={1}
+                                                        uploadLabel="Upload Foto Unit"
                                                     />
                                                 </div>
                                             </div>
@@ -1170,32 +1171,47 @@ export default function UnitsPage() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {!isViewer && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Open menu</span>
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setEditingUnit(unit)
-                                                        setIsOpen(true)
-                                                    }}
-                                                >
-                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Unit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeleteId(unit.id)}
-                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                >
-                                                    <Trash className="mr-2 h-4 w-4" /> Hapus
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex justify-end items-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                                                onClick={() => {
+                                                    setEditingUnit(unit)
+                                                    setIsOpen(true)
+                                                }}
+                                                title="Edit Unit"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Open menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setEditingUnit(unit)
+                                                            setIsOpen(true)
+                                                        }}
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Unit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteId(unit.id)}
+                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    >
+                                                        <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     )}
                                 </TableCell>
                             </TableRow>
