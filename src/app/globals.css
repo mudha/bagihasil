@@ -120,3 +120,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Disable native pull-to-refresh/overscroll on mobile to allow custom implementation */
+html, body {
+  overscroll-behavior-y: none;
+}
