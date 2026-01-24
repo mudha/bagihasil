@@ -86,11 +86,11 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Unit Image */}
                         {data.unit?.imageUrl && (
-                            <div className="rounded-lg overflow-hidden border max-h-64">
+                            <div className="rounded-lg overflow-hidden border bg-slate-100">
                                 <img
                                     src={data.unit.imageUrl}
                                     alt={data.unit.name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-auto max-h-[500px] object-contain mx-auto"
                                 />
                             </div>
                         )}
