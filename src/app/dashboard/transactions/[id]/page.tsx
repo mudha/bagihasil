@@ -213,55 +213,55 @@ export default function TransactionDetailPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4 md:gap-4">
                 <Card className="bg-blue-50 border-blue-200">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-800">Modal dari Pemodal</CardTitle>
+                    <CardHeader className="pb-2 p-4">
+                        <CardTitle className="text-xs md:text-sm font-medium text-blue-800">Modal dari Pemodal</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-900">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(baseInvestorCapital)}
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-base md:text-2xl font-bold text-blue-900 break-words">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseInvestorCapital)}
                         </div>
-                        <p className="text-xs text-blue-700 mt-1">
+                        <p className="text-[10px] md:text-xs text-blue-700 mt-1">
                             {transaction.initialInvestorCapital ? "Modal awal custom" : "Harga Beli Unit"}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-blue-100 border-blue-300">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-800">Total Modal Pemodal</CardTitle>
+                    <CardHeader className="pb-2 p-4">
+                        <CardTitle className="text-xs md:text-sm font-medium text-blue-800">Total Modal Pemodal</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-900">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalCapitalInvestor)}
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-base md:text-2xl font-bold text-blue-900 break-words">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalInvestor)}
                         </div>
-                        <p className="text-xs text-blue-700 mt-1">
-                            Beli + Biaya Pemodal ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(costsInvestor)})
+                        <p className="text-[10px] md:text-xs text-blue-700 mt-1">
+                            Beli + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsInvestor)})
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-purple-50 border-purple-200">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-purple-800">Total Modal Pengelola</CardTitle>
+                    <CardHeader className="pb-2 p-4">
+                        <CardTitle className="text-xs md:text-sm font-medium text-purple-800">Total Modal Pengelola</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-900">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalCapitalManager)}
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-base md:text-2xl font-bold text-purple-900 break-words">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalManager)}
                         </div>
-                        <p className="text-xs text-purple-700 mt-1">
-                            Modal Awal ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseManagerCapital)}) + Biaya Operasional ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsManager)})
+                        <p className="text-[10px] md:text-xs text-purple-700 mt-1">
+                            Modal ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseManagerCapital)}) + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsManager)})
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-green-50 border-green-200">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-green-800">Total Modal Keseluruhan</CardTitle>
+                    <CardHeader className="pb-2 p-4">
+                        <CardTitle className="text-xs md:text-sm font-medium text-green-800">Total Modal Keseluruhan</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-900">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalCapital)}
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-base md:text-2xl font-bold text-green-900 break-words">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapital)}
                         </div>
-                        <p className="text-xs text-green-700 mt-1">
+                        <p className="text-[10px] md:text-xs text-green-700 mt-1">
                             Pemodal + Pengelola
                         </p>
                     </CardContent>
