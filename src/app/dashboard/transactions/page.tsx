@@ -581,7 +581,13 @@ export default function TransactionsPage() {
                                                 <FormItem>
                                                     <FormLabel>Harga Beli (Rp)</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" placeholder="0" {...field} />
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="0"
+                                                            {...field}
+                                                            value={field.value === 0 ? '' : field.value}
+                                                            onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>

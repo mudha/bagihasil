@@ -371,7 +371,13 @@ export function AddCostDialog({
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                                // Convert 0 to empty string for display so user can type/backspace easily
+                                                value={field.value === 0 ? '' : field.value}
+                                                onChange={e => {
+                                                    const val = e.target.value
+                                                    // Allow empty string (set to 0 internally), otherwise parse float
+                                                    field.onChange(val === '' ? 0 : parseFloat(val))
+                                                }}
                                                 className={cn(
                                                     "transition-all duration-500",
                                                     isAnalyzing && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"

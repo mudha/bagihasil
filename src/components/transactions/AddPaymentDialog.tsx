@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -54,6 +54,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
         setValue,
         watch,
         reset,
+        control,
         formState: { errors },
     } = useForm<z.infer<typeof paymentSchema>>({
         resolver: zodResolver(paymentSchema),
@@ -325,15 +326,23 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     <div className="space-y-2">
                         <Label htmlFor="amount">Jumlah (Rp)</Label>
                         <div className="relative">
-                            <Input
-                                id="amount"
-                                type="number"
-                                step="0.01"
-                                placeholder="Masukkan jumlah"
-                                {...register('amount', { valueAsNumber: true })}
-                                className={cn(
-                                    "transition-all duration-500",
-                                    isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                            <Controller
+                                control={control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <Input
+                                        {...field}
+                                        id="amount"
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="Masukkan jumlah"
+                                        value={field.value === 0 ? '' : field.value}
+                                        onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                        className={cn(
+                                            "transition-all duration-500",
+                                            isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                        )}
+                                    />
                                 )}
                             />
                             {isAnalyzingRef.current && (
