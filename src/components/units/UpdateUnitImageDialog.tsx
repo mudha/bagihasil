@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
+import imageCompression from 'browser-image-compression'
 
 interface UpdateUnitImageDialogProps {
     open: boolean
@@ -45,7 +46,29 @@ export function UpdateUnitImageDialog({
             const newImage = images.find(img => img.file)
             if (newImage && newImage.file && newImage.file.size > 0) {
                 const formData = new FormData()
-                formData.append('file', newImage.file)
+
+                // Compress image if it's too large
+                let fileToUpload = newImage.file
+                if (newImage.file.size > 1 * 1024 * 1024) { // If > 1MB, compress
+                    toast.loading("Mengompres gambar...")
+                    const options = {
+                        maxSizeMB: 1, // Max 1MB
+                        maxWidthOrHeight: 1920, // Max dimension
+                        useWebWorker: true,
+                        fileType: 'image/jpeg' // Convert to JPEG for better compression
+                    }
+                    try {
+                        fileToUpload = await imageCompression(newImage.file, options)
+                        toast.dismiss()
+                        toast.success(`Gambar dikompres: ${(newImage.file.size / 1024 / 1024).toFixed(1)}MB → ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB`)
+                    } catch (compressError) {
+                        console.error('Compression error:', compressError)
+                        toast.dismiss()
+                        // Continue with original file if compression fails
+                    }
+                }
+
+                formData.append('file', fileToUpload)
 
                 // Using existing upload endpoint or we might need a general one
                 // Let's use the payment-proof one for now as it just returns a URL
