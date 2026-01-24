@@ -56,8 +56,8 @@ export function UpdateUnitImageDialog({
                 })
 
                 if (!uploadRes.ok) {
-                    const errorData = await uploadRes.json().catch(() => ({}))
-                    throw new Error(errorData.error || "Failed to upload image")
+                    const errorData = await uploadRes.json().catch(() => null)
+                    throw new Error(errorData?.error || `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`)
                 }
                 const uploadData = await uploadRes.json()
                 imageUrl = uploadData.url
