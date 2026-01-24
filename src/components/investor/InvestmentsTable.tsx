@@ -29,8 +29,8 @@ interface InvestmentsTableProps {
 }
 
 export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableProps) {
-    const [searchQuery, setSearchQuery] = useState(defaultFilter)
-    const [sortConfig, setSortConfig] = useState<{ key: keyof InvestmentUnit, direction: "asc" | "desc" } | null>(null)
+    const [statusFilter, setStatusFilter] = useState("ALL")
+    const [sortOption, setSortOption] = useState("NEWEST")
     const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
 
@@ -43,41 +43,44 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
 
     const filteredData = data.filter(unit => {
         const query = searchQuery.toLowerCase()
-        return (
+        const matchesSearch = (
             unit.name.toLowerCase().includes(query) ||
             (unit.plateNumber?.toLowerCase().includes(query) ?? false) ||
             unit.status.toLowerCase().includes(query) ||
             unit.transactionStatus.toLowerCase().includes(query)
         )
+
+        let matchesStatus = true
+        if (statusFilter === "ACTIVE") {
+            matchesStatus = unit.status !== "SOLD"
+        } else if (statusFilter === "SOLD") {
+            matchesStatus = unit.status === "SOLD"
+        }
+
+        return matchesSearch && matchesStatus
     })
 
     const sortedData = [...filteredData].sort((a, b) => {
-        if (!sortConfig) return 0
-
-        const { key, direction } = sortConfig
-
-        if (a[key] === null) return 1
-        if (b[key] === null) return -1
-        if (a[key] === null && b[key] === null) return 0
-
-        if (key === 'imageUrl') return 0 // Skip sorting by image
-
-        if (a[key]! < b[key]!) { // Added ! assertion as we handle nulls above, but typescript might complain strictly without it or better checks. 
-            // Actually simpler:
-            return direction === "asc" ? -1 : 1
+        switch (sortOption) {
+            case "PRICE_HIGH":
+                return (b.capital || 0) - (a.capital || 0)
+            case "PRICE_LOW":
+                return (a.capital || 0) - (b.capital || 0)
+            case "NAME_ASC":
+                return a.name.localeCompare(b.name)
+            case "NEWEST":
+            default:
+                // Assuming original order is newest (or simply stable) - no date field in interface currently
+                // Ideally we'd sort by transaction date if available on the unit object
+                return 0
         }
-        if (a[key]! > b[key]!) {
-            return direction === "asc" ? 1 : -1
-        }
-        return 0
     })
 
     const requestSort = (key: keyof InvestmentUnit) => {
-        let direction: "asc" | "desc" = "asc"
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc"
-        }
-        setSortConfig({ key, direction })
+        // Legacy support if needed or remove if strictly using dropdown
+        // Keeping it empty or adapting:
+        if (key === 'capital') setSortOption(sortOption === "PRICE_HIGH" ? "PRICE_LOW" : "PRICE_HIGH")
+        if (key === 'name') setSortOption("NAME_ASC")
     }
 
     const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)
@@ -89,7 +92,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative w-full max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -98,6 +101,28 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <select
+                        className="h-10 w-full sm:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="ALL">Semua Status</option>
+                        <option value="ACTIVE">Sedang Berjalan</option>
+                        <option value="SOLD">Terjual</option>
+                    </select>
+
+                    <select
+                        className="h-10 w-full sm:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value)}
+                    >
+                        <option value="NEWEST">Terbaru</option>
+                        <option value="PRICE_HIGH">Harga Tertinggi</option>
+                        <option value="PRICE_LOW">Harga Terendah</option>
+                        <option value="NAME_ASC">Nama (A-Z)</option>
+                    </select>
                 </div>
             </div>
 
