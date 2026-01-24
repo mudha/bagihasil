@@ -182,6 +182,9 @@ export default function TransactionDetailPage() {
                                 </div>
                             )}
                             <span className="break-words">
+                                <span className="font-mono text-xs font-semibold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded mr-2 align-middle">
+                                    {transaction.unit.code}
+                                </span>
                                 {transaction.unit.name} - {transaction.unit.plateNumber}
                             </span>
                             <Button
