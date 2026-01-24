@@ -145,10 +145,12 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                                         </span>
                                     </div>
                                 )}
-                                <span className="text-muted-foreground">Total Biaya Operasional</span>
-                                <span className="font-medium text-orange-600">
-                                    {formatCurrency(data.costs?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0)}
-                                </span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-muted-foreground">Total Biaya Operasional</span>
+                                    <span className="font-medium text-orange-600">
+                                        {formatCurrency(data.costs?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
