@@ -1,9 +1,8 @@
-"use client"
-
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
 import { Toaster } from "@/components/ui/sonner"
 import { usePathname } from "next/navigation"
+import { PullToRefresh } from "@/components/ui/pull-to-refresh"
 
 export default function DashboardLayout({
     children,
@@ -18,7 +17,9 @@ export default function DashboardLayout({
     if (isInvestorPage) {
         return (
             <div className="h-full relative">
-                {children}
+                <PullToRefresh>
+                    {children}
+                </PullToRefresh>
                 <Toaster />
             </div>
         )
@@ -31,9 +32,11 @@ export default function DashboardLayout({
                 <Sidebar />
             </div>
             <main className="md:pl-72 pb-10 min-h-screen bg-gray-50/50">
-                <div className="p-4 md:p-8">
-                    {children}
-                </div>
+                <PullToRefresh>
+                    <div className="p-4 md:p-8">
+                        {children}
+                    </div>
+                </PullToRefresh>
             </main>
             <Toaster />
         </div>
