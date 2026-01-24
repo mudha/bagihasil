@@ -49,7 +49,8 @@ export default async function InvestorDashboardPage() {
             imageUrl: unit.imageUrl,
             capital,
             sellPrice,
-            transactionStatus
+            transactionStatus,
+            transactionId: trx?.id ?? ""
         }
     })
 

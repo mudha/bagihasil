@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowUpDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
 
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
+import { UnitDetailModal } from "./UnitDetailModal"
 
 interface InvestmentUnit {
     id: string
@@ -18,6 +20,7 @@ interface InvestmentUnit {
     sellPrice: number
     transactionStatus: string
     imageUrl?: string | null
+    transactionId: string
 }
 
 interface InvestmentsTableProps {
@@ -28,6 +31,8 @@ interface InvestmentsTableProps {
 export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableProps) {
     const [searchQuery, setSearchQuery] = useState(defaultFilter)
     const [sortConfig, setSortConfig] = useState<{ key: keyof InvestmentUnit, direction: "asc" | "desc" } | null>(null)
+    const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
+    const [modalOpen, setModalOpen] = useState(false)
 
     // Update searchQuery when defaultFilter changes from parent
     useEffect(() => {
@@ -77,6 +82,11 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
 
     const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)
 
+    const handleUnitClick = (transactionId: string) => {
+        setSelectedTransactionId(transactionId)
+        setModalOpen(true)
+    }
+
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -99,11 +109,15 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     </div>
                 ) : (
                     sortedData.map((unit, index) => (
-                        <div key={unit.id} className={`border rounded-lg p-4 ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}>
+                        <div
+                            key={unit.id}
+                            className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
+                            onClick={() => handleUnitClick(unit.transactionId)}
+                        >
                             <div className="flex gap-4">
                                 {unit.imageUrl && (
                                     <div className="relative h-24 w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border">
-                                        <ImageHoverPreview
+                                        <Image
                                             src={unit.imageUrl}
                                             alt={unit.name}
                                             className="h-full w-full object-cover"
@@ -194,7 +208,11 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                             </TableRow>
                         ) : (
                             sortedData.map((unit, index) => (
-                                <TableRow key={unit.id} className={index % 2 === 0 ? "bg-white hover:bg-slate-100/50" : "bg-slate-50 hover:bg-slate-100"}>
+                                <TableRow
+                                    key={unit.id}
+                                    className={`cursor-pointer ${index % 2 === 0 ? "bg-white hover:bg-slate-100" : "bg-slate-50 hover:bg-slate-100"}`}
+                                    onClick={() => handleUnitClick(unit.transactionId)}
+                                >
                                     <TableCell>
                                         {unit.imageUrl ? (
                                             <div className="h-12 w-12 rounded overflow-hidden bg-gray-100 border">
@@ -236,6 +254,13 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Unit Detail Modal */}
+            <UnitDetailModal
+                open={modalOpen}
+                onOpenChange={setModalOpen}
+                transactionId={selectedTransactionId}
+            />
         </div>
     )
 }
