@@ -1,3 +1,5 @@
+"use client"
+
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
 import { Toaster } from "@/components/ui/sonner"
