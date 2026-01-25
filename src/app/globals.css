@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+/* @import "tw-animate-css"; */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -116,12 +116,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 /* Disable native pull-to-refresh/overscroll on mobile to allow custom implementation */
-html, body {
+html,
+body {
   overscroll-behavior-y: none;
 }
