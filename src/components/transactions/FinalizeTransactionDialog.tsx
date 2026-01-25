@@ -21,7 +21,7 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { SingleImageUpload } from "@/components/ui/single-image-upload"
+import { MultipleImageUpload } from "@/components/ui/multiple-image-upload"
 import { toast } from "sonner"
 import { DollarSign, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -45,8 +45,8 @@ interface FinalizeTransactionDialogProps {
 export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultShares = { investor: 40, manager: 60 } }: FinalizeTransactionDialogProps) {
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [imageFile, setImageFile] = useState<File | null>(null)
-    const [imagePreview, setImagePreview] = useState<string | null>(null)
+    const [imageFiles, setImageFiles] = useState<File[]>([])
+    const [imagePreview, setImagePreview] = useState<string | null>(null) // Deprecated, but keeping for compatibility if needed, though MultipleImageUpload handles previews internally
 
     // Ref for AI analysis
     const isAnalyzingRef = useRef(false)
@@ -64,6 +64,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
 
     const handlePaste = (e: React.ClipboardEvent) => {
         const items = e.clipboardData.items
+        const newFiles: File[] = []
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.startsWith("image/")) {
                 const file = items[i].getAsFile()
@@ -71,20 +72,18 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                     const validation = validateImageFile(file)
                     if (!validation.valid) {
                         toast.error(validation.error)
-                        return
+                        continue
                     }
-
-                    const reader = new FileReader()
-                    reader.onloadend = () => {
-                        const result = reader.result as string
-                        setImageFile(file)
-                        setImagePreview(result)
-                        toast.success("Gambar berhasil dipaste!")
-                    }
-                    reader.readAsDataURL(file)
-                    break
+                    newFiles.push(file)
                 }
             }
+        }
+
+        if (newFiles.length > 0) {
+            setImageFiles(prev => [...prev, ...newFiles])
+            toast.success(`${newFiles.length} gambar berhasil dipaste!`)
+            // Trigger analysis for new files
+            analyzeImages([...imageFiles, ...newFiles])
         }
     }
 
@@ -103,15 +102,34 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
     const onSubmit = async (values: z.infer<typeof sellSchema>) => {
         setIsLoading(true)
         try {
-            let proofUrl = undefined
-            if (imageFile) {
-                proofUrl = await uploadFile(imageFile)
+            const proofUrls: string[] = []
+            if (imageFiles.length > 0) {
+                // Upload all files in parallel
+                const uploadPromises = imageFiles.map(file => uploadFile(file))
+                const urls = await Promise.all(uploadPromises)
+                proofUrls.push(...urls)
+            }
+
+            // If we have multiple URLs, we'll store them as a JSON string or comma separated if needed.
+            // Assuming the schema sellProofImageUrl is a String, we might need to store it as JSON string if we want to keep multiple.
+            // Or if the backend expects a single URL, we might need a workaround.
+            // For now, let's store the first one as primary IF the backend blindly uses it as URL, 
+            // BUT since we want multiple, let's store JSON string. The frontend displaying it needs to handle this check.
+            // Ideally schema should change to String[] but for quick implementation we use JSON string if possible.
+            // Let's assume we store the stringified array if > 1, or just the url if 1 to try and keep some compat.
+            // Actually better to always store consistent format if possible, but let's stick to "if array then json" approach.
+
+            let finalProofUrl = null
+            if (proofUrls.length === 1) {
+                finalProofUrl = proofUrls[0]
+            } else if (proofUrls.length > 1) {
+                finalProofUrl = JSON.stringify(proofUrls)
             }
 
             const payload = {
                 ...values,
                 status: 'COMPLETED',
-                sellProofImageUrl: proofUrl,
+                sellProofImageUrl: finalProofUrl,
                 sellProofDescription: "Bukti Pelunasan Unit"
             }
 
@@ -138,15 +156,17 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
         }
     }
 
-    const analyzeImage = async (file: File) => {
-        if (isAnalyzingRef.current) return
+    const analyzeImages = async (files: File[]) => {
+        if (isAnalyzingRef.current || files.length === 0) return
 
         isAnalyzingRef.current = true
-        const toastId = toast.loading("Menganalisis bukti pelunasan...")
+        const toastId = toast.loading(`Menganalisis ${files.length} bukti pelunasan...`)
 
         try {
             const formData = new FormData()
-            formData.append('file', file)
+            files.forEach(file => {
+                formData.append('files', file) // Append all files with same key 'files'
+            })
 
             const res = await fetch('/api/ai/parse-receipt', {
                 method: 'POST',
@@ -160,33 +180,33 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
 
             const result = await res.json()
             if (result.success && result.data) {
-                const { amount, date, description } = result.data
+                const { totalAmount, latestDate, combinedDescription } = result.data
                 let updated = false
 
-                // Update Sell Price if 0
-                if (amount && typeof amount === 'number') {
-                    if (form.getValues("sellPrice") === 0) {
-                        form.setValue("sellPrice", amount)
-                        updated = true
-                    }
+                // Update Sell Price if 0 or update it to total
+                if (totalAmount && typeof totalAmount === 'number') {
+                    // Always update if it comes from AI to reflect sum of all
+                    form.setValue("sellPrice", totalAmount)
+                    updated = true
                 }
 
                 // Update Date
-                if (date) {
-                    if (!form.getValues("sellDate")) {
-                        form.setValue("sellDate", date)
-                        updated = true
-                    }
+                if (latestDate) {
+                    // Update to latest date found
+                    form.setValue("sellDate", latestDate)
+                    updated = true
                 }
 
                 // Update Notes
-                if (description && !form.getValues("notes")) {
-                    form.setValue("notes", description)
+                if (combinedDescription) {
+                    const currentNotes = form.getValues("notes")
+                    const newNotes = currentNotes ? `${currentNotes}\n\n${combinedDescription}` : combinedDescription
+                    form.setValue("notes", newNotes)
                     updated = true
                 }
 
                 if (updated) {
-                    toast.success("Data pelunasan terisi otomatis!", { id: toastId })
+                    toast.success("Data pelunasan terisi otomatis (Total Dijumlahkan)!", { id: toastId })
                 } else {
                     toast.dismiss(toastId)
                 }
@@ -280,16 +300,22 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                         <div className="space-y-2">
 
 
-                            <SingleImageUpload
-                                label="Bukti Pelunasan / Transfer"
-                                value={imagePreview}
-                                onChange={(file, preview) => {
-                                    setImageFile(file)
-                                    setImagePreview(preview)
-                                    if (file) {
-                                        analyzeImage(file)
+                            <MultipleImageUpload
+                                initialImages={imageFiles.map(file => ({
+                                    id: file.name,
+                                    file: file,
+                                    preview: URL.createObjectURL(file),
+                                    description: ""
+                                }))}
+                                onImagesChange={(images) => {
+                                    const files = images.map(img => img.file).filter((f): f is File => f !== null)
+                                    setImageFiles(files)
+                                    if (files.length > 0) {
+                                        analyzeImages(files)
                                     }
                                 }}
+                                maxImages={5}
+                                uploadLabel="Upload Bukti Transfer (Bisa Banyak)"
                             />
                         </div>
 

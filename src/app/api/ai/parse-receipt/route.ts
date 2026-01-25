@@ -1,39 +1,52 @@
-
 import { NextRequest, NextResponse } from 'next/server'
-import { parseTransferProof } from '@/lib/gemini'
+import { parseTransferProofs } from '@/lib/gemini'
 
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData()
-        const file = formData.get('file') as File | null
 
-        if (!file) {
+        // Handle multiple files
+        const filesEntry = formData.getAll('files') as File[]
+        const singleFileEntry = formData.get('file') as File | null
+
+        let files: File[] = []
+        if (filesEntry.length > 0) {
+            files = filesEntry
+        } else if (singleFileEntry) {
+            files = [singleFileEntry]
+        }
+
+        if (files.length === 0) {
             return NextResponse.json(
                 { error: 'Tidak ada file yang diupload' },
                 { status: 400 }
             )
         }
 
-        // Validate file type
+        // Validate file types and sizes
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png']
-        if (!validTypes.includes(file.type)) {
-            return NextResponse.json(
-                { error: 'Tipe file tidak valid. Hanya JPG dan PNG yang diperbolehkan.' },
-                { status: 400 }
-            )
+        const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+
+        const processedFiles: { buffer: Buffer; mimeType: string }[] = []
+
+        for (const file of files) {
+            if (!validTypes.includes(file.type)) {
+                return NextResponse.json(
+                    { error: `Tipe file ${file.name} tidak valid. Hanya JPG dan PNG.` },
+                    { status: 400 }
+                )
+            }
+            if (file.size > MAX_SIZE) {
+                return NextResponse.json(
+                    { error: `File ${file.name} terlalu besar. Maksimal 5MB.` },
+                    { status: 400 }
+                )
+            }
+            const buffer = Buffer.from(await file.arrayBuffer())
+            processedFiles.push({ buffer, mimeType: file.type })
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            return NextResponse.json(
-                { error: 'Ukuran file terlalu besar. Maksimal 5MB.' },
-                { status: 400 }
-            )
-        }
-
-        const buffer = Buffer.from(await file.arrayBuffer())
-
-        // Simple 10s timeout for AI
+        // Simple 20s timeout for AI (increased for multi-file)
         const withTimeout = (promise: Promise<any>, ms: number) => {
             return Promise.race([
                 promise,
@@ -43,10 +56,10 @@ export async function POST(request: NextRequest) {
             ]);
         };
 
-        // AI Parsing with Gemini only
+        // AI Parsing with Gemini
         const result = await withTimeout(
-            parseTransferProof(buffer, file.type),
-            10000 // 10 seconds max
+            parseTransferProofs(processedFiles),
+            20000 // 20 seconds max
         );
 
         return NextResponse.json({
