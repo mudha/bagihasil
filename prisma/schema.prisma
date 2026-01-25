@@ -80,6 +80,9 @@ model Unit {
   plateNumber String?    @unique
   code        String     @unique
   imageUrl    String?    // Foto unit
+  stnkImageUrl String?   // Foto STNK
+  engineNumber String?   // Nomor Mesin
+  chassisNumber String?  // Nomor Rangka
   taxDueDate  DateTime?  // Jatuh tempo pajak
   status      String     @default("AVAILABLE") // AVAILABLE, SOLD, MAINTENANCE
   createdAt   DateTime   @default(now())

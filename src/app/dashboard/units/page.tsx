@@ -79,6 +79,9 @@ const unitSchema = z.object({
     model: z.string().optional().nullable(),
     year: z.string().optional().nullable(),
     color: z.string().optional().nullable(),
+    stnkImageUrl: z.string().optional().nullable(),
+    engineNumber: z.string().optional().nullable(),
+    chassisNumber: z.string().optional().nullable(),
 })
 
 interface Unit {
@@ -98,6 +101,9 @@ interface Unit {
     model?: string | null
     year?: string | null
     color?: string | null
+    stnkImageUrl?: string | null
+    engineNumber?: string | null
+    chassisNumber?: string | null
     createdAt?: string
 }
 
@@ -171,6 +177,8 @@ export default function UnitsPage() {
     const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [unitImages, setUnitImages] = useState<ImageFileWithDescription[]>([])
+    const [stnkImages, setStnkImages] = useState<ImageFileWithDescription[]>([])
+    const [isScanningStnk, setIsScanningStnk] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -206,6 +214,9 @@ export default function UnitsPage() {
             model: null,
             year: null,
             color: null,
+            stnkImageUrl: null,
+            engineNumber: null,
+            chassisNumber: null,
         },
     })
 
@@ -256,7 +267,11 @@ export default function UnitsPage() {
                 brand: editingUnit.brand,
                 model: editingUnit.model,
                 year: editingUnit.year,
-                color: editingUnit.color
+                year: editingUnit.year,
+                color: editingUnit.color,
+                stnkImageUrl: editingUnit.stnkImageUrl,
+                engineNumber: editingUnit.engineNumber,
+                chassisNumber: editingUnit.chassisNumber,
             })
 
             // Populate dropdown states from editingUnit OR parse from name if missing
@@ -327,6 +342,17 @@ export default function UnitsPage() {
             } else {
                 setUnitImages([])
             }
+
+            if (editingUnit.stnkImageUrl) {
+                setStnkImages([{
+                    id: 'existing-stnk',
+                    file: new File([], "existing-stnk"),
+                    preview: editingUnit.stnkImageUrl,
+                    description: ""
+                }])
+            } else {
+                setStnkImages([])
+            }
         } else {
             form.reset({
                 name: "",
@@ -339,9 +365,14 @@ export default function UnitsPage() {
                 brand: null,
                 model: null,
                 year: null,
-                color: null
+                year: null,
+                color: null,
+                stnkImageUrl: null,
+                engineNumber: null,
+                chassisNumber: null,
             })
             setUnitImages([])
+            setStnkImages([])
             setVehicleType("")
             setBrand("")
             setModel("")
@@ -382,6 +413,51 @@ export default function UnitsPage() {
         }
     }, [vehicleType, brand, model, customModel, year, color, customColor, isOpen, form]);
 
+    const handleScanStnk = async () => {
+        const file = stnkImages[0]?.file;
+        if (!file || file.size === 0) {
+            toast.error("Upload foto STNK terlebih dahulu");
+            return;
+        }
+
+        setIsScanningStnk(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/ai/parse-stnk", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Gagal scan STNK");
+            }
+
+            const data = await res.json();
+
+            if (data.plateNumber) form.setValue("plateNumber", data.plateNumber);
+            if (data.taxDueDate) form.setValue("taxDueDate", new Date(data.taxDueDate));
+            if (data.engineNumber) form.setValue("engineNumber", data.engineNumber);
+            if (data.chassisNumber) form.setValue("chassisNumber", data.chassisNumber);
+            if (data.color) {
+                // Try to match with existing colors
+                const matchedColor = COLORS.find(c => c.toLowerCase() === data.color.toLowerCase())
+                    || (data.color.length < 20 ? data.color : "Lainnya"); // Fallback logic
+                setColor(matchedColor);
+                if (!COLORS.includes(matchedColor)) setCustomColor(data.color);
+            }
+
+            toast.success("STNK berhasil discan!");
+        } catch (error: any) {
+            console.error("Scan error:", error);
+            toast.error(error.message || "Gagal scan STNK");
+        } finally {
+            setIsScanningStnk(false);
+        }
+    };
+
     async function onSubmit(values: z.infer<typeof unitSchema>) {
         try {
             const url = editingUnit ? `/api/units/${editingUnit.id}` : '/api/units'
@@ -389,6 +465,7 @@ export default function UnitsPage() {
 
             // Handle image upload
             let imageUrl = values.imageUrl
+            let stnkImageUrl = values.stnkImageUrl
 
             const newImage = unitImages.find(img => img.file && img.file.size > 0)
             if (newImage && newImage.file) {
@@ -407,7 +484,25 @@ export default function UnitsPage() {
                 imageUrl = null
             }
 
-            const payload = { ...values, imageUrl }
+            // Handle STNK Upload
+            const newStnkImage = stnkImages.find(img => img.file && img.file.size > 0)
+            if (newStnkImage && newStnkImage.file) {
+                const formData = new FormData()
+                formData.append('file', newStnkImage.file)
+
+                const uploadRes = await fetch('/api/upload/payment-proof', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                if (!uploadRes.ok) throw new Error("Failed to upload STNK")
+                const uploadData = await uploadRes.json()
+                stnkImageUrl = uploadData.url
+            } else if (stnkImages.length === 0) {
+                stnkImageUrl = null
+            }
+
+            const payload = { ...values, imageUrl, stnkImageUrl }
 
             const res = await fetch(url, {
                 method: method,
@@ -623,25 +718,53 @@ export default function UnitsPage() {
                                     <Form {...form}>
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                                            <div className="mb-4">
-                                                <Label>Foto Unit (Opsional)</Label>
-                                                <div className="mt-2">
-                                                    <MultipleImageUpload
-                                                        initialImages={unitImages}
-                                                        onImagesChange={setUnitImages}
-                                                        maxImages={1}
-                                                        uploadLabel="Upload Foto Unit"
-                                                    />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                                <div>
+                                                    <Label>Foto Unit (Opsional)</Label>
+                                                    <div className="mt-2">
+                                                        <MultipleImageUpload
+                                                            initialImages={unitImages}
+                                                            onImagesChange={setUnitImages}
+                                                            maxImages={1}
+                                                            uploadLabel="Upload Foto Unit"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <Label>Foto STNK (Opsional)</Label>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            type="button"
+                                                            onClick={handleScanStnk}
+                                                            disabled={stnkImages.length === 0 || isScanningStnk}
+                                                        >
+                                                            {isScanningStnk ? "Scanning..." : "✨ Scan AI"}
+                                                        </Button>
+                                                    </div>
+                                                    <div>
+                                                        <MultipleImageUpload
+                                                            initialImages={stnkImages}
+                                                            onImagesChange={setStnkImages}
+                                                            maxImages={1}
+                                                            uploadLabel="Upload Foto STNK"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                                        *Upload STNK lalu klik "Scan AI" untuk isi otomatis data kendaraan.
+                                                    </p>
                                                 </div>
                                             </div>
 
                                             <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
+                                                {/* ... existing vehicle details fields ... */}
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <Label>Jenis Kendaraan</Label>
                                                         <Select value={vehicleType} onValueChange={(v) => {
                                                             setVehicleType(v);
-                                                            if (v !== vehicleType) { // Only reset if changed
+                                                            if (v !== vehicleType) {
                                                                 setBrand("");
                                                                 setModel("");
                                                             }
@@ -735,7 +858,6 @@ export default function UnitsPage() {
                                                     <div className="text-sm font-medium mt-1">
                                                         {form.watch("name") || "(Lengkapi form di atas)"}
                                                     </div>
-                                                    {/* Hidden Input to ensure form validation works */}
                                                     <input type="hidden" {...form.register("name")} />
                                                     <input type="hidden" {...form.register("vehicleType")} />
                                                     <input type="hidden" {...form.register("brand")} />
@@ -767,6 +889,35 @@ export default function UnitsPage() {
                                                             <FormLabel>Kode Unit</FormLabel>
                                                             <FormControl>
                                                                 <Input placeholder="UNT-INV-001" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="engineNumber"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>No. Mesin</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Contoh: JM01E..." {...field} value={field.value || ""} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="chassisNumber"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>No. Rangka</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Contoh: MHF..." {...field} value={field.value || ""} />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>

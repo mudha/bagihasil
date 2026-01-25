@@ -18,6 +18,9 @@ const unitSchema = z.object({
     model: z.string().optional().nullable(),
     year: z.string().optional().nullable(),
     color: z.string().optional().nullable(),
+    stnkImageUrl: z.string().optional().nullable(),
+    engineNumber: z.string().optional().nullable(),
+    chassisNumber: z.string().optional().nullable(),
 })
 
 export async function GET(req: Request) {

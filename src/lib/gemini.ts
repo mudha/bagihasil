@@ -91,3 +91,76 @@ export async function parseTransferProofs(
         throw error;
     }
 }
+
+export interface ParsedStnk {
+    plateNumber: string | null;
+    taxDueDate: string | null;
+    engineNumber: string | null;
+    chassisNumber: string | null;
+    color: string | null;
+}
+
+export async function parseStnk(
+    file: { buffer: Buffer; mimeType: string }
+): Promise<ParsedStnk> {
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY not configured");
+    }
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "models/gemini-flash-latest" });
+
+        const prompt = `
+            Andalah AI ahli pembaca dokumen STNK Indonesia.
+            Analisis gambar STNK ini dan ekstrak data berikut dengan sangat teliti:
+
+            1. **Nomor Polisi (Plate Number)**: Cari format B 1234 ABC.
+            2. **Masa Berlaku Pajak (Tax Due Date)**: Cari tanggal "Berlaku s/d" atau tanggal validitas pajak. Format YYYY-MM-DD. (Contoh: 2025-12-05)
+            3. **Nomor Mesin (Engine Number)**: Label "No. Mesin" atau sejenisnya.
+            4. **Nomor Rangka (Chassis Number)**: Label "No. Rangka" atau "NIK".
+            5. **Warna Kendaraan (Color)**: Label "Warna".
+
+            Kembalikan JSON murni:
+            {
+                "plateNumber": "string/null",
+                "taxDueDate": "YYYY-MM-DD/null",
+                "engineNumber": "string/null",
+                "chassisNumber": "string/null",
+                "color": "string/null"
+            }
+        `;
+
+        const imagePart = {
+            inlineData: {
+                data: file.buffer.toString("base64"),
+                mimeType: file.mimeType,
+            },
+        };
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            console.error("No JSON found in STNK response:", text);
+            throw new Error("Gagal mengenali data STNK.");
+        }
+
+        const data = JSON.parse(jsonMatch[0]);
+
+        return {
+            plateNumber: data.plateNumber || null,
+            taxDueDate: data.taxDueDate || null,
+            engineNumber: data.engineNumber || null,
+            chassisNumber: data.chassisNumber || null,
+            color: data.color || null
+        };
+    } catch (error: any) {
+        console.error("Error parsing STNK:", error);
+        if (error.status === 429) {
+            throw new Error("Quota AI habis.");
+        }
+        throw new Error("Gagal memproses STNK: " + error.message);
+    }
+}
