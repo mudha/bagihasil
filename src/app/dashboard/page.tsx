@@ -81,13 +81,14 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [exportingReport, setExportingReport] = useState(false)
+    const [monthsRange, setMonthsRange] = useState<string>("6")
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                let url = '/api/dashboard'
+                let url = `/api/dashboard?months=${monthsRange}`
                 if (selectedInvestorId && selectedInvestorId !== "all") {
-                    url += `?investorId=${selectedInvestorId}`
+                    url += `&investorId=${selectedInvestorId}`
                 }
                 const res = await fetch(url)
                 if (res.status === 401) {
@@ -116,7 +117,7 @@ export default function DashboardPage() {
         }
 
         fetchStats()
-    }, [selectedInvestorId])
+    }, [selectedInvestorId, monthsRange])
 
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>
     if (!stats) return <div className="p-8">Loading dashboard data...</div>
@@ -165,11 +166,11 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
                     <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Pilih Investor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -181,6 +182,20 @@ export default function DashboardPage() {
                             ))}
                         </SelectContent>
                     </Select>
+
+                    {/* Month Range Selector */}
+                    <Select value={monthsRange} onValueChange={setMonthsRange}>
+                        <SelectTrigger className="w-full sm:w-[150px]">
+                            <SelectValue placeholder="Rentang Waktu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="6">6 Bulan Terakhir</SelectItem>
+                            <SelectItem value="12">1 Tahun Terakhir</SelectItem>
+                            <SelectItem value="24">2 Tahun Terakhir</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+
                     {selectedInvestorId !== "all" && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -188,9 +203,10 @@ export default function DashboardPage() {
                                     variant="outline"
                                     size="sm"
                                     disabled={exportingReport}
+                                    className="w-full sm:w-auto"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
-                                    {exportingReport ? "Exporting..." : "Ekspor Laporan"}
+                                    {exportingReport ? "Exporting..." : "Ekspor"}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -320,12 +336,44 @@ export default function DashboardPage() {
                 </Card>
             )}
 
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                {/* Monthly Chart */}
-                <Card>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {/* Total Monthly Profit Chart (NEW) */}
+                <Card className="lg:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Total Profit Bulanan</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                        <div className="h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.monthlyStats} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                    <XAxis type="number" hide />
+                                    <YAxis
+                                        dataKey="month"
+                                        type="category"
+                                        stroke="#888888"
+                                        fontSize={10}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={60}
+                                    />
+                                    <Tooltip
+                                        formatter={(value: number) => formatCurrency(value)}
+                                        labelStyle={{ color: 'black' }}
+                                        cursor={{ fill: 'transparent' }}
+                                    />
+                                    <Bar dataKey="totalMargin" name="Total Profit" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Monthly Profit Breakdown Chart */}
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>
-                            Profit Bulanan {selectedInvestorId !== "all" ? `(${stats.investorStats.find(i => i.id === selectedInvestorId)?.name})` : "(Semua)"}
+                            Pembagian Profit Bulanan {selectedInvestorId !== "all" ? `(${stats.investorStats.find(i => i.id === selectedInvestorId)?.name})` : "(Semua)"}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
@@ -361,12 +409,12 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* Monthly Units Sold Chart */}
-                <Card>
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Tren Penjualan Unit Bulanan</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[350px]">
+                        <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.monthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />

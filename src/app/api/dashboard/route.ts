@@ -8,6 +8,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const investorId = searchParams.get('investorId')
+    const monthsParam = searchParams.get('months')
+    const monthsRange = monthsParam ? parseInt(monthsParam) : 6 // Default 6 months as requested
 
     // 1. General Stats
     const unitWhere: any = { status: "AVAILABLE" }
@@ -79,15 +81,15 @@ export async function GET(req: Request) {
         }
     })
 
-    // 3. Monthly Stats (Last 12 Months)
-    const twelveMonthsAgo = new Date()
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11)
-    twelveMonthsAgo.setDate(1) // Start of the month
-    twelveMonthsAgo.setHours(0, 0, 0, 0)
+    // 3. Monthly Stats
+    const startDate = new Date()
+    startDate.setMonth(startDate.getMonth() - (monthsRange - 1)) // -1 because current month is included
+    startDate.setDate(1)
+    startDate.setHours(0, 0, 0, 0)
 
     const monthlyWhere: any = {
         calculatedAt: {
-            gte: twelveMonthsAgo
+            gte: startDate
         }
     }
 
@@ -119,8 +121,8 @@ export async function GET(req: Request) {
 
     const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number }>()
 
-    // Initialize last 12 months with 0 to ensure continuous graph
-    for (let i = 0; i < 12; i++) {
+    // Initialize last N months with 0
+    for (let i = 0; i < monthsRange; i++) {
         const d = new Date()
         d.setMonth(d.getMonth() - i)
         const key = d.toLocaleString('default', { month: 'short', year: 'numeric' }) // e.g., "Dec 2025"
