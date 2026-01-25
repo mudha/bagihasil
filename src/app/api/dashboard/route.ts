@@ -141,14 +141,6 @@ export async function GET(req: Request) {
             current.investorShare += profit.investorProfitAmount
             current.managerShare += profit.managerProfitAmount
             current.unitsSold += 1
-        } else {
-            monthlyStatsMap.set(key, {
-                month: key,
-                totalMargin: profit.netMargin,
-                investorShare: profit.investorProfitAmount,
-                managerShare: profit.managerProfitAmount,
-                unitsSold: 1
-            })
         }
     })
 
