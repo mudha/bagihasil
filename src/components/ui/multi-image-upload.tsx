@@ -91,9 +91,15 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
         imagesRef.current = images
     }, [images])
 
+    // Track hover state to isolate paste events
+    const isHovered = useRef(false)
+
     // Global paste listener
     useEffect(() => {
         const handleGlobalPaste = (e: ClipboardEvent) => {
+            // Only paste if THIS component is being hovered
+            if (!isHovered.current) return
+
             const items = e.clipboardData?.items
             if (!items) return
 
@@ -141,7 +147,11 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
     }, [maxImages]) // removed images dependency
 
     return (
-        <div className={cn("space-y-4", className)}>
+        <div
+            className={cn("space-y-4", className)}
+            onMouseEnter={() => (isHovered.current = true)}
+            onMouseLeave={() => (isHovered.current = false)}
+        >
             <div className="grid gap-4">
                 {images.map((img, index) => (
                     <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-slate-50 relative group">

@@ -64,6 +64,7 @@ import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
+import { AdminUnitDetailDialog } from "@/components/units/AdminUnitDetailDialog"
 
 
 const unitSchema = z.object({
@@ -175,6 +176,7 @@ export default function UnitsPage() {
     const [investors, setInvestors] = useState<Investor[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
+    const [viewingUnit, setViewingUnit] = useState<Unit | null>(null)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [unitImages, setUnitImages] = useState<ImageFileWithDescription[]>([])
     const [stnkImages, setStnkImages] = useState<ImageFileWithDescription[]>([])
@@ -1369,7 +1371,21 @@ export default function UnitsPage() {
                     </TableHeader>
                     <TableBody>
                         {paginatedUnits.map((unit) => (
-                            <TableRow key={unit.id}>
+                            <TableRow
+                                key={unit.id}
+                                className="cursor-pointer hover:bg-slate-50"
+                                onClick={(e) => {
+                                    // Prevent click if clicking checkbox or action buttons
+                                    if (
+                                        (e.target as HTMLElement).closest("input[type='checkbox']") ||
+                                        (e.target as HTMLElement).closest("button") ||
+                                        (e.target as HTMLElement).closest(".prevent-row-click")
+                                    ) {
+                                        return
+                                    }
+                                    setViewingUnit(unit)
+                                }}
+                            >
                                 <TableCell>
                                     <input
                                         type="checkbox"
@@ -1516,6 +1532,11 @@ export default function UnitsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <AdminUnitDetailDialog
+                open={!!viewingUnit}
+                onOpenChange={(open) => !open && setViewingUnit(null)}
+                unit={viewingUnit}
+            />
         </div>
     )
 }

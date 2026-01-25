@@ -62,6 +62,8 @@ import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
+import { AdminTransactionDetailDialog } from "@/components/transactions/AdminTransactionDetailDialog"
+
 
 
 const transactionSchema = z.object({
@@ -157,6 +159,8 @@ export default function TransactionsPage() {
     const [availableUnits, setAvailableUnits] = useState<Unit[]>([])
     const [investors, setInvestors] = useState<Investor[]>([])
     const [isOpen, setIsOpen] = useState(false)
+    const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null)
+
     const [editingTransaction, setEditingTransaction] = useState<any>(null)
     const [editingStatusTransaction, setEditingStatusTransaction] = useState<any>(null)
     const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null)
@@ -828,11 +832,14 @@ export default function TransactionsPage() {
                             </div>
 
                             <div className="flex flex-wrap gap-2 pt-2 items-center justify-between border-t">
-                                <Link href={`/dashboard/transactions/${trx.id}`} className="flex-1">
-                                    <Button variant="outline" size="sm" className="w-full h-8 text-xs">
-                                        <Eye className="h-3 w-3 mr-2" /> Detail
-                                    </Button>
-                                </Link>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1 h-8 text-xs"
+                                    onClick={() => setViewingTransaction(trx)}
+                                >
+                                    <Eye className="h-3 w-3 mr-2" /> Detail
+                                </Button>
                                 {!isViewer && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -1055,7 +1062,24 @@ export default function TransactionsPage() {
                     </TableHeader>
                     <TableBody>
                         {paginatedTransactions.map((trx) => (
-                            <TableRow key={trx.id}>
+                            <TableRow
+                                key={trx.id}
+                                className="cursor-pointer hover:bg-slate-50"
+                                onClick={(e) => {
+                                    if (
+                                        (e.target as HTMLElement).closest("a") ||
+                                        (e.target as HTMLElement).closest("button") ||
+                                        (e.target as HTMLElement).closest(".prevent-row-click") ||
+                                        (e.target as HTMLElement).closest("input") ||
+                                        (e.target as HTMLElement).closest('[role="checkbox"]')
+                                    ) {
+                                        return
+                                    }
+                                    // @ts-ignore
+                                    setViewingTransaction(trx)
+                                }}
+                            >
+
                                 <TableCell>
                                     <input
                                         type="checkbox"
@@ -1220,6 +1244,14 @@ export default function TransactionsPage() {
                     setEditingStatusTransaction(null)
                 }}
             />
+
+            <AdminTransactionDetailDialog
+                open={!!viewingTransaction}
+                onOpenChange={(open) => !open && setViewingTransaction(null)}
+                // @ts-ignore
+                transaction={viewingTransaction}
+            />
+
         </div >
     )
 }
