@@ -444,9 +444,56 @@ export default function UnitsPage() {
             if (data.color) {
                 // Try to match with existing colors
                 const matchedColor = COLORS.find(c => c.toLowerCase() === data.color.toLowerCase())
-                    || (data.color.length < 20 ? data.color : "Lainnya"); // Fallback logic
+                    || (data.color.length < 20 ? data.color : "Lainnya");
                 setColor(matchedColor);
                 if (!COLORS.includes(matchedColor)) setCustomColor(data.color);
+            }
+
+            // Map Vehicle Type
+            if (data.vehicleType && ["Mobil", "Motor"].includes(data.vehicleType)) {
+                setVehicleType(data.vehicleType);
+
+                // Map Brand (only if vehicle type is valid)
+                if (data.brand) {
+                    // @ts-ignore
+                    const brandList = BRANDS[data.vehicleType] || [];
+                    // Fuzzy match brand
+                    const matchedBrand = brandList.find((b: string) => b.toLowerCase() === data.brand.toLowerCase());
+
+                    if (matchedBrand) {
+                        setBrand(matchedBrand);
+
+                        // Map Model (only if brand is valid)
+                        if (data.model) {
+                            // @ts-ignore
+                            const modelList = MODELS[data.vehicleType]?.[matchedBrand] || [];
+                            const matchedModel = modelList.find((m: string) => m.toLowerCase().includes(data.model.toLowerCase()) || data.model.toLowerCase().includes(m.toLowerCase()));
+
+                            if (matchedModel) {
+                                setModel(matchedModel);
+                            } else {
+                                setModel("Lainnya");
+                                setCustomModel(data.model);
+                            }
+                        }
+                    } else {
+                        // If brand not found, we can't select it in dropdown easily without "Lainnya" logic for brand (which we don't have in UI yet for Brand)
+                        // But if user allows generic "Lainnya"? 
+                        // Check constants again: Brands has "Lainnya".
+                        setBrand("Lainnya");
+                        // If brand is Lainnya, model is free text?
+                        // UI for Brand "Lainnya" isn't explicitly shown in my mental model, need to double check if Brand select handles "Lainnya" well.
+                        // For now, let's assume if brand not found, we leave it empty or user fills it.
+                        // Or try to set it if "Lainnya" exists.
+                        if (brandList.includes("Lainnya")) {
+                            setBrand("Lainnya");
+                        }
+                    }
+                }
+            }
+
+            if (data.year) {
+                setYear(data.year.toString());
             }
 
             toast.success("STNK berhasil discan!");

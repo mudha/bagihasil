@@ -98,6 +98,10 @@ export interface ParsedStnk {
     engineNumber: string | null;
     chassisNumber: string | null;
     color: string | null;
+    vehicleType: "Mobil" | "Motor" | null;
+    brand: string | null;
+    model: string | null;
+    year: string | null;
 }
 
 export async function parseStnk(
@@ -111,22 +115,36 @@ export async function parseStnk(
         const model = genAI.getGenerativeModel({ model: "models/gemini-flash-latest" });
 
         const prompt = `
-            Andalah AI ahli pembaca dokumen STNK Indonesia.
-            Analisis gambar STNK ini dan ekstrak data berikut dengan sangat teliti:
+            Andalah AI ahli pembaca dokumen STNK Indonesia (Surat Tanda Nomor Kendaraan).
+            Analisis gambar STNK ini dan ekstrak data berikut dengan sangat teliti.
 
-            1. **Nomor Polisi (Plate Number)**: Cari format B 1234 ABC.
-            2. **Masa Berlaku Pajak (Tax Due Date)**: Cari tanggal "Berlaku s/d" atau tanggal validitas pajak. Format YYYY-MM-DD. (Contoh: 2025-12-05)
-            3. **Nomor Mesin (Engine Number)**: Label "No. Mesin" atau sejenisnya.
+            **Konteks Validasi:**
+            - **Jenis Kendaraan**: "Mobil" atau "Motor". (Mobil biasanya > 1000cc, Motor < 1000cc, atau lihat bentuk fisik jika ada foto kendaraan).
+            - **Merek Populer**: Toyota, Honda, Yamaha, Suzuki, Mitsubishi, Daihatsu, Kawasaki, Vespa, dll.
+            - **Warna Populer**: Hitam, Putih, Silver, Abu-abu, Merah, Biru, Cokelat, Hijau, Kuning, Oranye, Ungu.
+
+            **Tugas Ekstraksi:**
+            1. **Nomor Polisi (Plate Number)**: Cari format B 1234 ABC. Hapus spasi berlebih.
+            2. **Masa Berlaku Pajak (Tax Due Date)**: Cari tanggal "Berlaku s/d" atau tanggal validitas pajak. Format YYYY-MM-DD.
+            3. **Nomor Mesin (Engine Number)**: Label "No. Mesin".
             4. **Nomor Rangka (Chassis Number)**: Label "No. Rangka" atau "NIK".
-            5. **Warna Kendaraan (Color)**: Label "Warna".
+            5. **Warna Kendaraan (Color)**: Cari label "Warna". Coba cocokkan dengan daftar warna populer di atas.
+            6. **Jenis Kendaraan (Vehicle Type)**: Tentukan apakah "Mobil" atau "Motor" berdasarkan Merek, Model, atau Isi Silinder.
+            7. **Merek (Brand)**: Contoh: Toyota, Honda, Yamaha.
+            8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
+            9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
 
-            Kembalikan JSON murni:
+            **Format Output JSON Murni:**
             {
                 "plateNumber": "string/null",
                 "taxDueDate": "YYYY-MM-DD/null",
                 "engineNumber": "string/null",
                 "chassisNumber": "string/null",
-                "color": "string/null"
+                "color": "string/null",
+                "vehicleType": "Mobil/Motor/null",
+                "brand": "string/null",
+                "model": "string/null",
+                "year": "string/null"
             }
         `;
 
@@ -154,7 +172,11 @@ export async function parseStnk(
             taxDueDate: data.taxDueDate || null,
             engineNumber: data.engineNumber || null,
             chassisNumber: data.chassisNumber || null,
-            color: data.color || null
+            color: data.color || null,
+            vehicleType: data.vehicleType || null,
+            brand: data.brand || null,
+            model: data.model || null,
+            year: data.year || null
         };
     } catch (error: any) {
         console.error("Error parsing STNK:", error);
