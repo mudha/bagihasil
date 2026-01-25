@@ -370,10 +370,10 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* Monthly Profit Breakdown Chart */}
-                <Card className="lg:col-span-2">
+                <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle>
-                            Pembagian Profit Bulanan {selectedInvestorId !== "all" ? `(${stats.investorStats.find(i => i.id === selectedInvestorId)?.name})` : "(Semua)"}
+                            Pembagian Profit
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
@@ -384,24 +384,21 @@ export default function DashboardPage() {
                                     <XAxis
                                         dataKey="month"
                                         stroke="#888888"
-                                        fontSize={12}
+                                        fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
+                                        tickFormatter={(val) => val.split(' ')[0]}
                                     />
                                     <YAxis
-                                        stroke="#888888"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={(value) => `Rp${(value / 1000000).toFixed(0)}jt`}
+                                        hide
                                     />
                                     <Tooltip
                                         formatter={(value: number) => formatCurrency(value)}
                                         labelStyle={{ color: 'black' }}
                                     />
-                                    <Legend />
-                                    <Bar dataKey="investorShare" name="Bagian Pemodal" stackId="a" fill="#adfa1d" radius={[0, 0, 4, 4]} />
-                                    <Bar dataKey="managerShare" name="Bagian Pengelola" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                    <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                    <Bar dataKey="investorShare" name="Pemodal" stackId="a" fill="#adfa1d" radius={[0, 0, 4, 4]} />
+                                    <Bar dataKey="managerShare" name="Pengelola" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -409,34 +406,31 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* Monthly Units Sold Chart */}
-                <Card className="lg:col-span-3">
+                <Card className="lg:col-span-1">
                     <CardHeader>
-                        <CardTitle>Tren Penjualan Unit Bulanan</CardTitle>
+                        <CardTitle>Unit Terjual</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[300px]">
+                        <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.monthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis
                                         dataKey="month"
                                         stroke="#888888"
-                                        fontSize={12}
+                                        fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
+                                        tickFormatter={(val) => val.split(' ')[0]}
                                     />
                                     <YAxis
-                                        stroke="#888888"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={(value) => `${value}`}
+                                        hide
                                     />
                                     <Tooltip
                                         formatter={(value: number) => [`${value} Unit`, "Terjual"]}
                                         labelStyle={{ color: 'black' }}
                                     />
-                                    <Bar dataKey="unitsSold" name="Unit Terjual" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={50} />
+                                    <Bar dataKey="unitsSold" name="Unit" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
