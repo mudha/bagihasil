@@ -657,535 +657,575 @@ export default function TransactionsPage() {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
-                    <Input
-                        placeholder="Cari transaksi..."
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
-                        className="w-full md:max-w-sm"
-                    />
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full md:w-[150px]">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="ALL">Semua Status</SelectItem>
-                                <SelectItem value="PENDING">Pending</SelectItem>
-                                <SelectItem value="PAID">Paid</SelectItem>
-                                <SelectItem value="COMPLETED">Completed</SelectItem>
-                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                            </SelectContent>
-                        </Select>
 
-                        {/* Mobile Sort Dropdown */}
-                        <div className="md:hidden w-full">
-                            <Select value={sortBy} onValueChange={setSortBy}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Urutkan" />
+    // Custom Logic for Mobile Sort that mimics Investor Portal (Combination of Field + Order)
+    const handleMobileSort = (value: string) => {
+        switch (value) {
+            case "NEWEST":
+            setSortBy("buyDate")
+            setSortOrder("desc")
+            break
+            case "PRICE_HIGH":
+            setSortBy("buyPrice")
+            setSortOrder("desc")
+            break
+            case "PRICE_LOW":
+            setSortBy("buyPrice")
+            setSortOrder("asc")
+            break
+            case "NAME_ASC":
+            setSortBy("transactionCode") // Using Code as proxy for primary identifier or Unit Name
+            setSortOrder("asc")
+            break
+            default:
+            break
+        }
+    }
+
+    // Helper to get current composite value
+    const getMobileSortValue = () => {
+        if (sortBy === "buyDate" && sortOrder === "desc") return "NEWEST"
+            if (sortBy === "buyPrice" && sortOrder === "desc") return "PRICE_HIGH"
+            if (sortBy === "buyPrice" && sortOrder === "asc") return "PRICE_LOW"
+            if (sortBy === "transactionCode" && sortOrder === "asc") return "NAME_ASC"
+            return "NEWEST"
+    }
+
+            return (
+            <div className="space-y-8">
+                {/* Headers and Dialogs... */}
+
+                {/* ... */}
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+                        <Input
+                            placeholder="Cari transaksi..."
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            className="w-full md:max-w-sm"
+                        />
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-full md:w-[150px]">
+                                    <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="transactionCode">Kode</SelectItem>
-                                    <SelectItem value="buyDate">Tanggal Beli</SelectItem>
-                                    <SelectItem value="buyPrice">Harga Beli</SelectItem>
-                                    <SelectItem value="status">Status</SelectItem>
+                                    <SelectItem value="ALL">Semua Status</SelectItem>
+                                    <SelectItem value="PENDING">Pending</SelectItem>
+                                    <SelectItem value="PAID">Paid</SelectItem>
+                                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
                                 </SelectContent>
                             </Select>
+
+                            {/* Mobile Sort Dropdown */}
+                            <div className="md:hidden w-full">
+                                <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Urutkan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="NEWEST">Terbaru</SelectItem>
+                                        <SelectItem value="PRICE_HIGH">Harga Tertinggi</SelectItem>
+                                        <SelectItem value="PRICE_LOW">Harga Terendah</SelectItem>
+                                        <SelectItem value="NAME_ASC">Kode (A-Z)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex gap-2 w-full md:w-auto">
-                    <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="w-full md:w-[200px]">
-                            <SelectValue placeholder="Pilih Investor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua Investor</SelectItem>
-                            {investors.map((investor) => (
-                                <SelectItem key={investor.id} value={investor.id}>
-                                    {investor.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
-                {paginatedTransactions.length === 0 ? (
-                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
-                        {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                            <SelectTrigger className="w-full md:w-[200px]">
+                                <SelectValue placeholder="Pilih Investor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Investor</SelectItem>
+                                {investors.map((investor) => (
+                                    <SelectItem key={investor.id} value={investor.id}>
+                                        {investor.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
-                ) : (
-                    paginatedTransactions.map((trx) => (
-                        <div key={trx.id} className="border rounded-lg p-4 space-y-4 bg-white dark:bg-slate-950 shadow-sm">
-                            <div className="flex justify-between items-start">
-                                <div className="flex gap-3">
-                                    {trx.unit.imageUrl ? (
-                                        <ImageHoverPreview
-                                            src={trx.unit.imageUrl}
-                                            alt={trx.unit.name}
-                                            previewSize="lg"
-                                            className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
-                                        >
-                                            <img
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                    {paginatedTransactions.length === 0 ? (
+                        <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                            {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
+                        </div>
+                    ) : (
+                        paginatedTransactions.map((trx) => (
+                            <div key={trx.id} className="border rounded-lg p-4 space-y-4 bg-white dark:bg-slate-950 shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex gap-3">
+                                        {trx.unit.imageUrl ? (
+                                            <ImageHoverPreview
                                                 src={trx.unit.imageUrl}
                                                 alt={trx.unit.name}
-                                                className="h-full w-full object-cover cursor-pointer"
-                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
-                                            />
-                                        </ImageHoverPreview>
-                                    ) : (
-                                        <div className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group">
-                                            <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                                <span className="text-[10px]">No Img</span>
+                                                previewSize="lg"
+                                                className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
+                                            >
+                                                <img
+                                                    src={trx.unit.imageUrl}
+                                                    alt={trx.unit.name}
+                                                    className="h-full w-full object-cover cursor-pointer"
+                                                    onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
+                                                />
+                                            </ImageHoverPreview>
+                                        ) : (
+                                            <div className="h-14 w-14 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group">
+                                                <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                                    <span className="text-[10px]">No Img</span>
+                                                </div>
                                             </div>
+                                        )}
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{trx.transactionCode}</span>
+                                                <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
+                                                    {trx.status}
+                                                </Badge>
+                                            </div>
+                                            <div className="font-semibold text-sm line-clamp-1">{trx.unit.name}</div>
+                                            <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
                                         </div>
-                                    )}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{trx.transactionCode}</span>
-                                            <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
-                                                {trx.status}
-                                            </Badge>
-                                        </div>
-                                        <div className="font-semibold text-sm line-clamp-1">{trx.unit.name}</div>
-                                        <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-3 pt-3 border-t text-sm">
-                                <div>
-                                    <span className="block text-xs text-muted-foreground mb-1">Investor</span>
-                                    <span className="font-medium text-xs">{trx.unit.investor.name}</span>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t text-sm">
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-1">Investor</span>
+                                        <span className="font-medium text-xs">{trx.unit.investor.name}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-1">Durasi</span>
+                                        <span className="font-medium text-xs">{calculateDuration(trx.buyDate, trx.sellDate)}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-1">Tanggal Beli</span>
+                                        <span className="font-medium text-xs">{format(new Date(trx.buyDate), 'dd MMM yy')}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs text-muted-foreground mb-1">Harga Beli</span>
+                                        <span className="font-medium text-xs text-emerald-600">
+                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.buyPrice)}
+                                        </span>
+                                    </div>
+                                    {trx.sellDate && (
+                                        <>
+                                            <div>
+                                                <span className="block text-xs text-muted-foreground mb-1">Tanggal Jual</span>
+                                                <span className="font-medium text-xs">{format(new Date(trx.sellDate), 'dd MMM yy')}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-xs text-muted-foreground mb-1">Harga Jual</span>
+                                                <span className="font-medium text-xs text-blue-600">
+                                                    {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.sellPrice) : "-"}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                <div>
-                                    <span className="block text-xs text-muted-foreground mb-1">Durasi</span>
-                                    <span className="font-medium text-xs">{calculateDuration(trx.buyDate, trx.sellDate)}</span>
-                                </div>
-                                <div>
-                                    <span className="block text-xs text-muted-foreground mb-1">Tanggal Beli</span>
-                                    <span className="font-medium text-xs">{format(new Date(trx.buyDate), 'dd MMM yy')}</span>
-                                </div>
-                                <div>
-                                    <span className="block text-xs text-muted-foreground mb-1">Harga Beli</span>
-                                    <span className="font-medium text-xs text-emerald-600">
-                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.buyPrice)}
-                                    </span>
-                                </div>
-                                {trx.sellDate && (
-                                    <>
-                                        <div>
-                                            <span className="block text-xs text-muted-foreground mb-1">Tanggal Jual</span>
-                                            <span className="font-medium text-xs">{format(new Date(trx.sellDate), 'dd MMM yy')}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs text-muted-foreground mb-1">Harga Jual</span>
-                                            <span className="font-medium text-xs text-blue-600">
-                                                {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.sellPrice) : "-"}
-                                            </span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
 
-                            <div className="flex flex-wrap gap-2 pt-2 items-center justify-between border-t">
-                                <Link href={`/dashboard/transactions/${trx.id}`} className="flex-1">
-                                    <Button variant="outline" size="sm" className="w-full h-8 text-xs">
-                                        <Eye className="h-3 w-3 mr-2" /> Detail
-                                    </Button>
-                                </Link>
-                                {!isViewer && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
-                                                <MoreHorizontal className="h-3 w-3 mr-1.5" />
-                                                Aksi
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Data
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setEditingStatusTransaction({
-                                                id: trx.id,
-                                                transactionCode: trx.transactionCode,
-                                                status: trx.status
-                                            })}>
-                                                <CheckCircle className="mr-2 h-4 w-4" /> Update Status
-                                            </DropdownMenuItem>
-                                            {trx.status === 'COMPLETED' && (
-                                                <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
-                                                    <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                <div className="flex flex-wrap gap-2 pt-2 items-center justify-between border-t">
+                                    <Link href={`/dashboard/transactions/${trx.id}`} className="flex-1">
+                                        <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                                            <Eye className="h-3 w-3 mr-2" /> Detail
+                                        </Button>
+                                    </Link>
+                                    {!isViewer && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+                                                    <MoreHorizontal className="h-3 w-3 mr-1.5" />
+                                                    Aksi
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => handleEdit(trx)}>
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Data
                                                 </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                onClick={() => setDeleteTransactionId(trx.id)}
-                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                            >
-                                                <Trash className="mr-2 h-4 w-4" /> Hapus
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
-                                {trx.status === 'COMPLETED' && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0 text-blue-600"
-                                        onClick={() => handleExportPDF(trx.id, trx.transactionCode)}
-                                        disabled={exportingTransactionId === trx.id}
-                                        title="Download Laporan PDF"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                    </Button>
-                                )}
+                                                <DropdownMenuItem onClick={() => setEditingStatusTransaction({
+                                                    id: trx.id,
+                                                    transactionCode: trx.transactionCode,
+                                                    status: trx.status
+                                                })}>
+                                                    <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                                </DropdownMenuItem>
+                                                {trx.status === 'COMPLETED' && (
+                                                    <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
+                                                        <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => setDeleteTransactionId(trx.id)}
+                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                >
+                                                    <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
+                                    {trx.status === 'COMPLETED' && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0 text-blue-600"
+                                            onClick={() => handleExportPDF(trx.id, trx.transactionCode)}
+                                            disabled={exportingTransactionId === trx.id}
+                                            title="Download Laporan PDF"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        ))
+                    )}
+                </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]">
-                                <input
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                    checked={paginatedTransactions.length > 0 && selectedIds.length === paginatedTransactions.length}
-                                    onChange={(e) => handleSelectAll(e.target.checked)}
-                                />
-                            </TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "transactionCode") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("transactionCode")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Kode TRX
-                                    {sortBy === "transactionCode" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "investor") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("investor")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Investor
-                                    {sortBy === "investor" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-
-                            </TableHead>
-                            <TableHead className="w-[80px]">Foto</TableHead>
-                            <TableHead>Unit</TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "buyDate") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("buyDate")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Tanggal Beli
-                                    {sortBy === "buyDate" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "buyPrice") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("buyPrice")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Harga Beli
-                                    {sortBy === "buyPrice" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "sellDate") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("sellDate")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Tanggal Laku
-                                    {sortBy === "sellDate" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "sellPrice") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("sellPrice")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Harga Laku
-                                    {sortBy === "sellPrice" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead>Durasi</TableHead>
-                            <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
-                                    onClick={() => {
-                                        if (sortBy === "status") {
-                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                        } else {
-                                            setSortBy("status")
-                                            setSortOrder("asc")
-                                        }
-                                    }}
-                                >
-                                    Status
-                                    {sortBy === "status" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                    )}
-                                </Button>
-                            </TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedTransactions.map((trx) => (
-                            <TableRow key={trx.id}>
-                                <TableCell>
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]">
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                                        checked={selectedIds.includes(trx.id)}
-                                        onChange={(e) => handleSelectOne(trx.id, e.target.checked)}
-                                        disabled={isViewer}
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={paginatedTransactions.length > 0 && selectedIds.length === paginatedTransactions.length}
+                                        onChange={(e) => handleSelectAll(e.target.checked)}
                                     />
-                                </TableCell>
-                                <TableCell className="font-medium">{trx.transactionCode}</TableCell>
-                                <TableCell>{trx.unit.investor.name}</TableCell>
-                                <TableCell>
-                                    {trx.unit.imageUrl ? (
-                                        <ImageHoverPreview
-                                            src={trx.unit.imageUrl}
-                                            alt={trx.unit.name}
-                                            previewSize="lg"
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
-                                        >
-                                            <img
+                                </TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "transactionCode") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("transactionCode")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Kode TRX
+                                        {sortBy === "transactionCode" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "investor") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("investor")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Investor
+                                        {sortBy === "investor" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+
+                                </TableHead>
+                                <TableHead className="w-[80px]">Foto</TableHead>
+                                <TableHead>Unit</TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "buyDate") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("buyDate")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Tanggal Beli
+                                        {sortBy === "buyDate" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "buyPrice") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("buyPrice")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Harga Beli
+                                        {sortBy === "buyPrice" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "sellDate") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("sellDate")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Tanggal Laku
+                                        {sortBy === "sellDate" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "sellPrice") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("sellPrice")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Harga Laku
+                                        {sortBy === "sellPrice" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead>Durasi</TableHead>
+                                <TableHead>
+                                    <Button
+                                        variant="ghost"
+                                        className="p-0 hover:bg-transparent font-semibold"
+                                        onClick={() => {
+                                            if (sortBy === "status") {
+                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                            } else {
+                                                setSortBy("status")
+                                                setSortOrder("asc")
+                                            }
+                                        }}
+                                    >
+                                        Status
+                                        {sortBy === "status" ? (
+                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                        ) : (
+                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                        )}
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedTransactions.map((trx) => (
+                                <TableRow key={trx.id}>
+                                    <TableCell>
+                                        <input
+                                            type="checkbox"
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                                            checked={selectedIds.includes(trx.id)}
+                                            onChange={(e) => handleSelectOne(trx.id, e.target.checked)}
+                                            disabled={isViewer}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{trx.transactionCode}</TableCell>
+                                    <TableCell>{trx.unit.investor.name}</TableCell>
+                                    <TableCell>
+                                        {trx.unit.imageUrl ? (
+                                            <ImageHoverPreview
                                                 src={trx.unit.imageUrl}
                                                 alt={trx.unit.name}
-                                                className="h-full w-full object-cover cursor-pointer"
-                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
-                                            />
-                                        </ImageHoverPreview>
-                                    ) : (
-                                        <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
-                                            <span className="text-xs">No Img</span>
-                                        </div>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="font-medium">{trx.unit.name}</div>
-                                    <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
-                                </TableCell>
-                                <TableCell>{format(new Date(trx.buyDate), 'dd MMM yyyy')}</TableCell>
-                                <TableCell>
-                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.buyPrice)}
-                                </TableCell>
-                                <TableCell>
-                                    {trx.sellDate ? format(new Date(trx.sellDate), 'dd MMM yyyy') : "-"}
-                                </TableCell>
-                                <TableCell>
-                                    {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.sellPrice) : "-"}
-                                </TableCell>
-                                <TableCell>
-                                    {calculateDuration(trx.buyDate, trx.sellDate)}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                                        {trx.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Link href={`/dashboard/transactions/${trx.id}`}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                <Eye className="h-4 w-4" />
-                                                <span className="sr-only">Detail</span>
-                                            </Button>
-                                        </Link>
-
-                                        {!isViewer && (
-                                            <>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                    onClick={() => handleEdit(trx)}
-                                                    title="Edit Data"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                    <span className="sr-only">Edit</span>
-                                                </Button>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Aksi</span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                            <Pencil className="mr-2 h-4 w-4" /> Edit Data
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => setEditingStatusTransaction({
-                                                            id: trx.id,
-                                                            transactionCode: trx.transactionCode,
-                                                            status: trx.status
-                                                        })}>
-                                                            <CheckCircle className="mr-2 h-4 w-4" /> Update Status
-                                                        </DropdownMenuItem>
-                                                        {trx.status === 'COMPLETED' && (
-                                                            <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
-                                                                <FileText className="mr-2 h-4 w-4" /> Download Laporan
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => setDeleteTransactionId(trx.id)}
-                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                        >
-                                                            <Trash className="mr-2 h-4 w-4" /> Hapus
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </>
+                                                previewSize="lg"
+                                                className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
+                                            >
+                                                <img
+                                                    src={trx.unit.imageUrl}
+                                                    alt={trx.unit.name}
+                                                    className="h-full w-full object-cover cursor-pointer"
+                                                    onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
+                                                />
+                                            </ImageHoverPreview>
+                                        ) : (
+                                            <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
+                                                <span className="text-xs">No Img</span>
+                                            </div>
                                         )}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {paginatedTransactions.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={9} className="text-center py-4">
-                                    {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">{trx.unit.name}</div>
+                                        <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
+                                    </TableCell>
+                                    <TableCell>{format(new Date(trx.buyDate), 'dd MMM yyyy')}</TableCell>
+                                    <TableCell>
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.buyPrice)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {trx.sellDate ? format(new Date(trx.sellDate), 'dd MMM yyyy') : "-"}
+                                    </TableCell>
+                                    <TableCell>
+                                        {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.sellPrice) : "-"}
+                                    </TableCell>
+                                    <TableCell>
+                                        {calculateDuration(trx.buyDate, trx.sellDate)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                                            {trx.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Link href={`/dashboard/transactions/${trx.id}`}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                    <Eye className="h-4 w-4" />
+                                                    <span className="sr-only">Detail</span>
+                                                </Button>
+                                            </Link>
 
-            <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+                                            {!isViewer && (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                        onClick={() => handleEdit(trx)}
+                                                        title="Edit Data"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                        <span className="sr-only">Edit</span>
+                                                    </Button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                <span className="sr-only">Aksi</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                            <DropdownMenuItem onClick={() => handleEdit(trx)}>
+                                                                <Pencil className="mr-2 h-4 w-4" /> Edit Data
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setEditingStatusTransaction({
+                                                                id: trx.id,
+                                                                transactionCode: trx.transactionCode,
+                                                                status: trx.status
+                                                            })}>
+                                                                <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                                            </DropdownMenuItem>
+                                                            {trx.status === 'COMPLETED' && (
+                                                                <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
+                                                                    <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={() => setDeleteTransactionId(trx.id)}
+                                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                            >
+                                                                <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {paginatedTransactions.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="text-center py-4">
+                                        {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
 
-            <AlertDialog open={deleteTransactionId !== null} onOpenChange={() => setDeleteTransactionId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Aksi ini tidak dapat dibatalkan. Transaksi dan semua biaya terkait akan dihapus permanen.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                            Hapus
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            <ImagePreviewDialog
-                src={previewUrl}
-                isOpen={!!previewUrl}
-                onOpenChange={(open) => !open && setPreviewUrl(null)}
-                title="Pratinjau Foto Unit"
-            />
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
 
-            <EditStatusDialog
-                transaction={editingStatusTransaction}
-                open={!!editingStatusTransaction}
-                onOpenChange={(open) => !open && setEditingStatusTransaction(null)}
-                onSuccess={() => {
-                    fetchTransactions()
-                    fetchAvailableUnits()
-                    setEditingStatusTransaction(null)
-                }}
-            />
-        </div >
-    )
+                <AlertDialog open={deleteTransactionId !== null} onOpenChange={() => setDeleteTransactionId(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Aksi ini tidak dapat dibatalkan. Transaksi dan semua biaya terkait akan dihapus permanen.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                Hapus
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <ImagePreviewDialog
+                    src={previewUrl}
+                    isOpen={!!previewUrl}
+                    onOpenChange={(open) => !open && setPreviewUrl(null)}
+                    title="Pratinjau Foto Unit"
+                />
+
+                <EditStatusDialog
+                    transaction={editingStatusTransaction}
+                    open={!!editingStatusTransaction}
+                    onOpenChange={(open) => !open && setEditingStatusTransaction(null)}
+                    onSuccess={() => {
+                        fetchTransactions()
+                        fetchAvailableUnits()
+                        setEditingStatusTransaction(null)
+                    }}
+                />
+            </div >
+            )
 }
