@@ -175,6 +175,7 @@ export default function UnitsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
+    const [statusFilter, setStatusFilter] = useState("ALL")
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort", "code", "asc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -456,8 +457,9 @@ export default function UnitsPage() {
             (unit.investor?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
 
         const matchesInvestor = selectedInvestorId === "all" || unit.investorId === selectedInvestorId
+        const matchesStatus = statusFilter === "ALL" || unit.status === statusFilter
 
-        return matchesSearch && matchesInvestor
+        return matchesSearch && matchesInvestor && matchesStatus
     }).sort((a, b) => {
         let compareValue = 0
 
@@ -837,15 +839,46 @@ export default function UnitsPage() {
                 </div>
             </div>
 
-            <div className="flex items-center justify-between py-4">
-                <Input
-                    placeholder="Cari unit..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    className="max-w-sm"
-                />
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+                    <Input
+                        placeholder="Cari unit..."
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        className="w-full md:max-w-sm"
+                    />
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full md:w-[150px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Semua Status</SelectItem>
+                                <SelectItem value="AVAILABLE">Available</SelectItem>
+                                <SelectItem value="SOLD">Sold</SelectItem>
+                                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Mobile Sort Dropdown */}
+                        <div className="md:hidden w-full">
+                            <Select value={sortBy} onValueChange={setSortBy}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Urutkan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="code">Kode Unit</SelectItem>
+                                    <SelectItem value="name">Nama Unit</SelectItem>
+                                    <SelectItem value="plateNumber">No. Polisi</SelectItem>
+                                    <SelectItem value="status">Status</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-full md:w-[200px]">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>

@@ -164,6 +164,7 @@ export default function TransactionsPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [exportingTransactionId, setExportingTransactionId] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
+    const [statusFilter, setStatusFilter] = useState("ALL")
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("transactions-sort", "buyDate", "desc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -177,8 +178,9 @@ export default function TransactionsPage() {
             (trx.unit?.plateNumber || "").toLowerCase().includes(searchQuery.toLowerCase())
 
         const matchesInvestor = selectedInvestorId === "all" || trx.unit.investorId === selectedInvestorId
+        const matchesStatus = statusFilter === "ALL" || trx.status === statusFilter
 
-        return matchesSearch && matchesInvestor
+        return matchesSearch && matchesInvestor && matchesStatus
     }).sort((a, b) => {
         let compareValue = 0
 
@@ -655,16 +657,48 @@ export default function TransactionsPage() {
                 </div>
             </div>
 
-            <div className="flex items-center justify-between py-4 gap-4">
-                <Input
-                    placeholder="Cari transaksi..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    className="max-w-sm"
-                />
-                <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+                    <Input
+                        placeholder="Cari transaksi..."
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        className="w-full md:max-w-sm"
+                    />
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full md:w-[150px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Semua Status</SelectItem>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="PAID">Paid</SelectItem>
+                                <SelectItem value="COMPLETED">Completed</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Mobile Sort Dropdown */}
+                        <div className="md:hidden w-full">
+                            <Select value={sortBy} onValueChange={setSortBy}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Urutkan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="transactionCode">Kode</SelectItem>
+                                    <SelectItem value="buyDate">Tanggal Beli</SelectItem>
+                                    <SelectItem value="buyPrice">Harga Beli</SelectItem>
+                                    <SelectItem value="status">Status</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-2 w-full md:w-auto">
                     <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-full md:w-[200px]">
                             <SelectValue placeholder="Pilih Investor" />
                         </SelectTrigger>
                         <SelectContent>
