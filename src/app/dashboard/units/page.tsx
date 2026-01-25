@@ -542,785 +542,782 @@ export default function UnitsPage() {
         }
     }
 
-    return (
-        <div className="space-y-8">
-
     // Custom Logic for Mobile Sort that mimics Investor Portal
     const handleMobileSort = (value: string) => {
         switch (value) {
             case "NEWEST":
-            setSortBy("createdAt") // Ensure createdAt is handled in sort logic
-            setSortOrder("desc")
-            break
+                setSortBy("createdAt") // Ensure createdAt is handled in sort logic
+                setSortOrder("desc")
+                break
             case "NAME_ASC":
-            setSortBy("name")
-            setSortOrder("asc")
-            break
+                setSortBy("name")
+                setSortOrder("asc")
+                break
             case "PLATE_ASC":
-            setSortBy("plateNumber")
-            setSortOrder("asc")
-            break
+                setSortBy("plateNumber")
+                setSortOrder("asc")
+                break
             case "STATUS":
-            setSortBy("status")
-            setSortOrder("asc")
-            break
+                setSortBy("status")
+                setSortOrder("asc")
+                break
             default:
-            break
+                break
         }
     }
 
     // Helper to get current composite value
     const getMobileSortValue = () => {
         if (sortBy === "createdAt" && sortOrder === "desc") return "NEWEST"
-            if (sortBy === "name" && sortOrder === "asc") return "NAME_ASC"
-            if (sortBy === "plateNumber" && sortOrder === "asc") return "PLATE_ASC"
-            if (sortBy === "status" && sortOrder === "asc") return "STATUS"
-            return "NEWEST"
+        if (sortBy === "name" && sortOrder === "asc") return "NAME_ASC"
+        if (sortBy === "plateNumber" && sortOrder === "asc") return "PLATE_ASC"
+        if (sortBy === "status" && sortOrder === "asc") return "STATUS"
+        return "NEWEST"
     }
 
-            return (
-            <div className="space-y-8">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <h2 className="text-3xl font-bold tracking-tight">Manajemen Unit</h2>
-                    <div className="flex items-center gap-2 w-full md:w-auto">
-                        {/* ... (Alert Dialogs & Import Buttons) ... */}
-                        {selectedIds.length > 0 && !isViewer && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
-                                        <Trash className="mr-2 h-4 w-4" /> Hapus ({selectedIds.length})
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <h2 className="text-3xl font-bold tracking-tight">Manajemen Unit</h2>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    {/* ... (Alert Dialogs & Import Buttons) ... */}
+                    {selectedIds.length > 0 && !isViewer && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash className="mr-2 h-4 w-4" /> Hapus ({selectedIds.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus {selectedIds.length} Unit?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tindakan ini tidak dapat dibatalkan. Data unit yang dipilih akan dihapus permanen.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                                        Hapus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    {!isViewer && (
+                        <>
+                            <ImportUnitsDialog onImportSuccess={fetchUnits} />
+                            <Dialog open={isOpen} onOpenChange={(open) => {
+                                setIsOpen(open)
+                                if (!open) setEditingUnit(null)
+                            }}>
+                                <DialogTrigger asChild>
+                                    <Button>
+                                        <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Hapus {selectedIds.length} Unit?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Tindakan ini tidak dapat dibatalkan. Data unit yang dipilih akan dihapus permanen.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
-                                            Hapus
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                        {!isViewer && (
-                            <>
-                                <ImportUnitsDialog onImportSuccess={fetchUnits} />
-                                <Dialog open={isOpen} onOpenChange={(open) => {
-                                    setIsOpen(open)
-                                    if (!open) setEditingUnit(null)
-                                }}>
-                                    <DialogTrigger asChild>
-                                        <Button>
-                                            <Plus className="mr-2 h-4 w-4" /> Tambah Unit
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                                        <DialogHeader>
-                                            <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
-                                        </DialogHeader>
-                                        <Form {...form}>
-                                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                </DialogTrigger>
+                                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                                    <DialogHeader>
+                                        <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                    </DialogHeader>
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                                                <div className="mb-4">
-                                                    <Label>Foto Unit (Opsional)</Label>
-                                                    <div className="mt-2">
-                                                        <MultipleImageUpload
-                                                            initialImages={unitImages}
-                                                            onImagesChange={setUnitImages}
-                                                            maxImages={1}
-                                                            uploadLabel="Upload Foto Unit"
-                                                        />
+                                            <div className="mb-4">
+                                                <Label>Foto Unit (Opsional)</Label>
+                                                <div className="mt-2">
+                                                    <MultipleImageUpload
+                                                        initialImages={unitImages}
+                                                        onImagesChange={setUnitImages}
+                                                        maxImages={1}
+                                                        uploadLabel="Upload Foto Unit"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Jenis Kendaraan</Label>
+                                                        <Select value={vehicleType} onValueChange={(v) => {
+                                                            setVehicleType(v);
+                                                            if (v !== vehicleType) { // Only reset if changed
+                                                                setBrand("");
+                                                                setModel("");
+                                                            }
+                                                        }}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Jenis" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Tahun</Label>
+                                                        <Select value={year} onValueChange={setYear}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Tahun" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label>Jenis Kendaraan</Label>
-                                                            <Select value={vehicleType} onValueChange={(v) => {
-                                                                setVehicleType(v);
-                                                                if (v !== vehicleType) { // Only reset if changed
-                                                                    setBrand("");
-                                                                    setModel("");
-                                                                }
-                                                            }}>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Pilih Jenis" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Tahun</Label>
-                                                            <Select value={year} onValueChange={setYear}>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Pilih Tahun" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                    </div>
+                                                <div className="space-y-2">
+                                                    <Label>Merek</Label>
+                                                    <Select value={brand} onValueChange={(v) => {
+                                                        setBrand(v);
+                                                        if (v !== brand) setModel("");
+                                                    }} disabled={!vehicleType}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={vehicleType ? "Pilih Merek" : "Pilih Jenis dulu"} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {vehicleType && BRANDS[vehicleType as keyof typeof BRANDS]?.map(b => (
+                                                                <SelectItem key={b} value={b}>{b}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
 
+                                                {brand && (
                                                     <div className="space-y-2">
-                                                        <Label>Merek</Label>
-                                                        <Select value={brand} onValueChange={(v) => {
-                                                            setBrand(v);
-                                                            if (v !== brand) setModel("");
-                                                        }} disabled={!vehicleType}>
+                                                        <Label>Model</Label>
+                                                        <Select value={model} onValueChange={setModel}>
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder={vehicleType ? "Pilih Merek" : "Pilih Jenis dulu"} />
+                                                                <SelectValue placeholder="Pilih Model" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {vehicleType && BRANDS[vehicleType as keyof typeof BRANDS]?.map(b => (
-                                                                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                                                                {/* @ts-ignore */}
+                                                                {MODELS[vehicleType]?.[brand]?.map(m => (
+                                                                    <SelectItem key={m} value={m}>{m}</SelectItem>
                                                                 ))}
+                                                                <SelectItem value="Lainnya">Lainnya / Manual input</SelectItem>
                                                             </SelectContent>
                                                         </Select>
-                                                    </div>
-
-                                                    {brand && (
-                                                        <div className="space-y-2">
-                                                            <Label>Model</Label>
-                                                            <Select value={model} onValueChange={setModel}>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Pilih Model" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {/* @ts-ignore */}
-                                                                    {MODELS[vehicleType]?.[brand]?.map(m => (
-                                                                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                                                                    ))}
-                                                                    <SelectItem value="Lainnya">Lainnya / Manual input</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            {model === "Lainnya" && (
-                                                                <Input
-                                                                    placeholder="Ketik nama model..."
-                                                                    value={customModel}
-                                                                    onChange={e => setCustomModel(e.target.value)}
-                                                                    className="mt-2"
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    )}
-
-                                                    <div className="space-y-2">
-                                                        <Label>Warna</Label>
-                                                        <Select value={color} onValueChange={setColor}>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Pilih Warna" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        {color === "Lainnya" && (
+                                                        {model === "Lainnya" && (
                                                             <Input
-                                                                placeholder="Ketik warna..."
-                                                                value={customColor}
-                                                                onChange={e => setCustomColor(e.target.value)}
+                                                                placeholder="Ketik nama model..."
+                                                                value={customModel}
+                                                                onChange={e => setCustomModel(e.target.value)}
                                                                 className="mt-2"
                                                             />
                                                         )}
                                                     </div>
+                                                )}
 
-                                                    <div className="mt-4 pt-4 border-t">
-                                                        <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>
-                                                        <div className="text-sm font-medium mt-1">
-                                                            {form.watch("name") || "(Lengkapi form di atas)"}
-                                                        </div>
-                                                        {/* Hidden Input to ensure form validation works */}
-                                                        <input type="hidden" {...form.register("name")} />
-                                                        <input type="hidden" {...form.register("vehicleType")} />
-                                                        <input type="hidden" {...form.register("brand")} />
-                                                        <input type="hidden" {...form.register("model")} />
-                                                        <input type="hidden" {...form.register("year")} />
-                                                        <input type="hidden" {...form.register("color")} />
+                                                <div className="space-y-2">
+                                                    <Label>Warna</Label>
+                                                    <Select value={color} onValueChange={setColor}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Pilih Warna" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {color === "Lainnya" && (
+                                                        <Input
+                                                            placeholder="Ketik warna..."
+                                                            value={customColor}
+                                                            onChange={e => setCustomColor(e.target.value)}
+                                                            className="mt-2"
+                                                        />
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-4 pt-4 border-t">
+                                                    <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>
+                                                    <div className="text-sm font-medium mt-1">
+                                                        {form.watch("name") || "(Lengkapi form di atas)"}
                                                     </div>
+                                                    {/* Hidden Input to ensure form validation works */}
+                                                    <input type="hidden" {...form.register("name")} />
+                                                    <input type="hidden" {...form.register("vehicleType")} />
+                                                    <input type="hidden" {...form.register("brand")} />
+                                                    <input type="hidden" {...form.register("model")} />
+                                                    <input type="hidden" {...form.register("year")} />
+                                                    <input type="hidden" {...form.register("color")} />
                                                 </div>
+                                            </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="plateNumber"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>No. Polisi</FormLabel>
-                                                                <FormControl>
-                                                                    <Input placeholder="B 1234 ABC" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="code"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Kode Unit</FormLabel>
-                                                                <FormControl>
-                                                                    <Input placeholder="UNT-INV-001" {...field} />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                </div>
+                                            <div className="grid grid-cols-2 gap-4">
                                                 <FormField
                                                     control={form.control}
-                                                    name="investorId"
+                                                    name="plateNumber"
                                                     render={({ field }) => (
                                                         <FormItem>
-                                                            <FormLabel>Pemilik Modal</FormLabel>
+                                                            <FormLabel>No. Polisi</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="B 1234 ABC" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name="code"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Kode Unit</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="UNT-INV-001" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            <FormField
+                                                control={form.control}
+                                                name="investorId"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Pemilik Modal</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Pilih Pemodal" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {investors.map((investor) => (
+                                                                    <SelectItem key={investor.id} value={investor.id}>
+                                                                        {investor.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="taxDueDate"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-col">
+                                                        <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <FormControl>
+                                                                    <Button
+                                                                        variant={"outline"}
+                                                                        className={cn(
+                                                                            "w-full pl-3 text-left font-normal",
+                                                                            !field.value && "text-muted-foreground"
+                                                                        )}
+                                                                    >
+                                                                        {field.value ? (
+                                                                            format(field.value, "PPP")
+                                                                        ) : (
+                                                                            <span>Pilih tanggal</span>
+                                                                        )}
+                                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                    </Button>
+                                                                </FormControl>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value || undefined}
+                                                                    onSelect={field.onChange}
+                                                                    disabled={(date) =>
+                                                                        date < new Date("1900-01-01")
+                                                                    }
+                                                                    initialFocus
+                                                                    captionLayout="dropdown-buttons"
+                                                                    fromYear={2000}
+                                                                    toYear={new Date().getFullYear() + 10}
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            {editingUnit && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="status"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Status</FormLabel>
                                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                 <FormControl>
                                                                     <SelectTrigger>
-                                                                        <SelectValue placeholder="Pilih Pemodal" />
+                                                                        <SelectValue placeholder="Pilih Status" />
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    {investors.map((investor) => (
-                                                                        <SelectItem key={investor.id} value={investor.id}>
-                                                                            {investor.name}
-                                                                        </SelectItem>
-                                                                    ))}
+                                                                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                                                                    <SelectItem value="SOLD">Sold</SelectItem>
+                                                                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
                                                         </FormItem>
                                                     )}
                                                 />
-
-                                                <FormField
-                                                    control={form.control}
-                                                    name="taxDueDate"
-                                                    render={({ field }) => (
-                                                        <FormItem className="flex flex-col">
-                                                            <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
-                                                            <Popover>
-                                                                <PopoverTrigger asChild>
-                                                                    <FormControl>
-                                                                        <Button
-                                                                            variant={"outline"}
-                                                                            className={cn(
-                                                                                "w-full pl-3 text-left font-normal",
-                                                                                !field.value && "text-muted-foreground"
-                                                                            )}
-                                                                        >
-                                                                            {field.value ? (
-                                                                                format(field.value, "PPP")
-                                                                            ) : (
-                                                                                <span>Pilih tanggal</span>
-                                                                            )}
-                                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                                        </Button>
-                                                                    </FormControl>
-                                                                </PopoverTrigger>
-                                                                <PopoverContent className="w-auto p-0" align="start">
-                                                                    <Calendar
-                                                                        mode="single"
-                                                                        selected={field.value || undefined}
-                                                                        onSelect={field.onChange}
-                                                                        disabled={(date) =>
-                                                                            date < new Date("1900-01-01")
-                                                                        }
-                                                                        initialFocus
-                                                                        captionLayout="dropdown-buttons"
-                                                                        fromYear={2000}
-                                                                        toYear={new Date().getFullYear() + 10}
-                                                                    />
-                                                                </PopoverContent>
-                                                            </Popover>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                                {editingUnit && (
-                                                    <FormField
-                                                        control={form.control}
-                                                        name="status"
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Status</FormLabel>
-                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                                    <FormControl>
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Pilih Status" />
-                                                                        </SelectTrigger>
-                                                                    </FormControl>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="AVAILABLE">Available</SelectItem>
-                                                                        <SelectItem value="SOLD">Sold</SelectItem>
-                                                                        <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                )}
-                                                <Button type="submit" className="w-full">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
-                                            </form>
-                                        </Form>
-                                    </DialogContent>
-                                </Dialog>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
-                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
-                        <Input
-                            placeholder="Cari unit..."
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            className="w-full md:max-w-sm"
-                        />
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-full md:w-[150px]">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ALL">Semua Status</SelectItem>
-                                    <SelectItem value="AVAILABLE">Available</SelectItem>
-                                    <SelectItem value="SOLD">Sold</SelectItem>
-                                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {/* Mobile Sort Dropdown */}
-                            <div className="md:hidden w-full">
-                                <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Urutkan" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="NEWEST">Terbaru</SelectItem>
-                                        <SelectItem value="NAME_ASC">Nama (A-Z)</SelectItem>
-                                        <SelectItem value="PLATE_ASC">Plat Nomor</SelectItem>
-                                        <SelectItem value="STATUS">Status</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="w-full md:w-[200px]">
-                            <SelectValue placeholder="Pilih Investor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua Investor</SelectItem>
-                            {investors.map((investor) => (
-                                <SelectItem key={investor.id} value={investor.id}>
-                                    {investor.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {paginatedUnits.length === 0 ? (
-                        <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
-                            {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
-                        </div>
-                    ) : (
-                        paginatedUnits.map((unit) => (
-                            <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex gap-3">
-                                        {unit.imageUrl ? (
-                                            <ImageHoverPreview
-                                                src={unit.imageUrl}
-                                                alt={unit.name}
-                                                previewSize="lg"
-                                                className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
-                                            >
-                                                <img
-                                                    src={unit.imageUrl}
-                                                    alt={unit.name}
-                                                    className="h-full w-full object-cover transition-transform group-hover:scale-105 cursor-pointer"
-                                                    onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
-                                                />
-                                            </ImageHoverPreview>
-                                        ) : (
-                                            <div
-                                                className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group"
-                                            >
-                                                <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                                    <span className="text-[10px]">No Img</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{unit.code}</span>
-                                                <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
-                                                    {unit.status}
-                                                </Badge>
-                                            </div>
-                                            <div className="font-semibold text-base mt-1">{unit.name}</div>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <span>{unit.plateNumber}</span>
-                                                {(() => {
-                                                    const duplicateInfo = getDuplicateInfo(units, unit)
-                                                    return duplicateInfo.isDuplicate ? (
-                                                        <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-300 py-0 h-4">
-                                                            🔄 Ke-{duplicateInfo.purchaseNumber}
-                                                        </Badge>
-                                                    ) : null
-                                                })()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t text-sm">
-                                    <div>
-                                        <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
-                                        <span className="font-medium">{unit.investor.name}</span>
-                                    </div>
-                                    <div>
-                                        <span className="block text-xs text-muted-foreground mb-1">Jatuh Tempo Pajak</span>
-                                        {unit.taxDueDate ? (
-                                            <span className={cn(
-                                                "font-medium",
-                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
-                                                    isWithinInterval(new Date(unit.taxDueDate), {
-                                                        start: new Date(),
-                                                        end: addDays(new Date(), 30)
-                                                    }) ? "text-amber-600" : "text-green-600"
-                                            )}>
-                                                {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
-                                            </span>
-                                        ) : (
-                                            <span className="text-muted-foreground italic">-</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {!isViewer && (
-                                    <div className="flex justify-end pt-2 border-t mt-3">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="sm" className="h-9">
-                                                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                                                    Aksi
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setEditingUnit(unit)
-                                                        setIsOpen(true)
-                                                    }}
-                                                >
-                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Unit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    onClick={() => setDeleteId(unit.id)}
-                                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                >
-                                                    <Trash className="mr-2 h-4 w-4" /> Hapus
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                                            )}
+                                            <Button type="submit" className="w-full">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </>
                     )}
                 </div>
+            </div>
 
-                {/* Desktop Table View */}
-                <div className="hidden md:block rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]">
-                                    <input
-                                        type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                        checked={paginatedUnits.length > 0 && selectedIds.length === paginatedUnits.length}
-                                        onChange={(e) => handleSelectAll(e.target.checked)}
-                                    />
-                                </TableHead>
-                                <TableHead className="w-[80px]">Foto</TableHead>
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+                    <Input
+                        placeholder="Cari unit..."
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        className="w-full md:max-w-sm"
+                    />
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full md:w-[150px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">Semua Status</SelectItem>
+                                <SelectItem value="AVAILABLE">Available</SelectItem>
+                                <SelectItem value="SOLD">Sold</SelectItem>
+                                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                                <TableHead>
-                                    <Button
-                                        variant="ghost"
-                                        className="p-0 hover:bg-transparent font-semibold"
-                                        onClick={() => {
-                                            if (sortBy === "code") {
-                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                            } else {
-                                                setSortBy("code")
-                                                setSortOrder("asc")
-                                            }
-                                        }}
-                                    >
-                                        Kode
-                                        {sortBy === "code" ? (
-                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                        ) : (
-                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>
-                                    <Button
-                                        variant="ghost"
-                                        className="p-0 hover:bg-transparent font-semibold"
-                                        onClick={() => {
-                                            if (sortBy === "name") {
-                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                            } else {
-                                                setSortBy("name")
-                                                setSortOrder("asc")
-                                            }
-                                        }}
-                                    >
-                                        Nama Unit
-                                        {sortBy === "name" ? (
-                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                        ) : (
-                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>
-                                    <Button
-                                        variant="ghost"
-                                        className="p-0 hover:bg-transparent font-semibold"
-                                        onClick={() => {
-                                            if (sortBy === "plateNumber") {
-                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                            } else {
-                                                setSortBy("plateNumber")
-                                                setSortOrder("asc")
-                                            }
-                                        }}
-                                    >
-                                        No. Polisi
-                                        {sortBy === "plateNumber" ? (
-                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                        ) : (
-                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>
-                                    <Button
-                                        variant="ghost"
-                                        className="p-0 hover:bg-transparent font-semibold"
-                                        onClick={() => {
-                                            if (sortBy === "investor") {
-                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                            } else {
-                                                setSortBy("investor")
-                                                setSortOrder("asc")
-                                            }
-                                        }}
-                                    >
-                                        Pemilik
-                                        {sortBy === "investor" ? (
-                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                        ) : (
-                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>
-                                    <Button
-                                        variant="ghost"
-                                        className="p-0 hover:bg-transparent font-semibold"
-                                        onClick={() => {
-                                            if (sortBy === "status") {
-                                                setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                            } else {
-                                                setSortBy("status")
-                                                setSortOrder("asc")
-                                            }
-                                        }}
-                                    >
-                                        Status
-                                        {sortBy === "status" ? (
-                                            sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-                                        ) : (
-                                            <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
-                                        )}
-                                    </Button>
-                                </TableHead>
-                                <TableHead>Pajak</TableHead>
-                                <TableHead className="text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedUnits.map((unit) => (
-                                <TableRow key={unit.id}>
-                                    <TableCell>
-                                        <input
-                                            type="checkbox"
-                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
-                                            checked={selectedIds.includes(unit.id)}
-                                            onChange={(e) => handleSelectOne(unit.id, e.target.checked)}
-                                            disabled={isViewer}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        {unit.imageUrl ? (
-                                            <ImageHoverPreview
+                        {/* Mobile Sort Dropdown */}
+                        <div className="md:hidden w-full">
+                            <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Urutkan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="NEWEST">Terbaru</SelectItem>
+                                    <SelectItem value="NAME_ASC">Nama (A-Z)</SelectItem>
+                                    <SelectItem value="PLATE_ASC">Plat Nomor</SelectItem>
+                                    <SelectItem value="STATUS">Status</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectValue placeholder="Pilih Investor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Semua Investor</SelectItem>
+                        {investors.map((investor) => (
+                            <SelectItem key={investor.id} value={investor.id}>
+                                {investor.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                {paginatedUnits.length === 0 ? (
+                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                        {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
+                    </div>
+                ) : (
+                    paginatedUnits.map((unit) => (
+                        <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-3">
+                                    {unit.imageUrl ? (
+                                        <ImageHoverPreview
+                                            src={unit.imageUrl}
+                                            alt={unit.name}
+                                            previewSize="lg"
+                                            className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
+                                        >
+                                            <img
                                                 src={unit.imageUrl}
                                                 alt={unit.name}
-                                                previewSize="lg"
-                                                className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
-                                            >
-                                                <img
-                                                    src={unit.imageUrl}
-                                                    alt={unit.name}
-                                                    className="h-full w-full object-cover cursor-pointer"
-                                                    onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
-                                                />
-                                            </ImageHoverPreview>
-                                        ) : (
-                                            <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
-                                                <span className="text-xs">No Img</span>
+                                                className="h-full w-full object-cover transition-transform group-hover:scale-105 cursor-pointer"
+                                                onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
+                                            />
+                                        </ImageHoverPreview>
+                                    ) : (
+                                        <div
+                                            className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group"
+                                        >
+                                            <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                                <span className="text-[10px]">No Img</span>
                                             </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="font-medium">{unit.code}</TableCell>
-                                    <TableCell>{unit.name}</TableCell>
-                                    <TableCell>
+                                        </div>
+                                    )}
+                                    <div>
                                         <div className="flex items-center gap-2">
+                                            <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{unit.code}</span>
+                                            <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
+                                                {unit.status}
+                                            </Badge>
+                                        </div>
+                                        <div className="font-semibold text-base mt-1">{unit.name}</div>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <span>{unit.plateNumber}</span>
                                             {(() => {
                                                 const duplicateInfo = getDuplicateInfo(units, unit)
                                                 return duplicateInfo.isDuplicate ? (
-                                                    <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300">
+                                                    <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-300 py-0 h-4">
                                                         🔄 Ke-{duplicateInfo.purchaseNumber}
                                                     </Badge>
                                                 ) : null
                                             })()}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>{unit.investor.name}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-sm">
-                                            {unit.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {unit.taxDueDate ? (
-                                            <span className={cn(
-                                                "font-medium",
-                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
-                                                    isWithinInterval(new Date(unit.taxDueDate), {
-                                                        start: new Date(),
-                                                        end: addDays(new Date(), 30)
-                                                    }) ? "text-amber-600" : "text-green-600"
-                                            )}>
-                                                {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
-                                            </span>
-                                        ) : (
-                                            <span className="text-muted-foreground italic">-</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {!isViewer && (
-                                            <div className="flex justify-end items-center gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                                                    onClick={() => {
-                                                        setEditingUnit(unit)
-                                                        setIsOpen(true)
-                                                    }}
-                                                    title="Edit Unit"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
+                                    </div>
+                                </div>
+                            </div>
 
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Open menu</span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                setEditingUnit(unit)
-                                                                setIsOpen(true)
-                                                            }}
-                                                        >
-                                                            <Pencil className="mr-2 h-4 w-4" /> Edit Unit
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={() => setDeleteId(unit.id)}
-                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                                        >
-                                                            <Trash className="mr-2 h-4 w-4" /> Hapus
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t text-sm">
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
+                                    <span className="font-medium">{unit.investor.name}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-muted-foreground mb-1">Jatuh Tempo Pajak</span>
+                                    {unit.taxDueDate ? (
+                                        <span className={cn(
+                                            "font-medium",
+                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                isWithinInterval(new Date(unit.taxDueDate), {
+                                                    start: new Date(),
+                                                    end: addDays(new Date(), 30)
+                                                }) ? "text-amber-600" : "text-green-600"
+                                        )}>
+                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">-</span>
+                                    )}
+                                </div>
+                            </div>
 
-                <PaginationControls
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                />
-
-                <ImagePreviewDialog
-                    open={!!previewUrl}
-                    onOpenChange={(open) => !open && setPreviewUrl(null)}
-                    imageUrl={previewUrl || ""}
-                />
-
-                <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Apakah anda yakin?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Tindakan ini tidak dapat dibatalkan. Data unit ini akan dihapus permanen dari sistem.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                                Hapus
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                            {!isViewer && (
+                                <div className="flex justify-end pt-2 border-t mt-3">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-9">
+                                                <MoreHorizontal className="h-4 w-4 mr-2" />
+                                                Aksi
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setEditingUnit(unit)
+                                                    setIsOpen(true)
+                                                }}
+                                            >
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Unit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                                onClick={() => setDeleteId(unit.id)}
+                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                            >
+                                                <Trash className="mr-2 h-4 w-4" /> Hapus
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
-            )
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[50px]">
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    checked={paginatedUnits.length > 0 && selectedIds.length === paginatedUnits.length}
+                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                />
+                            </TableHead>
+                            <TableHead className="w-[80px]">Foto</TableHead>
+
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "code") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("code")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Kode
+                                    {sortBy === "code" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "name") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("name")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Nama Unit
+                                    {sortBy === "name" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "plateNumber") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("plateNumber")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    No. Polisi
+                                    {sortBy === "plateNumber" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "investor") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("investor")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Pemilik
+                                    {sortBy === "investor" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "status") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("status")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Status
+                                    {sortBy === "status" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
+                            <TableHead>Pajak</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedUnits.map((unit) => (
+                            <TableRow key={unit.id}>
+                                <TableCell>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                                        checked={selectedIds.includes(unit.id)}
+                                        onChange={(e) => handleSelectOne(unit.id, e.target.checked)}
+                                        disabled={isViewer}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    {unit.imageUrl ? (
+                                        <ImageHoverPreview
+                                            src={unit.imageUrl}
+                                            alt={unit.name}
+                                            previewSize="lg"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
+                                        >
+                                            <img
+                                                src={unit.imageUrl}
+                                                alt={unit.name}
+                                                className="h-full w-full object-cover cursor-pointer"
+                                                onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
+                                            />
+                                        </ImageHoverPreview>
+                                    ) : (
+                                        <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
+                                            <span className="text-xs">No Img</span>
+                                        </div>
+                                    )}
+                                </TableCell>
+                                <TableCell className="font-medium">{unit.code}</TableCell>
+                                <TableCell>{unit.name}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <span>{unit.plateNumber}</span>
+                                        {(() => {
+                                            const duplicateInfo = getDuplicateInfo(units, unit)
+                                            return duplicateInfo.isDuplicate ? (
+                                                <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300">
+                                                    🔄 Ke-{duplicateInfo.purchaseNumber}
+                                                </Badge>
+                                            ) : null
+                                        })()}
+                                    </div>
+                                </TableCell>
+                                <TableCell>{unit.investor.name}</TableCell>
+                                <TableCell>
+                                    <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-sm">
+                                        {unit.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    {unit.taxDueDate ? (
+                                        <span className={cn(
+                                            "font-medium",
+                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                isWithinInterval(new Date(unit.taxDueDate), {
+                                                    start: new Date(),
+                                                    end: addDays(new Date(), 30)
+                                                }) ? "text-amber-600" : "text-green-600"
+                                        )}>
+                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">-</span>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {!isViewer && (
+                                        <div className="flex justify-end items-center gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                                                onClick={() => {
+                                                    setEditingUnit(unit)
+                                                    setIsOpen(true)
+                                                }}
+                                                title="Edit Unit"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Open menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setEditingUnit(unit)
+                                                            setIsOpen(true)
+                                                        }}
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Unit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => setDeleteId(unit.id)}
+                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                    >
+                                                        <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
+
+            <ImagePreviewDialog
+                open={!!previewUrl}
+                onOpenChange={(open) => !open && setPreviewUrl(null)}
+                imageUrl={previewUrl || ""}
+            />
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Apakah anda yakin?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tindakan ini tidak dapat dibatalkan. Data unit ini akan dihapus permanen dari sistem.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                            Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
 }
