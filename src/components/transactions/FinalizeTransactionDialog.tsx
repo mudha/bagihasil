@@ -25,6 +25,7 @@ import { MultipleImageUpload } from "@/components/ui/multiple-image-upload"
 import { toast } from "sonner"
 import { DollarSign, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { validateImageFile } from "@/lib/image-utils"
 
 const sellSchema = z.object({
     sellDate: z.string().min(1, "Tanggal jual harus diisi"),
