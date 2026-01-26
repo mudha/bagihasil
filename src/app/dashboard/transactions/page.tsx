@@ -200,12 +200,18 @@ export default function TransactionsPage() {
 
             if (res.ok && data.success) {
                 const total = data.data.totalAmount
+                const date = data.data.latestDate
 
                 // Set Buy Price
                 form.setValue('buyPrice', total)
 
                 // Set Modal Pemodal (Default equal to buy price)
                 form.setValue('initialInvestorCapital', total)
+
+                // Set Date if available
+                if (date) {
+                    form.setValue('buyDate', date)
+                }
 
                 toast.success(`Scan berhasil! Total: Rp ${total.toLocaleString()}`)
             } else {
