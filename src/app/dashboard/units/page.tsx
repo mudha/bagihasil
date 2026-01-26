@@ -1030,40 +1030,23 @@ export default function UnitsPage() {
                                                 render={({ field }) => (
                                                     <FormItem className="flex flex-col">
                                                         <FormLabel>Jatuh Tempo Pajak (Opsional)</FormLabel>
-                                                        <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <FormControl>
-                                                                    <Button
-                                                                        variant={"outline"}
-                                                                        className={cn(
-                                                                            "w-full pl-3 text-left font-normal",
-                                                                            !field.value && "text-muted-foreground"
-                                                                        )}
-                                                                    >
-                                                                        {field.value ? (
-                                                                            format(field.value, "PPP")
-                                                                        ) : (
-                                                                            <span>Pilih tanggal</span>
-                                                                        )}
-                                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                                    </Button>
-                                                                </FormControl>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-auto p-0" align="start">
-                                                                <Calendar
-                                                                    mode="single"
-                                                                    selected={field.value || undefined}
-                                                                    onSelect={field.onChange}
-                                                                    disabled={(date) =>
-                                                                        date < new Date("1900-01-01")
+                                                        <FormControl>
+                                                            <Input
+                                                                type="date"
+                                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                                onChange={(e) => {
+                                                                    const dateValue = e.target.value
+                                                                    if (dateValue) {
+                                                                        field.onChange(new Date(dateValue))
+                                                                    } else {
+                                                                        field.onChange(null)
                                                                     }
-                                                                    initialFocus
-                                                                    captionLayout="dropdown-buttons"
-                                                                    fromYear={2000}
-                                                                    toYear={new Date().getFullYear() + 10}
-                                                                />
-                                                            </PopoverContent>
-                                                        </Popover>
+                                                                }}
+                                                                className="w-full"
+                                                                min="2000-01-01"
+                                                                max={`${new Date().getFullYear() + 10}-12-31`}
+                                                            />
+                                                        </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
