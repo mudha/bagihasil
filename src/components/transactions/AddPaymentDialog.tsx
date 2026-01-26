@@ -59,6 +59,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
     } = useForm<z.infer<typeof paymentSchema>>({
         resolver: zodResolver(paymentSchema),
         defaultValues: {
+            amount: 0, // Add default value to prevent uncontrolled->controlled error
             paymentDate: new Date().toISOString().split('T')[0],
             method: 'TRANSFER',
         }
