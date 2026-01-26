@@ -35,7 +35,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan } from "lucide-react"
-import { MultiImageUpload } from "@/components/ui/multi-image-upload"
+import { MultipleImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -174,6 +174,7 @@ export default function TransactionsPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
     const [isScanning, setIsScanning] = useState(false)
+    const [resetKey, setResetKey] = useState(0)
 
     const handleScanProof = async () => {
         if (uploadedFiles.length === 0) return
@@ -462,6 +463,7 @@ export default function TransactionsPage() {
                 setIsOpen(false)
                 setEditingTransaction(null)
                 setUploadedFiles([])
+                setResetKey(prev => prev + 1)
                 form.reset()
                 fetchTransactions()
                 fetchAvailableUnits() // Refresh available units
@@ -738,16 +740,13 @@ export default function TransactionsPage() {
                                                 )}
                                             </Button>
                                         </div>
-                                        <MultiImageUpload
-                                            value={uploadedFiles}
-                                            onChange={setUploadedFiles}
-                                            onRemove={(index) => {
-                                                const newFiles = [...uploadedFiles]
-                                                newFiles.splice(index, 1)
-                                                setUploadedFiles(newFiles)
+                                        <MultipleImageUpload
+                                            key={resetKey}
+                                            onImagesChange={(images) => {
+                                                const files = images.map(img => img.file).filter((f): f is File => f !== null)
+                                                setUploadedFiles(files)
                                             }}
-                                            disabled={isScanning}
-                                            maxFiles={5}
+                                            maxImages={5}
                                         />
                                         <p className="text-[10px] text-muted-foreground">
                                             Upload bukti transfer DP & Pelunasan. Klik "Scan AI" untuk menjumlahkan nominal otomatis.
