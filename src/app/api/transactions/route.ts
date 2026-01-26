@@ -61,6 +61,10 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
+        try {
+            const fs = require('fs');
+            fs.appendFileSync('debug_log.txt', `Payload: ${JSON.stringify(body)}\n`);
+        } catch (e) { }
         const validatedData = transactionSchema.parse(body)
 
         // Check for active transaction
@@ -75,12 +79,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400 })
         }
 
+        const { proofs, ...transactionData } = validatedData
+
+        try {
+            const fs = require('fs');
+            fs.appendFileSync('debug_log.txt', `About to create transaction in DB...\n`);
+        } catch (e) { }
+
         const transaction = await db.transaction.create({
             data: {
-                ...validatedData,
+                ...transactionData,
                 status: "ON_PROCESS",
-                proofs: validatedData.proofs && validatedData.proofs.length > 0 ? {
-                    create: validatedData.proofs.map(p => ({
+                proofs: proofs && proofs.length > 0 ? {
+                    create: proofs.map(p => ({
                         proofType: 'BUY',
                         imageUrl: p.imageUrl,
                         description: p.description
@@ -89,19 +100,53 @@ export async function POST(req: Request) {
             },
         })
 
-        // Log Activity
-        await logActivity(
-            "CREATE",
-            "TRANSACTION",
-            transaction.id,
-            `Created transaction ${transaction.transactionCode} for unit ${transaction.unitId}`
-        )
+        try {
+            const fs = require('fs');
+            fs.appendFileSync('debug_log.txt', `Transaction created successfully: ${transaction.id}\n`);
+        } catch (e) { }
+
+        // Log Activity - wrap in try-catch to prevent blocking
+        try {
+            await logActivity(
+                "CREATE",
+                "TRANSACTION",
+                transaction.id,
+                `Created transaction ${transaction.transactionCode} for unit ${transaction.unitId}`
+            )
+        } catch (logError) {
+            console.error("Activity logging failed:", logError)
+            // Don't fail the request if activity logging fails
+        }
 
         return NextResponse.json(transaction)
-    } catch (error) {
+    } catch (error: any) {
+        console.error("Error creating transaction:", error)
+        try {
+            const fs = require('fs');
+            const errorMsg = error instanceof Error ? error.message + '\n' + error.stack : String(error);
+            fs.appendFileSync('debug_log.txt', `Error Occurred: ${errorMsg}\n`);
+        } catch (e) {
+            console.error("Logger truly failed", e)
+        }
+
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 })
         }
+
+        // Handle Prisma unique constraint violation
+        if (error.code === 'P2002') {
+            return NextResponse.json({
+                error: `Kode transaksi sudah digunakan. Silakan tutup dialog dan coba lagi untuk mendapatkan kode baru.`
+            }, { status: 400 })
+        }
+
+        // Handle other Prisma errors
+        if (error.code) {
+            return NextResponse.json({
+                error: `Database error: ${error.message || 'Unknown error'}`
+            }, { status: 500 })
+        }
+
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }

@@ -387,8 +387,10 @@ export default function TransactionsPage() {
         fetchInvestors()
     }, [])
 
+    // Generate/Regenerate transaction code when dialog opens
     useEffect(() => {
         if (isOpen && !editingTransaction) {
+            // Always fetch a fresh code when dialog opens
             fetch('/api/transactions/next-code')
                 .then(res => res.json())
                 .then(data => {
@@ -398,7 +400,7 @@ export default function TransactionsPage() {
                 })
                 .catch(err => console.error("Failed to fetch next code", err))
         }
-    }, [isOpen, editingTransaction, form])
+    }, [isOpen, editingTransaction, form, resetKey]) // Add resetKey as dependency to regenerate after failed save
 
     // Watch for unitId changes and update transaction code suggestion
     useEffect(() => {
@@ -479,11 +481,26 @@ export default function TransactionsPage() {
                 fetchTransactions()
                 fetchAvailableUnits() // Refresh available units
             } else {
-                const error = await res.json()
-                toast.error(error.error || "Gagal menyimpan transaksi")
+                let errorMessage = "Gagal menyimpan transaksi"
+                try {
+                    // Clone response to allow reading text if json fails
+                    const resClone = res.clone()
+                    try {
+                        const errorData = await res.json()
+                        errorMessage = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error)
+                    } catch (e) {
+                        const text = await resClone.text()
+                        console.error("Non-JSON response:", res.status, res.statusText, text)
+                        errorMessage = `Server Error (${res.status}): ${text.substring(0, 100)}`
+                    }
+                } catch (e) {
+                    console.error("Error parsing error response:", e)
+                }
+                toast.error(errorMessage)
             }
         } catch (error) {
-            toast.error("Terjadi kesalahan")
+            console.error("Submit Error:", error)
+            toast.error(`Terjadi kesalahan: ${error instanceof Error ? error.message : "Unknown error"}`)
         }
     }
 

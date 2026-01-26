@@ -55,8 +55,9 @@ export async function GET(req: Request) {
             let nextCode = `${prefix}-0001`
 
             if (latestTransaction?.transactionCode) {
+                console.log('Latest transaction code:', latestTransaction.transactionCode)
                 // Try to extract the number part from the code
-                // Example: TRX-WAH-0007 -> 0007
+                // Example: TRX-WAH-2026-0007 -> 0007
                 const match = latestTransaction.transactionCode.match(/(\d+)$/)
 
                 if (match) {
@@ -67,7 +68,10 @@ export async function GET(req: Request) {
                     // Preserve the padding length
                     const padLength = Math.max(lastNumStr.length, 4)
                     nextCode = `${prefix}-${String(nextNum).padStart(padLength, '0')}`
+                    console.log('Generated next code:', nextCode)
                 }
+            } else {
+                console.log('No previous transaction found, using:', nextCode)
             }
 
             return NextResponse.json({ code: nextCode })
