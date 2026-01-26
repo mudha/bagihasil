@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
@@ -175,6 +175,11 @@ export default function TransactionsPage() {
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
     const [isScanning, setIsScanning] = useState(false)
     const [resetKey, setResetKey] = useState(0)
+
+    const handleImagesChange = useCallback((images: any[]) => {
+        const files = images.map(img => img.file).filter((f): f is File => f !== null)
+        setUploadedFiles(files)
+    }, [])
 
     const handleScanProof = async () => {
         if (uploadedFiles.length === 0) return
@@ -743,7 +748,23 @@ export default function TransactionsPage() {
                                         <MultipleImageUpload
                                             key={resetKey}
                                             onImagesChange={(images) => {
+                                                // Prevent infinite loop by only updating if files actually changed
+                                                // But since onImagesChange is called on mount/update of internal state,
+                                                // and internal state is managed by Child, we just need to ensure this function is stable
+                                                // OR we accept the update.
+                                                // The Loop happens because Parent Re-renders -> New Function -> Child Effect -> Parent State Update -> Parent Re-render
+
+                                                // Simple fix: Check if files actually different?
+                                                // Or better: Fix dependency in Child?
+                                                // Let's use a stable reference for the handler if possible, but the handler updates invalidates 'uploadedFiles'.
+
+                                                // Actually, we can just extract this function and wrap in useCallback
                                                 const files = images.map(img => img.file).filter((f): f is File => f !== null)
+                                                // Only update if count changed to avoid some loops? No, file content might change.
+                                                // Let's break the loop by checking if state actually needs update?
+                                                // Setting state to same value might still trigger re-render in some React versions/setups but usually bails out.
+
+                                                // Best approach: useCallback in the component body
                                                 setUploadedFiles(files)
                                             }}
                                             maxImages={5}
