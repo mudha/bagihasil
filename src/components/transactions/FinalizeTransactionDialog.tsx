@@ -180,8 +180,10 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
             }
 
             const result = await res.json()
+            console.log('AI Result:', result) // Debug log
             if (result.success && result.data) {
                 const { totalAmount, latestDate, combinedDescription } = result.data
+                console.log('Extracted data:', { totalAmount, latestDate, combinedDescription }) // Debug log
                 let updated = false
 
                 // Update Sell Price if 0 or update it to total
@@ -191,9 +193,9 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                     updated = true
                 }
 
-                // Update Date
+                // Update Date - ALWAYS update to latest date if available
                 if (latestDate) {
-                    // Update to latest date found
+                    console.log('Setting sellDate to:', latestDate) // Debug log
                     form.setValue("sellDate", latestDate)
                     updated = true
                 }
