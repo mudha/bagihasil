@@ -31,10 +31,17 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Sync with parent
+    const onImagesChangeRef = useRef(onImagesChange)
+
+    // Update ref when prop changes
     useEffect(() => {
-        onImagesChange(images)
-    }, [images, onImagesChange])
+        onImagesChangeRef.current = onImagesChange
+    }, [onImagesChange])
+
+    // Sync with parent only when images change
+    useEffect(() => {
+        onImagesChangeRef.current(images)
+    }, [images])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
