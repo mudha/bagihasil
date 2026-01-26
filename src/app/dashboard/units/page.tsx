@@ -586,7 +586,12 @@ export default function UnitsPage() {
                 setEditingUnit(null)
                 fetchUnits()
             } else {
-                toast.error(editingUnit ? "Gagal memperbarui unit" : "Gagal menambahkan unit")
+                const data = await res.json()
+                const errorMessage = data.error
+                    ? (Array.isArray(data.error) ? data.error.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ') : data.error)
+                    : (editingUnit ? "Gagal memperbarui unit" : "Gagal menambahkan unit")
+
+                toast.error(errorMessage)
             }
         } catch (error) {
             toast.error("Terjadi kesalahan")
