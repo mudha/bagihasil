@@ -34,7 +34,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil } from "lucide-react"
+import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan } from "lucide-react"
+import { MultiImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -171,6 +172,46 @@ export default function TransactionsPage() {
     const [statusFilter, setStatusFilter] = useState("ALL")
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("transactions-sort", "buyDate", "desc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+    const [isScanning, setIsScanning] = useState(false)
+
+    const handleScanProof = async () => {
+        if (uploadedFiles.length === 0) return
+
+        setIsScanning(true)
+        const formData = new FormData()
+        uploadedFiles.forEach(file => {
+            formData.append('files', file)
+        })
+
+        try {
+            const res = await fetch('/api/ai/parse-receipt', {
+                method: 'POST',
+                body: formData
+            })
+
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+                const total = data.data.totalAmount
+
+                // Set Buy Price
+                form.setValue('buyPrice', total)
+
+                // Set Modal Pemodal (Default equal to buy price)
+                form.setValue('initialInvestorCapital', total)
+
+                toast.success(`Scan berhasil! Total: Rp ${total.toLocaleString()}`)
+            } else {
+                toast.error(data.error || "Gagal scan gambar")
+            }
+        } catch (error) {
+            console.error(error)
+            toast.error("Gagal memproses gambar")
+        } finally {
+            setIsScanning(false)
+        }
+    }
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1)
@@ -368,19 +409,59 @@ export default function TransactionsPage() {
 
     async function onSubmit(values: z.infer<typeof transactionSchema>) {
         try {
+            // Handle File Uploads
+            const proofs: { imageUrl: string; description: string }[] = []
+
+            if (uploadedFiles.length > 0) {
+                toast.loading("Mengupload bukti transfer...")
+
+                for (const file of uploadedFiles) {
+                    const formData = new FormData()
+                    formData.append('file', file)
+
+                    try {
+                        const uploadRes = await fetch('/api/upload/payment-proof', {
+                            method: 'POST',
+                            body: formData
+                        })
+
+                        if (uploadRes.ok) {
+                            const data = await uploadRes.json()
+                            proofs.push({
+                                imageUrl: data.url,
+                                description: "Bukti Transfer Pembelian"
+                            })
+                        }
+                    } catch (err) {
+                        console.error("Failed to upload file", file.name, err)
+                    }
+                }
+
+                toast.dismiss()
+            }
+
             const url = editingTransaction ? `/api/transactions/${editingTransaction.id}` : '/api/transactions'
             const method = editingTransaction ? 'PUT' : 'POST'
+
+            // Add proofs to payload
+            const payload = {
+                ...values,
+                proofs: proofs.length > 0 ? proofs : undefined,
+                // Fallback for single image field if needed for backward compatibility
+                buyProofImageUrl: proofs.length > 0 ? proofs[0].imageUrl : undefined
+            }
 
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
+                body: JSON.stringify(payload),
             })
 
             if (res.ok) {
                 toast.success(editingTransaction ? "Transaksi berhasil diperbarui" : "Transaksi berhasil dibuat")
                 setIsOpen(false)
                 setEditingTransaction(null)
+                setUploadedFiles([])
                 form.reset()
                 fetchTransactions()
                 fetchAvailableUnits() // Refresh available units
@@ -633,6 +714,46 @@ export default function TransactionsPage() {
                                             )}
                                         />
                                     </div>
+                                    <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900/50">
+                                        <div className="flex items-center justify-between">
+                                            <FormLabel>Bukti Transfer Pembelian</FormLabel>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleScanProof}
+                                                disabled={isScanning || uploadedFiles.length === 0}
+                                                className="gap-2"
+                                            >
+                                                {isScanning ? (
+                                                    <>
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                                        Scanning...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Scan className="h-4 w-4 text-blue-600" />
+                                                        Scan AI (Total)
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                        <MultiImageUpload
+                                            value={uploadedFiles}
+                                            onChange={setUploadedFiles}
+                                            onRemove={(index) => {
+                                                const newFiles = [...uploadedFiles]
+                                                newFiles.splice(index, 1)
+                                                setUploadedFiles(newFiles)
+                                            }}
+                                            disabled={isScanning}
+                                            maxFiles={5}
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Upload bukti transfer DP & Pelunasan. Klik "Scan AI" untuk menjumlahkan nominal otomatis.
+                                        </p>
+                                    </div>
+
                                     <FormField
                                         control={form.control}
                                         name="initialInvestorCapital"

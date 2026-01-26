@@ -21,6 +21,10 @@ const transactionSchema = z.object({
     notes: z.string().optional(),
     buyProofImageUrl: z.string().optional(),
     buyProofDescription: z.string().optional(),
+    proofs: z.array(z.object({
+        imageUrl: z.string(),
+        description: z.string().optional()
+    })).optional()
 })
 
 export async function GET(req: Request) {
@@ -75,6 +79,13 @@ export async function POST(req: Request) {
             data: {
                 ...validatedData,
                 status: "ON_PROCESS",
+                proofs: validatedData.proofs && validatedData.proofs.length > 0 ? {
+                    create: validatedData.proofs.map(p => ({
+                        proofType: 'BUY',
+                        imageUrl: p.imageUrl,
+                        description: p.description
+                    }))
+                } : undefined
             },
         })
 
