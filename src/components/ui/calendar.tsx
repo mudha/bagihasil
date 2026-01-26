@@ -82,7 +82,7 @@ function Calendar({
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
-          "flex w-full items-center justify-center gap-1",
+          "flex w-full items-center justify-center gap-2 relative z-20",
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
@@ -94,7 +94,7 @@ function Calendar({
           defaultClassNames.dropdown
         ),
         caption_label: cn(
-          "select-none font-medium text-sm hidden", // Hide default label when dropdown is active
+          "select-none font-medium text-sm", // Show label as fallback
           defaultClassNames.caption_label
         ),
         table: "w-full border-collapse",
