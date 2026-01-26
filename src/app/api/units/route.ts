@@ -60,11 +60,17 @@ export async function POST(req: Request) {
         )
 
         return NextResponse.json(unit)
-    } catch (error) {
+    } catch (error: any) {
+        console.error("Error creating unit:", error)
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 })
         }
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+
+        // Return actual error message for debugging (safe enough for admin internal app)
+        return NextResponse.json({
+            error: error.message || "Internal Server Error",
+            details: error.code // Prisma error code if available
+        }, { status: 500 })
     }
 }
 
