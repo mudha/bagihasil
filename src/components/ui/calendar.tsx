@@ -14,6 +14,13 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 
 function Calendar({
@@ -83,7 +90,7 @@ function Calendar({
           defaultClassNames.dropdown_root
         ),
         dropdown: cn(
-          "bg-transparent outline-none border-none p-1 rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer appearance-none",
+          "flex items-center",
           defaultClassNames.dropdown
         ),
         caption_label: cn(
@@ -165,8 +172,36 @@ function Calendar({
           )
         },
         DayButton: CalendarDayButton,
-        // Plain native dropdowns for better mobile UX
-        // Dropdown: ({ value, onChange, children, style, className, ...props }: any) => { ... }
+        // Replace Dropdown with Custom Select
+        Dropdown: ({ value, onChange, children, style, className, ...props }: any) => {
+          const options = React.Children.toArray(children) as React.ReactElement<React.OptionHTMLAttributes<HTMLOptionElement>>[]
+          const selected = options.find((child) => child.props.value === value)
+          const handleChange = (value: string) => {
+            const changeEvent = {
+              target: { value },
+            } as React.ChangeEvent<HTMLSelectElement>
+            onChange?.(changeEvent)
+          }
+          return (
+            <Select
+              value={value?.toString()}
+              onValueChange={(val) => {
+                handleChange(val)
+              }}
+            >
+              <SelectTrigger className="pr-1.5 focus:ring-0 h-[28px] max-w-[120px] text-xs font-medium border-border/50 shadow-sm bg-background/50 hover:bg-accent hover:text-accent-foreground z-10 gap-1 rounded-full px-3">
+                <SelectValue>{selected?.props?.children}</SelectValue>
+              </SelectTrigger>
+              <SelectContent position="popper" className="max-h-[200px]">
+                {options.map((option, id) => (
+                  <SelectItem key={`${option.props.value}-${id}`} value={option.props.value?.toString() ?? ""}>
+                    {option.props.children}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
+        },
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
