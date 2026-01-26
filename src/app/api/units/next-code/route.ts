@@ -31,33 +31,46 @@ export async function GET(req: Request) {
                 }
             },
             orderBy: {
-                createdAt: 'desc'
+                code: 'desc'
             },
             select: {
                 code: true
             }
         })
 
-        let nextCode = `${prefix}-001`
+        // Initial guess based on latest code
+        let nextCodeSuffix = 1
 
         if (latestUnit?.code) {
-            // Try to extract the number part
-            // Example: UNT-WAH-007 -> 007
-            // We look for the last sequence of digits
             const match = latestUnit.code.match(/(\d+)$/)
-
             if (match) {
                 const lastNumStr = match[1]
-                const lastNum = parseInt(lastNumStr)
-                const nextNum = lastNum + 1
-
-                // Preserve the padding length, default to 3
-                const padLength = Math.max(lastNumStr.length, 3)
-                nextCode = `${prefix}-${String(nextNum).padStart(padLength, '0')}`
+                nextCodeSuffix = parseInt(lastNumStr) + 1
             }
         }
 
-        return NextResponse.json({ code: nextCode })
+        // Loop to find a truly available code
+        let isUnique = false
+        let attempts = 0
+        let finalCode = ''
+
+        while (!isUnique && attempts < 10) {
+            const suffix = String(nextCodeSuffix).padStart(3, '0') // Always pad to at least 3
+            finalCode = `${prefix}-${suffix}`
+
+            const existing = await prisma.unit.findUnique({
+                where: { code: finalCode }
+            })
+
+            if (!existing) {
+                isUnique = true
+            } else {
+                nextCodeSuffix++
+                attempts++
+            }
+        }
+
+        return NextResponse.json({ code: finalCode })
     } catch (error) {
         console.error('Error fetching next unit code:', error)
         return NextResponse.json(
