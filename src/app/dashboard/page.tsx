@@ -345,24 +345,22 @@ export default function DashboardPage() {
                     <CardContent className="pl-2">
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyStats} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                    <XAxis type="number" hide />
-                                    <YAxis
+                                <BarChart data={stats.monthlyStats}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis
                                         dataKey="month"
-                                        type="category"
                                         stroke="#888888"
                                         fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
-                                        width={60}
+                                        tickFormatter={(val) => val.split(' ')[0]}
                                     />
+                                    <YAxis hide />
                                     <Tooltip
                                         formatter={(value: number) => formatCurrency(value)}
                                         labelStyle={{ color: 'black' }}
-                                        cursor={{ fill: 'transparent' }}
                                     />
-                                    <Bar dataKey="totalMargin" name="Total Profit" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                                    <Bar dataKey="totalMargin" name="Total Profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
