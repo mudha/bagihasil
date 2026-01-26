@@ -963,16 +963,17 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             }
         }
 
-        // 1. Buy Proofs (Priority 1)
-        if (data.transaction.buyProofImageUrl) { // Legacy
+        // 1. Buy Proofs (Priority 1) - Avoid duplicates between legacy and modern fields
+        const buyProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'BUY') || []
+
+        if (buyProofs.length > 0) {
+            // Use modern proofs array if available
+            buyProofs.forEach((p: any) => {
+                addAttachment('Bukti Pembelian Unit ke Seller', p.description, p.imageUrl)
+            })
+        } else if (data.transaction.buyProofImageUrl) {
+            // Fallback to legacy field only if modern proofs don't exist
             addAttachment('Bukti Pembelian Unit ke Seller', data.transaction.buyProofDescription, data.transaction.buyProofImageUrl)
-        }
-        if (data.transaction.proofs && data.transaction.proofs.length > 0) {
-            data.transaction.proofs
-                .filter((p: any) => p.proofType === 'BUY')
-                .forEach((p: any) => {
-                    addAttachment('Bukti Pembelian Unit ke Seller', p.description, p.imageUrl)
-                })
         }
 
         // 2. Cost Proofs (Priority 2)
@@ -986,16 +987,17 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             })
         }
 
-        // 3. Sell Proofs (Priority 3)
-        if (data.transaction.sellProofImageUrl) { // Legacy
+        // 3. Sell Proofs (Priority 3) - Avoid duplicates between legacy and modern fields
+        const sellProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'SELL') || []
+
+        if (sellProofs.length > 0) {
+            // Use modern proofs array if available
+            sellProofs.forEach((p: any) => {
+                addAttachment('Bukti Pelunasan Unit dari Buyer', p.description, p.imageUrl)
+            })
+        } else if (data.transaction.sellProofImageUrl) {
+            // Fallback to legacy field only if modern proofs don't exist
             addAttachment('Bukti Pelunasan Unit dari Buyer', data.transaction.sellProofDescription, data.transaction.sellProofImageUrl)
-        }
-        if (data.transaction.proofs && data.transaction.proofs.length > 0) {
-            data.transaction.proofs
-                .filter((p: any) => p.proofType === 'SELL')
-                .forEach((p: any) => {
-                    addAttachment('Bukti Pelunasan Unit dari Buyer', p.description, p.imageUrl)
-                })
         }
 
         // 4. Payment Proofs (Priority 4 - Transfer Bagi Hasil)
