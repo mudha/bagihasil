@@ -77,11 +77,11 @@ function Calendar({
           defaultClassNames.button_next
         ),
         month_caption: cn(
-          "flex items-center justify-center h-(--cell-size) w-full px-(--cell-size)",
+          "flex justify-center pt-1 relative items-center",
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
-          "w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-2",
+          "flex w-full items-center justify-center gap-1",
           defaultClassNames.dropdowns
         ),
         dropdown_root: cn(
@@ -89,7 +89,7 @@ function Calendar({
           defaultClassNames.dropdown_root
         ),
         dropdown: cn(
-          "hidden", // Hide the native dropdown
+          "flex items-center", // Removed 'hidden' so custom dropdowns are visible
           defaultClassNames.dropdown
         ),
         caption_label: cn(
