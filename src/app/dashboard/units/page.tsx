@@ -65,6 +65,7 @@ import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminUnitDetailDialog } from "@/components/units/AdminUnitDetailDialog"
+import { compressImage } from "@/lib/image-compression"
 
 
 const unitSchema = z.object({
@@ -518,8 +519,18 @@ export default function UnitsPage() {
 
             const newImage = unitImages.find(img => img.file && img.file.size > 0)
             if (newImage && newImage.file) {
+                let fileToUpload = newImage.file
+                try {
+                    toast.loading("Mengompres foto unit...")
+                    fileToUpload = await compressImage(newImage.file)
+                    toast.dismiss()
+                } catch (e) {
+                    console.error("Compression failed", e)
+                    toast.dismiss()
+                }
+
                 const formData = new FormData()
-                formData.append('file', newImage.file)
+                formData.append('file', fileToUpload)
 
                 const uploadRes = await fetch('/api/upload/payment-proof', {
                     method: 'POST',
@@ -536,8 +547,18 @@ export default function UnitsPage() {
             // Handle STNK Upload
             const newStnkImage = stnkImages.find(img => img.file && img.file.size > 0)
             if (newStnkImage && newStnkImage.file) {
+                let fileToUpload = newStnkImage.file
+                try {
+                    toast.loading("Mengompres foto STNK...")
+                    fileToUpload = await compressImage(newStnkImage.file)
+                    toast.dismiss()
+                } catch (e) {
+                    console.error("Compression failed", e)
+                    toast.dismiss()
+                }
+
                 const formData = new FormData()
-                formData.append('file', newStnkImage.file)
+                formData.append('file', fileToUpload)
 
                 const uploadRes = await fetch('/api/upload/payment-proof', {
                     method: 'POST',

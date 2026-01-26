@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
-import imageCompression from 'browser-image-compression'
+import { compressImage } from "@/lib/image-compression"
 
 interface UpdateUnitImageDialogProps {
     open: boolean
@@ -49,23 +49,20 @@ export function UpdateUnitImageDialog({
 
                 // Compress image if it's too large
                 let fileToUpload = newImage.file
-                if (newImage.file.size > 500 * 1024) { // If > 500KB, compress
-                    toast.loading("Mengompres gambar...")
-                    const options = {
-                        maxSizeMB: 0.5, // Max 500KB
-                        maxWidthOrHeight: 1280, // Max dimension
-                        useWebWorker: true,
-                        fileType: 'image/jpeg' // Convert to JPEG for better compression
-                    }
-                    try {
-                        fileToUpload = await imageCompression(newImage.file, options)
+                toast.loading("Mengompres gambar...")
+                try {
+                    fileToUpload = await compressImage(newImage.file)
+
+                    if (fileToUpload.size < newImage.file.size) {
                         toast.dismiss()
                         toast.success(`Gambar dikompres: ${(newImage.file.size / 1024 / 1024).toFixed(1)}MB → ${(fileToUpload.size / 1024).toFixed(0)}KB`)
-                    } catch (compressError) {
-                        console.error('Compression error:', compressError)
+                    } else {
                         toast.dismiss()
-                        // Continue with original file if compression fails
                     }
+                } catch (compressError) {
+                    console.error('Compression error:', compressError)
+                    toast.dismiss()
+                    // Continue with original file if compression fails
                 }
 
                 formData.append('file', fileToUpload)
