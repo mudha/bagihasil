@@ -32,7 +32,10 @@ export async function GET(req: Request) {
             // Generate prefix from investor name (first 3 letters of first name)
             const nameParts = unit.investor.name.split(' ')
             const rawPrefix = nameParts[0].substring(0, 3).toUpperCase()
-            const prefix = `TRX-${rawPrefix}`
+            const currentYear = new Date().getFullYear()
+
+            // Format: TRX-<INVESTOR>-<YEAR>-<SEQUENCE>
+            const prefix = `TRX-${rawPrefix}-${currentYear}`
 
             // Find the latest transaction for this investor
             const latestTransaction = await prisma.transaction.findFirst({
