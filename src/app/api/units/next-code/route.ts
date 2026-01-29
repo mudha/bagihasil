@@ -22,40 +22,41 @@ export async function GET(req: Request) {
             }
         }
 
-        // Find the latest unit code matching the prefix
-        // We use startsWith to find related codes
-        const latestUnit = await prisma.unit.findFirst({
+        // Fetch all matching codes to avoid string sort issues (e.g., '046' > '0047')
+        const existingUnits = await prisma.unit.findMany({
             where: {
                 code: {
                     startsWith: prefix
                 }
-            },
-            orderBy: {
-                code: 'desc'
             },
             select: {
                 code: true
             }
         })
 
-        // Initial guess based on latest code
-        let nextCodeSuffix = 1
+        let maxSuffix = 0
 
-        if (latestUnit?.code) {
-            const match = latestUnit.code.match(/(\d+)$/)
-            if (match) {
-                const lastNumStr = match[1]
-                nextCodeSuffix = parseInt(lastNumStr) + 1
+        existingUnits.forEach(unit => {
+            if (unit.code) {
+                // Extract last number from code
+                const match = unit.code.match(/(\d+)$/)
+                if (match) {
+                    const num = parseInt(match[1])
+                    if (!isNaN(num) && num > maxSuffix) {
+                        maxSuffix = num
+                    }
+                }
             }
-        }
+        })
 
-        // Loop to find a truly available code
+        let nextCodeSuffix = maxSuffix + 1
         let isUnique = false
         let attempts = 0
         let finalCode = ''
 
         while (!isUnique && attempts < 10) {
-            const suffix = String(nextCodeSuffix).padStart(3, '0') // Always pad to at least 3
+            // Updated to 4 digits padding as requested
+            const suffix = String(nextCodeSuffix).padStart(4, '0')
             finalCode = `${prefix}-${suffix}`
 
             const existing = await prisma.unit.findUnique({
