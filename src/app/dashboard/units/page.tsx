@@ -160,10 +160,14 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
     const purchaseNumber = index + 1
     const totalDuplicates = samePlateUnits.length
 
+    // Determine if this specific unit instance is a buyback (not the first one)
+    const isBuyback = purchaseNumber > 1
+
     return {
         isDuplicate: totalDuplicates > 1,
         purchaseNumber,
-        totalDuplicates
+        totalDuplicates,
+        isBuyback
     }
 }
 
@@ -520,14 +524,8 @@ export default function UnitsPage() {
             const newImage = unitImages.find(img => img.file && img.file.size > 0)
             if (newImage && newImage.file) {
                 let fileToUpload = newImage.file
-                try {
-                    toast.loading("Mengompres foto unit...")
-                    fileToUpload = await compressImage(newImage.file)
-                    toast.dismiss()
-                } catch (e) {
-                    console.error("Compression failed", e)
-                    toast.dismiss()
-                }
+                // File is already compressed by MultipleImageUpload
+                fileToUpload = newImage.file
 
                 const formData = new FormData()
                 formData.append('file', fileToUpload)
@@ -548,14 +546,8 @@ export default function UnitsPage() {
             const newStnkImage = stnkImages.find(img => img.file && img.file.size > 0)
             if (newStnkImage && newStnkImage.file) {
                 let fileToUpload = newStnkImage.file
-                try {
-                    toast.loading("Mengompres foto STNK...")
-                    fileToUpload = await compressImage(newStnkImage.file)
-                    toast.dismiss()
-                } catch (e) {
-                    console.error("Compression failed", e)
-                    toast.dismiss()
-                }
+                // File is already compressed by MultipleImageUpload
+                fileToUpload = newStnkImage.file
 
                 const formData = new FormData()
                 formData.append('file', fileToUpload)
@@ -1184,9 +1176,9 @@ export default function UnitsPage() {
                                             <span>{unit.plateNumber}</span>
                                             {(() => {
                                                 const duplicateInfo = getDuplicateInfo(units, unit)
-                                                return duplicateInfo.isDuplicate ? (
-                                                    <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-300 py-0 h-4">
-                                                        🔄 Ke-{duplicateInfo.purchaseNumber}
+                                                return duplicateInfo.isBuyback ? (
+                                                    <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-700 border-purple-300 py-0 h-4">
+                                                        🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
                                                     </Badge>
                                                 ) : null
                                             })()}
@@ -1432,9 +1424,9 @@ export default function UnitsPage() {
                                         <span>{unit.plateNumber}</span>
                                         {(() => {
                                             const duplicateInfo = getDuplicateInfo(units, unit)
-                                            return duplicateInfo.isDuplicate ? (
-                                                <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-300">
-                                                    🔄 Ke-{duplicateInfo.purchaseNumber}
+                                            return duplicateInfo.isBuyback ? (
+                                                <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-300">
+                                                    🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
                                                 </Badge>
                                             ) : null
                                         })()}

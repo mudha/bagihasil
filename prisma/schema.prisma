@@ -77,7 +77,7 @@ model Unit {
   id          String     @id @default(cuid())
   investorId  String
   name        String
-  plateNumber String?    @unique
+  plateNumber String?
   code        String     @unique
   imageUrl    String?    // Foto unit
   stnkImageUrl String?   // Foto STNK
