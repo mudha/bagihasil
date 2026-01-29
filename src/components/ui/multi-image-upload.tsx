@@ -10,6 +10,7 @@ import { validateImageFile, formatFileSize } from "@/lib/image-utils"
 import { cn } from "@/lib/utils"
 import { ImagePreviewDialog } from "./image-preview-dialog"
 import { ImageHoverPreview } from "./image-hover-preview"
+import { compressImage } from "@/lib/image-compression"
 
 export interface ImageFileWithDescription {
     id: string
@@ -43,7 +44,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
         onImagesChangeRef.current(images)
     }, [images])
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files || files.length === 0) return
 
@@ -55,27 +56,58 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
             return
         }
 
-        Array.from(files).forEach(file => {
-            const validation = validateImageFile(file)
-            if (!validation.valid) {
-                toast.error(`${file.name}: ${validation.error}`)
+        const processFile = async (file: File) => {
+            // 1. Initial Validation (Type only)
+            const typeValidation = validateImageFile(file, { skipSizeCheck: true })
+            if (!typeValidation.valid) {
+                toast.error(`${file.name}: ${typeValidation.error}`)
                 return
             }
 
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setImages(prev => [
-                    ...prev,
-                    {
-                        id: Math.random().toString(36).substr(2, 9),
-                        file,
-                        preview: reader.result as string,
-                        description: ""
-                    }
-                ])
+            let fileToProcess = file;
+
+            // 2. Compress if Size > 5MB and is Image
+            if (file.size > 5 * 1024 * 1024 && file.type.startsWith('image/')) {
+                const toastId = toast.loading(`Mengompres ${file.name}...`)
+                try {
+                    fileToProcess = await compressImage(file)
+                    toast.success(`Berhasil dikompres: ${formatFileSize(file.size)} -> ${formatFileSize(fileToProcess.size)}`, { id: toastId })
+                } catch (error) {
+                    console.error("Compression ended with error", error)
+                    toast.error(`Gagal mengompres ${file.name}`, { id: toastId })
+                    return // Skip this file
+                }
             }
-            reader.readAsDataURL(file)
-        })
+
+            // 3. Final Validation (Size check on processed file)
+            const finalValidation = validateImageFile(fileToProcess)
+            if (!finalValidation.valid) {
+                toast.error(`${file.name}: ${finalValidation.error}`)
+                return
+            }
+
+            return new Promise<void>((resolve) => {
+                const reader = new FileReader()
+                reader.onloadend = () => {
+                    setImages(prev => [
+                        ...prev,
+                        {
+                            id: Math.random().toString(36).substr(2, 9),
+                            file: fileToProcess, // Use processed file
+                            preview: reader.result as string,
+                            description: ""
+                        }
+                    ])
+                    resolve()
+                }
+                reader.readAsDataURL(fileToProcess)
+            })
+        }
+
+        // Process sequentially to keep order
+        for (const file of Array.from(files)) {
+            await processFile(file);
+        }
 
         // Reset input
         if (fileInputRef.current) fileInputRef.current.value = ""
@@ -103,7 +135,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
 
     // Global paste listener
     useEffect(() => {
-        const handleGlobalPaste = (e: ClipboardEvent) => {
+        const handleGlobalPaste = async (e: ClipboardEvent) => {
             // Only paste if THIS component is being hovered
             if (!isHovered.current) return
 
@@ -122,9 +154,32 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                             return
                         }
 
-                        const validation = validateImageFile(file)
-                        if (!validation.valid) {
-                            toast.error(validation.error)
+                        // 1. Initial Validation (Type only)
+                        const typeValidation = validateImageFile(file, { skipSizeCheck: true })
+                        if (!typeValidation.valid) {
+                            toast.error(typeValidation.error)
+                            return
+                        }
+
+                        let fileToProcess = file;
+
+                        // 2. Compress if Size > 5MB
+                        if (file.size > 5 * 1024 * 1024) {
+                            const toastId = toast.loading("Mengompres gambar yang dipaste...")
+                            try {
+                                fileToProcess = await compressImage(file)
+                                toast.success(`Berhasil dikompres: ${formatFileSize(file.size)} -> ${formatFileSize(fileToProcess.size)}`, { id: toastId })
+                            } catch (error) {
+                                console.error("Paste compression error", error)
+                                toast.error("Gagal mengompres gambar", { id: toastId })
+                                return
+                            }
+                        }
+
+                        // 3. Final Validation
+                        const finalValidation = validateImageFile(fileToProcess)
+                        if (!finalValidation.valid) {
+                            toast.error(finalValidation.error)
                             return
                         }
 
@@ -134,14 +189,14 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                 ...prev,
                                 {
                                     id: Math.random().toString(36).substr(2, 9),
-                                    file,
+                                    file: fileToProcess,
                                     preview: reader.result as string,
                                     description: ""
                                 }
                             ])
-                            toast.success("Gambar berhasil dipaste!")
+                            // toast.success("Gambar berhasil dipaste!") // handled by compress toast or redundant
                         }
-                        reader.readAsDataURL(file)
+                        reader.readAsDataURL(fileToProcess)
                     }
                 }
             }

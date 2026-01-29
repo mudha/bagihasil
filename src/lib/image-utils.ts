@@ -38,7 +38,7 @@ export async function convertImageToBase64(url: string): Promise<string> {
  * @param file - File to validate
  * @returns true if valid, false otherwise
  */
-export function validateImageFile(file: File): { valid: boolean; error?: string } {
+export function validateImageFile(file: File, options?: { skipSizeCheck?: boolean }): { valid: boolean; error?: string } {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
     const maxSizeInBytes = 5 * 1024 * 1024 // 5MB
 
@@ -49,7 +49,7 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
         }
     }
 
-    if (file.size > maxSizeInBytes) {
+    if (!options?.skipSizeCheck && file.size > maxSizeInBytes) {
         return {
             valid: false,
             error: 'Ukuran file terlalu besar. Maksimal 5MB.'
