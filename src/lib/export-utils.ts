@@ -798,6 +798,24 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         drawRow('Harga Jual', formatCurrency(sellPrice), localY, leftColX, colWidth)
         localY += 6
         drawRow('Total Biaya', formatCurrency(totalCosts), localY, leftColX, colWidth)
+
+        // Add Notes Section if exists
+        if (data.transaction.notes) {
+            yPos += 55 // Space after Financial Summary box which is ~42mm high + margin
+
+            // Check page break for notes
+            checkNewPage(40)
+
+            yPos = drawSectionHeader('Catatan Transaksi', yPos)
+
+            doc.setFont('helvetica', 'normal')
+            doc.setFontSize(9)
+            doc.setTextColor(...(COLORS.textMain as [number, number, number]))
+
+            const noteLines = doc.splitTextToSize(data.transaction.notes, contentWidth - 4)
+            doc.text(noteLines, margin + 2, yPos)
+            yPos += (noteLines.length * 5) + 5
+        }
         localY += 8
 
         // Line

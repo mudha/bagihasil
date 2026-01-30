@@ -108,7 +108,8 @@ export async function GET(
                 buyProofDescription: transaction.buyProofDescription,
                 sellProofImageUrl: transaction.sellProofImageUrl,
                 sellProofDescription: transaction.sellProofDescription,
-                proofs: transaction.proofs
+                proofs: transaction.proofs,
+                notes: transaction.notes
             },
             unit: {
                 name: transaction.unit.name,
