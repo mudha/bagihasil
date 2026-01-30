@@ -765,13 +765,16 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         // Draw containers
         const boxHeight = 42
 
+        // Store start Y for side-by-side layout
+        const summaryStartY = yPos
+
         // LEFT BOX (Values)
         doc.setDrawColor(...(COLORS.border as [number, number, number]))
         doc.setLineWidth(0.3)
         doc.setFillColor(255, 255, 255)
-        doc.roundedRect(leftColX, yPos, colWidth, boxHeight, 1, 1, 'S')
+        doc.roundedRect(leftColX, summaryStartY, colWidth, boxHeight, 1, 1, 'S')
 
-        let localY = yPos + 6
+        let localY = summaryStartY + 6
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(9)
         doc.setTextColor(...(COLORS.primary as [number, number, number]))
@@ -798,24 +801,6 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         drawRow('Harga Jual', formatCurrency(sellPrice), localY, leftColX, colWidth)
         localY += 6
         drawRow('Total Biaya', formatCurrency(totalCosts), localY, leftColX, colWidth)
-
-        // Add Notes Section if exists
-        if (data.transaction.notes) {
-            yPos += 55 // Space after Financial Summary box which is ~42mm high + margin
-
-            // Check page break for notes
-            checkNewPage(40)
-
-            yPos = drawSectionHeader('Catatan Transaksi', yPos)
-
-            doc.setFont('helvetica', 'normal')
-            doc.setFontSize(9)
-            doc.setTextColor(...(COLORS.textMain as [number, number, number]))
-
-            const noteLines = doc.splitTextToSize(data.transaction.notes, contentWidth - 4)
-            doc.text(noteLines, margin + 2, yPos)
-            yPos += (noteLines.length * 5) + 5
-        }
         localY += 8
 
         // Line
@@ -827,11 +812,11 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         drawRow('Nett Margin', formatCurrency(netMargin), localY, leftColX, colWidth, true)
 
 
-        // RIGHT BOX (Shares)
+        // RIGHT BOX (Shares) - Draw immediately at same Y as Left Box
         doc.setDrawColor(...(COLORS.border as [number, number, number]))
-        doc.roundedRect(rightColX, yPos, colWidth, boxHeight, 1, 1, 'S')
+        doc.roundedRect(rightColX, summaryStartY, colWidth, boxHeight, 1, 1, 'S')
 
-        localY = yPos + 6
+        localY = summaryStartY + 6
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(9)
         doc.setTextColor(...(COLORS.primary as [number, number, number]))
@@ -861,7 +846,24 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         doc.setFont('helvetica', 'bold')
         doc.text(formatCurrency(data.payment.investorShouldReceive), rightColX + colWidth - 6, localY + 5, { align: 'right' })
 
-        yPos += boxHeight + 15
+        // Update yPos to below the boxes
+        yPos = summaryStartY + boxHeight + 10
+
+        // Add Notes Section if exists - BELOW the boxes
+        if (data.transaction.notes) {
+            // Check page break for notes
+            checkNewPage(30)
+
+            yPos = drawSectionHeader('Catatan Transaksi', yPos)
+
+            doc.setFont('helvetica', 'normal')
+            doc.setFontSize(9)
+            doc.setTextColor(...(COLORS.textMain as [number, number, number]))
+
+            const noteLines = doc.splitTextToSize(data.transaction.notes, contentWidth - 4)
+            doc.text(noteLines, margin + 2, yPos)
+            yPos += (noteLines.length * 5) + 10
+        }
 
         // ===== 5. PAYMENT STATUS CARD =====
         checkNewPage(30) // lowered require space
