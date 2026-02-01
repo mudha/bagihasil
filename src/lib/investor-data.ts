@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { getHijriMonthYear } from "@/lib/date-utils"
 
 export async function getInvestorDashboardData(userId: string) {
     // 1. Find Investor attached to this User
@@ -27,6 +28,9 @@ export async function getInvestorDashboardData(userId: string) {
         include: {
             profitSharing: true,
             costs: true // to double check logic if needed
+        },
+        orderBy: {
+            sellDate: 'asc' // Ensure chronological order for charts
         }
     })
 
@@ -47,11 +51,7 @@ export async function getInvestorDashboardData(userId: string) {
         const trx = unit.transactions[0]
         if (trx) {
             const capital = trx.initialInvestorCapital ?? trx.buyPrice
-
-            // Total accumulative investment
             totalInvested += capital
-
-            // Active capital (only ON_PROCESS)
             if (trx.status === "ON_PROCESS") {
                 activeCapital += capital
             }
@@ -71,10 +71,15 @@ export async function getInvestorDashboardData(userId: string) {
     // Calculate Monthly Stats (Income and Sales Trend)
     const monthlyIncomeStats = new Map<string, number>()
     const monthlySalesStats = new Map<string, number>()
+
+    // Hijri Maps
+    const monthlyIncomeStatsHijriMap = new Map<string, { month: string, income: number, rank: number }>()
+    const monthlySalesStatsHijriMap = new Map<string, { month: string, count: number, rank: number }>()
+
     const now = new Date()
     const months = []
 
-    // Initialize last 6 months (including current)
+    // Initialize last 6 months (including current) for Gregorian
     for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
@@ -88,6 +93,8 @@ export async function getInvestorDashboardData(userId: string) {
     transactions.forEach(trx => {
         if (!trx.sellDate) return
         const d = new Date(trx.sellDate)
+
+        // Gregorian Key
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
 
         // Income (Investor's Profit Share)
@@ -99,6 +106,25 @@ export async function getInvestorDashboardData(userId: string) {
         if (monthlySalesStats.has(key)) {
             monthlySalesStats.set(key, (monthlySalesStats.get(key) || 0) + 1)
         }
+
+        // --- Hijri Grouping ---
+        const hijri = getHijriMonthYear(d)
+        const hijriKey = hijri.key
+
+        // Initialize if not exists
+        if (!monthlyIncomeStatsHijriMap.has(hijriKey)) {
+            // We use rank (timestamp) to sort later
+            monthlyIncomeStatsHijriMap.set(hijriKey, { month: hijriKey, income: 0, rank: d.getTime() })
+            monthlySalesStatsHijriMap.set(hijriKey, { month: hijriKey, count: 0, rank: d.getTime() })
+        }
+
+        if (trx.profitSharing) {
+            const current = monthlyIncomeStatsHijriMap.get(hijriKey)!
+            current.income += trx.profitSharing.investorProfitAmount
+        }
+
+        const currentSales = monthlySalesStatsHijriMap.get(hijriKey)!
+        currentSales.count += 1
     })
 
     const monthlyChartData = months.map(m => ({
@@ -110,6 +136,18 @@ export async function getInvestorDashboardData(userId: string) {
         month: m.label,
         count: monthlySalesStats.get(m.key) || 0
     }))
+
+    // Convert Hijri maps to sorted arrays
+    const monthlyChartDataHijri = Array.from(monthlyIncomeStatsHijriMap.values())
+        .sort((a, b) => a.rank - b.rank)
+        .map(item => ({ month: item.month, income: item.income }))
+
+    const monthlySalesTrendHijri = Array.from(monthlySalesStatsHijriMap.values())
+        .sort((a, b) => a.rank - b.rank)
+        .map(item => ({ month: item.month, count: item.count }))
+
+    // Recent transactions (reversed because we fetched asc)
+    const recentTransactions = [...transactions].reverse().slice(0, 5)
 
     return {
         investor,
@@ -123,6 +161,8 @@ export async function getInvestorDashboardData(userId: string) {
         },
         monthlyChartData,
         monthlySalesTrend,
-        recentTransactions: transactions.slice(0, 5) // Last 5 transactions
+        monthlyChartDataHijri,
+        monthlySalesTrendHijri,
+        recentTransactions
     }
 }

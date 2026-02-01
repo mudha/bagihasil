@@ -29,15 +29,27 @@ export function InvestorMonthlyChart({ data, className }: InvestorMonthlyChartPr
                 <CardTitle>Pendapatan Bulanan (6 Bulan Terakhir)</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
-                <div className="h-[250px] w-full">
+                <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
                             <XAxis
                                 dataKey="month"
                                 stroke="#888888"
-                                fontSize={12}
+                                fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
+                                interval={0}
+                                height={60}
+                                tick={{ dy: 10 }}
+                                angle={-45}
+                                textAnchor="end"
+                                tickFormatter={(val) => {
+                                    const parts = val.split(' ')
+                                    if (parts.length >= 2 && ['Awal', 'Akhir'].includes(parts[1])) {
+                                        return `${parts[0]} ${parts[1]}`
+                                    }
+                                    return parts[0]
+                                }}
                             />
                             <YAxis
                                 stroke="#888888"

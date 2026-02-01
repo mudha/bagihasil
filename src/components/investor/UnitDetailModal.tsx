@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Calendar, DollarSign, TrendingUp, Package } from "lucide-react"
-import { format } from "date-fns"
-import { id } from "date-fns/locale"
+import { formatHijriFull } from "@/lib/date-utils"
 
 interface UnitDetailModalProps {
     open: boolean
@@ -102,7 +101,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                                 <div>
                                     <p className="text-sm text-muted-foreground">Tanggal Beli</p>
                                     <p className="font-semibold">
-                                        {data.buyDate ? format(new Date(data.buyDate), "d MMMM yyyy", { locale: id }) : "-"}
+                                        {data.buyDate ? formatHijriFull(new Date(data.buyDate)) : "-"}
                                     </p>
                                 </div>
                             </div>

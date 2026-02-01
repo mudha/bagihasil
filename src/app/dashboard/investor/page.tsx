@@ -67,6 +67,8 @@ export default async function InvestorDashboardPage() {
             stats={stats}
             monthlyChartData={data.monthlyChartData}
             monthlySalesTrend={data.monthlySalesTrend}
+            monthlyChartDataHijri={data.monthlyChartDataHijri}
+            monthlySalesTrendHijri={data.monthlySalesTrendHijri}
             investmentsData={investmentsData}
             paymentsData={payments}
         />

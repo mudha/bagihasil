@@ -20,6 +20,8 @@ interface InvestorTabsProps {
     }
     monthlyChartData: any[]
     monthlySalesTrend: any[]
+    monthlyChartDataHijri: any[]
+    monthlySalesTrendHijri: any[]
     investmentsData: any[]
     paymentsData: any[]
 }
@@ -29,11 +31,14 @@ export function InvestorTabs({
     stats,
     monthlyChartData,
     monthlySalesTrend,
+    monthlyChartDataHijri,
+    monthlySalesTrendHijri,
     investmentsData,
     paymentsData
 }: InvestorTabsProps) {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [investmentFilter, setInvestmentFilter] = useState("")
+    const [calendarMode, setCalendarMode] = useState<'masehi' | 'hijri'>('masehi')
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat("id-ID", {
@@ -58,25 +63,31 @@ export function InvestorTabs({
 
     const handleActiveUnitsClick = () => {
         setActiveTab("investments")
-        // Filter untuk unit yang statusnya belum SOLD (misal: "AVAILABLE" atau "ON_PROCESS" yg belum COMPLETED)
-        // Di UI kita pakai bahasa Indonesia atau Inggris?
-        // Di DB: "AVAILABLE", "SOLD".
-        // Di InvestmentsTable kita filter berdasarkan text.
-        // Mari kita gunakan "AVAILABLE" sebagai keyword pencarian awal jika Table search support itu.
-        // Atau jika 'active' bermakna sedang berjalan, bisa 'Sedang Berjalan'.
-        // Mari kita coba "AVAILABLE" dulu, tapi user mungkin ingin lihat semua yang aktif (termasuk on process).
-        // Table search bersifat OR searching.
-        // Jika saya set "AVAILABLE", mungkin hanya filter status AVAILABLE.
-        // Mari kita cek InvestmentsTable lagi.
-        // unit.status (DB status) matches query OR transactionStatus matches query.
-        // Jika saya kirim "AVAILABLE", maka status AVAILABLE akan muncul.
         setInvestmentFilter("AVAILABLE")
     }
 
+    const currentMonthlyChartData = calendarMode === 'hijri' ? monthlyChartDataHijri : monthlyChartData
+    const currentMonthlySalesTrend = calendarMode === 'hijri' ? monthlySalesTrendHijri : monthlySalesTrend
+
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex justify-between items-center">
-                {/* Optional: Add extra header controls here if needed */}
+            <div className="flex justify-between items-center flex-wrap gap-4">
+                {/* Empty div or Title if needed */}
+                <div></div>
+                <div className="flex bg-muted p-1 rounded-lg">
+                    <button
+                        onClick={() => setCalendarMode('masehi')}
+                        className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${calendarMode === 'masehi' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/50'}`}
+                    >
+                        Masehi
+                    </button>
+                    <button
+                        onClick={() => setCalendarMode('hijri')}
+                        className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${calendarMode === 'hijri' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/50'}`}
+                    >
+                        Hijriyah
+                    </button>
+                </div>
             </div>
 
             <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
@@ -139,14 +150,14 @@ export function InvestorTabs({
                         <CardContent>
                             <div className="text-2xl font-bold text-blue-700">{stats.activeUnitsCount} Unit</div>
                             <p className="text-xs text-blue-600/80">Dari total {stats.totalUnitsCount} unit didanai</p>
-                            <p className="text-[10px] text-blue-400 mt-1 italic">Klik untuk lihat detail</p>
+                            <p className="text-blue-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
                         </CardContent>
                     </Card>
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                    <InvestorMonthlyChart data={monthlyChartData} className="lg:col-span-4" />
-                    <InvestorSalesTrendChart data={monthlySalesTrend} className="lg:col-span-3" />
+                    <InvestorMonthlyChart data={currentMonthlyChartData} className="lg:col-span-4" />
+                    <InvestorSalesTrendChart data={currentMonthlySalesTrend} className="lg:col-span-3" />
                 </div>
             </TabsContent>
 
