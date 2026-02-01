@@ -71,30 +71,34 @@ export function InvestorTabs({
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-                {/* Empty div or Title if needed */}
-                <div></div>
-                <div className="flex bg-muted p-1 rounded-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 mb-6">
+                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                    <TabsTrigger value="investments">Investasi</TabsTrigger>
+                    <TabsTrigger value="payments">Pembayaran</TabsTrigger>
+                </TabsList>
+
+                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-full border border-slate-200">
                     <button
                         onClick={() => setCalendarMode('masehi')}
-                        className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${calendarMode === 'masehi' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/50'}`}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
+                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
                     >
                         Masehi
                     </button>
                     <button
                         onClick={() => setCalendarMode('hijri')}
-                        className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${calendarMode === 'hijri' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:bg-background/50'}`}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
+                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
                     >
                         Hijriyah
                     </button>
                 </div>
             </div>
-
-            <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="investments">Investasi</TabsTrigger>
-                <TabsTrigger value="payments">Pembayaran</TabsTrigger>
-            </TabsList>
 
             <TabsContent value="dashboard" className="space-y-6">
                 <div>
