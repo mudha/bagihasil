@@ -111,7 +111,8 @@ export async function GET(req: Request) {
                 managerProfitAmount: true,
                 transaction: {
                     select: {
-                        sellDate: true
+                        sellDate: true,
+                        sellPrice: true
                     }
                 }
             },
@@ -120,14 +121,14 @@ export async function GET(req: Request) {
             }
         })
 
-        const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number }>()
+        const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number, totalRevenue: number }>()
 
         // Initialize last N months with 0
         for (let i = 0; i < monthsRange; i++) {
             const d = new Date()
             d.setMonth(d.getMonth() - i)
             const key = d.toLocaleString('default', { month: 'short', year: 'numeric' }) // e.g., "Dec 2025"
-            monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0 })
+            monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
         }
 
         monthlyProfits.forEach(profit => {
@@ -142,6 +143,7 @@ export async function GET(req: Request) {
                 current.investorShare += profit.investorProfitAmount
                 current.managerShare += profit.managerProfitAmount
                 current.unitsSold += 1
+                current.totalRevenue += (profit.transaction?.sellPrice || 0)
             }
         })
 

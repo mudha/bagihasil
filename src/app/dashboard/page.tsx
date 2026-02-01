@@ -35,6 +35,7 @@ interface MonthlyStat {
     investorShare: number
     managerShare: number
     unitsSold: number
+    totalRevenue: number
 }
 
 interface UnitStatusStat {
@@ -336,7 +337,36 @@ export default function DashboardPage() {
                 </Card>
             )}
 
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="lg:col-span-1">
+                    <CardHeader>
+                        <CardTitle>Total Omset Bulanan</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                        <div className="h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={stats.monthlyStats}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        stroke="#888888"
+                                        fontSize={10}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(val) => val.split(' ')[0]}
+                                    />
+                                    <YAxis hide />
+                                    <Tooltip
+                                        formatter={(value: number) => formatCurrency(value)}
+                                        labelStyle={{ color: 'black' }}
+                                    />
+                                    <Bar dataKey="totalRevenue" name="Omset" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Total Monthly Profit Chart (NEW) */}
                 <Card className="lg:col-span-1">
                     <CardHeader>
