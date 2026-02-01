@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { getHijriMonthYear } from "@/lib/date-utils"
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -82,7 +83,7 @@ export async function GET(req: Request) {
             }
         })
 
-        // 3. Monthly Stats
+        // 3. Monthly Stats (Gregorian & Hijri)
         const startDate = new Date()
         startDate.setMonth(startDate.getMonth() - (monthsRange - 1)) // -1 because current month is included
         startDate.setDate(1)
@@ -131,8 +132,8 @@ export async function GET(req: Request) {
             monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
         }
 
+        // Gregorian Grouping
         monthlyProfits.forEach(profit => {
-            // Use sellDate from transaction for monthly grouping, not calculatedAt
             const sellDate = profit.transaction?.sellDate
             if (!sellDate) return // Skip if no sell date
 
@@ -146,6 +147,39 @@ export async function GET(req: Request) {
                 current.totalRevenue += (profit.transaction?.sellPrice || 0)
             }
         })
+
+        // Hijri Grouping
+        const monthlyStatsHijriMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number, totalRevenue: number }>()
+
+        // We can't easily iterate "last 6 Hijri months" without a complex library, 
+        // effectively we will just group the fetched profits by Hijri month.
+        // The query "monthsRange" still applies to the calculatedAt date in Gregorian, 
+        // which roughly corresponds to the recent period.
+
+        monthlyProfits.forEach(profit => {
+            const sellDate = profit.transaction?.sellDate
+            if (!sellDate) return
+
+            const { key } = getHijriMonthYear(sellDate)
+
+            if (!monthlyStatsHijriMap.has(key)) {
+                monthlyStatsHijriMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
+            }
+
+            const current = monthlyStatsHijriMap.get(key)!
+            current.totalMargin += profit.netMargin
+            current.investorShare += profit.investorProfitAmount
+            current.managerShare += profit.managerProfitAmount
+            current.unitsSold += 1
+            current.totalRevenue += (profit.transaction?.sellPrice || 0)
+        })
+
+        // Sort Hijri stats (rough sort by assuming order in array or using first date found, but Map iteration order is insertion order usually)
+        // Better: Sort by the actual sellDate of the first transaction in that bucket? 
+        // For simplicity, we'll convert to array. The order might need improvement if months are non-continuous.
+        const monthlyStatsHijri = Array.from(monthlyStatsHijriMap.values())
+        // To sort properly we might need a mapping key -> comparable value. 
+        // Given we fetch by date ascending, the insertion order in Map should be correct.
 
         // Convert map to array and sort by date
         const monthlyStats = Array.from(monthlyStatsMap.values()).sort((a, b) => {
@@ -255,7 +289,8 @@ export async function GET(req: Request) {
             totalManagerProfit: profitStats._sum.managerProfitAmount || 0,
             totalCapitalDeployed,
             investorStats,
-            monthlyStats,
+            monthlyStats, // Gregorian
+            monthlyStatsHijri,
             unitStatusDistribution,
             recentTransactions: formattedRecentTransactions,
             taxReminders

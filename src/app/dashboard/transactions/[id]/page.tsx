@@ -36,6 +36,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
+import { formatHijriFull } from "@/lib/date-utils"
 import { ArrowLeft, Plus, DollarSign, Pencil, Trash2, Calendar } from "lucide-react"
 import Link from "next/link"
 import { AddPaymentDialog } from "@/components/transactions/AddPaymentDialog"
@@ -199,7 +200,7 @@ export default function TransactionDetailPage() {
                             <span className="text-slate-300 mx-1">|</span>
                             <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                                 <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                                <span>{format(new Date(transaction.buyDate), 'd MMMM yyyy', { locale: id })}</span>
+                                <span>{formatHijriFull(new Date(transaction.buyDate))}</span>
                             </div>
                         </div>
                     </div>
@@ -447,11 +448,11 @@ export default function TransactionDetailPage() {
                                 </div>
                                 <div>
                                     <span className="font-medium">Tanggal Beli:</span>
-                                    <p>{format(new Date(transaction.buyDate), 'dd MMMM yyyy')}</p>
+                                    <p>{formatHijriFull(new Date(transaction.buyDate))}</p>
                                 </div>
                                 <div>
                                     <span className="font-medium">Tanggal Laku:</span>
-                                    <p>{transaction.sellDate ? format(new Date(transaction.sellDate), 'dd MMMM yyyy') : '-'}</p>
+                                    <p>{transaction.sellDate ? formatHijriFull(new Date(transaction.sellDate)) : '-'}</p>
                                 </div>
                                 <div className="col-span-2">
                                     <span className="font-medium">Catatan:</span>
@@ -591,7 +592,7 @@ export default function TransactionDetailPage() {
                                         <TableBody>
                                             {transaction.paymentHistories.map((payment: any) => (
                                                 <TableRow key={payment.id}>
-                                                    <TableCell>{format(new Date(payment.paymentDate), 'dd MMM yyyy')}</TableCell>
+                                                    <TableCell>{formatHijriFull(new Date(payment.paymentDate))}</TableCell>
                                                     <TableCell>
                                                         <Badge variant="outline">{payment.method}</Badge>
                                                     </TableCell>

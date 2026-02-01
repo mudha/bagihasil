@@ -43,7 +43,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { format } from "date-fns"
+import { formatHijriFull } from "@/lib/date-utils"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { ImportTransactionsDialog } from "@/components/import/ImportTransactionsDialog"
 import { EditStatusDialog } from "@/components/transactions/EditStatusDialog"
@@ -971,7 +974,7 @@ export default function TransactionsPage() {
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Tanggal Beli</span>
-                                    <span className="font-medium text-xs">{format(new Date(trx.buyDate), 'dd MMM yy')}</span>
+                                    <span className="font-medium text-xs">{formatHijriFull(new Date(trx.buyDate))}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Harga Beli</span>
@@ -983,7 +986,7 @@ export default function TransactionsPage() {
                                     <>
                                         <div>
                                             <span className="block text-xs text-muted-foreground mb-1">Tanggal Jual</span>
-                                            <span className="font-medium text-xs">{format(new Date(trx.sellDate), 'dd MMM yy')}</span>
+                                            <span className="font-medium text-xs">{formatHijriFull(new Date(trx.sellDate))}</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-muted-foreground mb-1">Harga Jual</span>
@@ -1280,12 +1283,12 @@ export default function TransactionsPage() {
                                     <div className="font-medium">{trx.unit.name}</div>
                                     <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
                                 </TableCell>
-                                <TableCell>{format(new Date(trx.buyDate), 'dd MMM yyyy')}</TableCell>
+                                <TableCell>{formatHijriFull(new Date(trx.buyDate))}</TableCell>
                                 <TableCell>
                                     {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.buyPrice)}
                                 </TableCell>
                                 <TableCell>
-                                    {trx.sellDate ? format(new Date(trx.sellDate), 'dd MMM yyyy') : "-"}
+                                    {trx.sellDate ? formatHijriFull(new Date(trx.sellDate)) : "-"}
                                 </TableCell>
                                 <TableCell>
                                     {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.sellPrice) : "-"}

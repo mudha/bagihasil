@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
+import { formatHijriFull } from "@/lib/date-utils"
 import { ViewImageDialog } from "@/components/ui/view-image-dialog"
 import { Badge } from "@/components/ui/badge"
 
@@ -100,7 +101,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                                     <div className="flex items-center gap-2 mb-1">
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm font-medium">
-                                            {format(new Date(pay.paymentDate), "dd MMM yyyy", { locale: id })}
+                                            {formatHijriFull(new Date(pay.paymentDate))}
                                         </span>
                                     </div>
                                     <h3 className="font-semibold text-base">{pay.transaction?.unit.name || "-"}</h3>
@@ -178,7 +179,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                             sortedData.map(pay => (
                                 <TableRow key={pay.id}>
                                     <TableCell>
-                                        {format(new Date(pay.paymentDate), "dd MMM yyyy", { locale: id })}
+                                        {formatHijriFull(new Date(pay.paymentDate))}
                                     </TableCell>
                                     <TableCell>
                                         {pay.transaction?.unit.name || "-"}

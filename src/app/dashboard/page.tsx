@@ -3,10 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Car, CheckCircle, DollarSign, TrendingUp, Download, FileText, FileSpreadsheet, Wallet } from "lucide-react"
+import { Car, CheckCircle, DollarSign, TrendingUp, Download, FileText, FileSpreadsheet, Wallet, Calendar } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
+import { formatHijriFull } from "@/lib/date-utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -71,6 +73,7 @@ interface DashboardStats {
     totalCapitalDeployed: number
     investorStats: InvestorStat[]
     monthlyStats: MonthlyStat[]
+    monthlyStatsHijri: MonthlyStat[]
     unitStatusDistribution: UnitStatusStat[]
     recentTransactions: RecentTransaction[]
     taxReminders?: TaxReminder[]
@@ -83,6 +86,7 @@ export default function DashboardPage() {
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [exportingReport, setExportingReport] = useState(false)
     const [monthsRange, setMonthsRange] = useState<string>("6")
+    const [calendarMode, setCalendarMode] = useState<"gregorian" | "hijri">("gregorian")
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -106,6 +110,7 @@ export default function DashboardPage() {
                 if (!data.recentTransactions) data.recentTransactions = [];
                 if (!data.unitStatusDistribution) data.unitStatusDistribution = [];
                 if (!data.monthlyStats) data.monthlyStats = [];
+                if (!data.monthlyStatsHijri) data.monthlyStatsHijri = [];
                 if (!data.taxReminders) data.taxReminders = [];
 
                 setStats(data)
@@ -125,6 +130,15 @@ export default function DashboardPage() {
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
+    }
+
+    const formatXAxisDate = (val: string) => {
+        const parts = val.split(' ')
+        // Handle 2-word Hijri months (e.g., Jumadil Awal, Rabiul Akhir)
+        if (parts.length >= 2 && ['Awal', 'Akhir'].includes(parts[1])) {
+            return `${parts[0]} ${parts[1]}`
+        }
+        return parts[0]
     }
 
     const handleExportXLSX = async () => {
@@ -165,6 +179,8 @@ export default function DashboardPage() {
         setExportingReport(false)
     }
 
+    const currentMonthlyStats = calendarMode === 'hijri' ? (stats.monthlyStatsHijri || []) : (stats.monthlyStats || [])
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -183,6 +199,13 @@ export default function DashboardPage() {
                             ))}
                         </SelectContent>
                     </Select>
+
+                    <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-[180px]">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="gregorian">Masehi</TabsTrigger>
+                            <TabsTrigger value="hijri">Hijri</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
 
                     {/* Month Range Selector */}
                     <Select value={monthsRange} onValueChange={setMonthsRange}>
@@ -345,7 +368,7 @@ export default function DashboardPage() {
                     <CardContent className="pl-2">
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyStats}>
+                                <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis
                                         dataKey="month"
@@ -353,7 +376,12 @@ export default function DashboardPage() {
                                         fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
-                                        tickFormatter={(val) => val.split(' ')[0]}
+                                        tickFormatter={formatXAxisDate}
+                                        interval={0}
+                                        height={60}
+                                        tick={{ dy: 10 }}
+                                        angle={-45}
+                                        textAnchor="end"
                                     />
                                     <YAxis hide />
                                     <Tooltip
@@ -375,7 +403,7 @@ export default function DashboardPage() {
                     <CardContent className="pl-2">
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyStats}>
+                                <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis
                                         dataKey="month"
@@ -383,7 +411,12 @@ export default function DashboardPage() {
                                         fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
-                                        tickFormatter={(val) => val.split(' ')[0]}
+                                        tickFormatter={formatXAxisDate}
+                                        interval={0}
+                                        height={60}
+                                        tick={{ dy: 10 }}
+                                        angle={-45}
+                                        textAnchor="end"
                                     />
                                     <YAxis hide />
                                     <Tooltip
@@ -407,7 +440,7 @@ export default function DashboardPage() {
                     <CardContent className="pl-2">
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyStats}>
+                                <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis
                                         dataKey="month"
@@ -415,7 +448,12 @@ export default function DashboardPage() {
                                         fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
-                                        tickFormatter={(val) => val.split(' ')[0]}
+                                        tickFormatter={formatXAxisDate}
+                                        interval={0}
+                                        height={60}
+                                        tick={{ dy: 10 }}
+                                        angle={-45}
+                                        textAnchor="end"
                                     />
                                     <YAxis
                                         hide
@@ -441,7 +479,7 @@ export default function DashboardPage() {
                     <CardContent className="pl-2">
                         <div className="h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stats.monthlyStats}>
+                                <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis
                                         dataKey="month"
@@ -449,7 +487,12 @@ export default function DashboardPage() {
                                         fontSize={10}
                                         tickLine={false}
                                         axisLine={false}
-                                        tickFormatter={(val) => val.split(' ')[0]}
+                                        tickFormatter={formatXAxisDate}
+                                        interval={0}
+                                        height={60}
+                                        tick={{ dy: 10 }}
+                                        angle={-45}
+                                        textAnchor="end"
                                     />
                                     <YAxis
                                         hide
@@ -479,7 +522,7 @@ export default function DashboardPage() {
                                     <div className="space-y-1 flex-1">
                                         <p className="text-sm font-medium leading-none">{tx.code} - {tx.unitName}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {format(new Date(tx.date), 'dd MMM yyyy')} • {tx.type}
+                                            {formatHijriFull(new Date(tx.date))} • {tx.type}
                                         </p>
                                     </div>
                                     <div className="text-right">

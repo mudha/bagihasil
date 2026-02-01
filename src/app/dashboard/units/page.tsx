@@ -47,6 +47,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format, isPast, isWithinInterval, addDays } from "date-fns"
+import { formatHijriFull } from "@/lib/date-utils"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -1203,7 +1204,8 @@ export default function UnitsPage() {
                                                     end: addDays(new Date(), 30)
                                                 }) ? "text-amber-600" : "text-green-600"
                                         )}>
-                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                        )}>
+                                            {formatHijriFull(new Date(unit.taxDueDate))}
                                         </span>
                                     ) : (
                                         <span className="text-muted-foreground italic">-</span>
@@ -1448,7 +1450,7 @@ export default function UnitsPage() {
                                                     end: addDays(new Date(), 30)
                                                 }) ? "text-amber-600" : "text-green-600"
                                         )}>
-                                            {format(new Date(unit.taxDueDate), "dd MMM yyyy")}
+                                            {formatHijriFull(new Date(unit.taxDueDate))}
                                         </span>
                                     ) : (
                                         <span className="text-muted-foreground italic">-</span>
