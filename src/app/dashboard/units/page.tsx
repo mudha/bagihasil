@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -175,6 +176,7 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 
 export default function UnitsPage() {
     const { data: session } = useSession()
+    const searchParams = useSearchParams()
     // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
 
@@ -192,6 +194,13 @@ export default function UnitsPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState("ALL")
+
+    useEffect(() => {
+        const status = searchParams.get('status')
+        if (status) {
+            setStatusFilter(status)
+        }
+    }, [searchParams])
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort", "code", "asc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
