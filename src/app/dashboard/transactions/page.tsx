@@ -1,5 +1,7 @@
 "use client"
 
+import { Suspense } from "react"
+
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -153,7 +155,7 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 }
 
 
-export default function TransactionsPage() {
+function TransactionsPageContent() {
     const { data: session } = useSession()
     const searchParams = useSearchParams()
     // @ts-ignore
@@ -1427,5 +1429,13 @@ export default function TransactionsPage() {
             />
 
         </div >
+    )
+}
+
+export default function TransactionsPage() {
+    return (
+        <Suspense fallback={<div className="p-8">Loading...</div>}>
+            <TransactionsPageContent />
+        </Suspense>
     )
 }

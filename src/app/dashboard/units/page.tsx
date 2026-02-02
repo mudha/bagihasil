@@ -1,5 +1,7 @@
 "use client"
 
+import { Suspense } from "react"
+
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
@@ -174,7 +176,7 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 }
 
 
-export default function UnitsPage() {
+function UnitsPageContent() {
     const { data: session } = useSession()
     const searchParams = useSearchParams()
     // @ts-ignore
@@ -1550,5 +1552,13 @@ export default function UnitsPage() {
                 unit={viewingUnit}
             />
         </div>
+    )
+}
+
+export default function UnitsPage() {
+    return (
+        <Suspense fallback={<div className="p-8">Loading...</div>}>
+            <UnitsPageContent />
+        </Suspense>
     )
 }
