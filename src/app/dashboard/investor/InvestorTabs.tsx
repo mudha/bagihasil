@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InvestmentsTable } from "@/components/investor/InvestmentsTable"
 import { PaymentsTable } from "@/components/investor/PaymentsTable"
-import { DollarSign, TrendingUp, Package, Wallet } from "lucide-react"
+import { DollarSign, TrendingUp, Package, Wallet, CheckCircle } from "lucide-react"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 
@@ -16,6 +16,8 @@ interface InvestorTabsProps {
         activeCapital: number
         totalProfit: number
         activeUnitsCount: number
+        activeUnitsCount: number
+        soldUnitsCount: number
         totalUnitsCount: number
     }
     monthlyChartData: any[]
@@ -66,6 +68,11 @@ export function InvestorTabs({
         setInvestmentFilter("AVAILABLE")
     }
 
+    const handleSoldUnitsClick = () => {
+        setActiveTab("investments")
+        setInvestmentFilter("SOLD")
+    }
+
     const currentMonthlyChartData = calendarMode === 'hijri' ? monthlyChartDataHijri : monthlyChartData
     const currentMonthlySalesTrend = calendarMode === 'hijri' ? monthlySalesTrendHijri : monthlySalesTrend
 
@@ -82,8 +89,8 @@ export function InvestorTabs({
                     <button
                         onClick={() => setCalendarMode('masehi')}
                         className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         Masehi
@@ -91,8 +98,8 @@ export function InvestorTabs({
                     <button
                         onClick={() => setCalendarMode('hijri')}
                         className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                     >
                         Hijriyah
@@ -157,6 +164,20 @@ export function InvestorTabs({
                             <p className="text-blue-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
                         </CardContent>
                     </Card>
+                    <Card
+                        className="cursor-pointer hover:bg-slate-50 transition-colors border-amber-200"
+                        onClick={handleSoldUnitsClick}
+                    >
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-amber-700">Unit Terjual</CardTitle>
+                            <CheckCircle className="h-4 w-4 text-amber-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-amber-700">{stats.soldUnitsCount} Unit</div>
+                            <p className="text-xs text-amber-600/80">Sudah selesai transaksi</p>
+                            <p className="text-amber-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
@@ -186,6 +207,6 @@ export function InvestorTabs({
                     </CardContent>
                 </Card>
             </TabsContent>
-        </Tabs>
+        </Tabs >
     )
 }

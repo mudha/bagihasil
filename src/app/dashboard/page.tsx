@@ -283,16 +283,18 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">Modal di unit aktif</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Transaksi Selesai</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold sm:text-xl truncate">{stats.completedTransactions}</div>
-                        <p className="text-xs text-muted-foreground">Total unit terjual</p>
-                    </CardContent>
-                </Card>
+                <Link href="/dashboard/transactions?status=COMPLETED">
+                    <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Unit Terjual</CardTitle>
+                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-lg font-bold sm:text-xl truncate">{stats.completedTransactions}</div>
+                            <p className="text-xs text-muted-foreground">Unit sudah lunas / selesai</p>
+                        </CardContent>
+                    </Card>
+                </Link>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Margin</CardTitle>

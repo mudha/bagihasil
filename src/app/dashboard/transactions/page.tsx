@@ -43,6 +43,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { format } from "date-fns"
 import { formatHijriFull } from "@/lib/date-utils"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
@@ -154,6 +155,7 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 
 export default function TransactionsPage() {
     const { data: session } = useSession()
+    const searchParams = useSearchParams()
     // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
 
@@ -171,6 +173,13 @@ export default function TransactionsPage() {
     const [exportingTransactionId, setExportingTransactionId] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState("ALL")
+
+    useEffect(() => {
+        const status = searchParams.get('status')
+        if (status) {
+            setStatusFilter(status)
+        }
+    }, [searchParams])
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("transactions-sort", "buyDate", "desc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([])

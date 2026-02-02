@@ -157,6 +157,8 @@ export async function getInvestorDashboardData(userId: string) {
             totalProfit,
             totalReceived,
             activeUnitsCount,
+            activeUnitsCount,
+            soldUnitsCount: await db.unit.count({ where: { investorId: investor.id, status: "SOLD" } }),
             totalUnitsCount
         },
         monthlyChartData,
