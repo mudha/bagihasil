@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { v2 as cloudinary } from 'cloudinary'
+import ImageKit from 'imagekit'
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+// Configure ImageKit
+const imagekit = new ImageKit({
+    publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+    urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
 })
 
 export async function POST(request: NextRequest) {
@@ -21,15 +21,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate file type
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png']
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
         if (!validTypes.includes(file.type)) {
             return NextResponse.json(
-                { error: 'Tipe file tidak valid. Hanya JPG dan PNG yang diperbolehkan.' },
+                { error: 'Tipe file tidak valid. Hanya JPG, PNG, dan WEBP yang diperbolehkan.' },
                 { status: 400 }
             )
         }
 
-        // Validate file size (max 10MB for Cloudinary free tier is usually fine, but let's keep it reasonable)
+        // Validate file size (max 10MB)
         const maxSize = 10 * 1024 * 1024 // 10MB
         if (file.size > maxSize) {
             return NextResponse.json(
@@ -42,29 +42,27 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        // Upload to Cloudinary using buffer
+        // Upload to ImageKit
         const uploadResult = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'profit-sharing-app/payment-proofs',
-                    resource_type: 'auto',
-                },
-                (error, result) => {
-                    if (error) reject(error)
-                    else resolve(result)
-                }
-            )
-            uploadStream.end(buffer)
+            imagekit.upload({
+                file: buffer, // required
+                fileName: file.name, // required
+                folder: '/profit-sharing-app/payment-proofs',
+                useUniqueFileName: true,
+            }, (error, result) => {
+                if (error) reject(error)
+                else resolve(result)
+            })
         }) as any
 
         return NextResponse.json({
             success: true,
-            url: uploadResult.secure_url,
-            publicId: uploadResult.public_id,
-            filename: file.name
+            url: uploadResult.url,
+            publicId: uploadResult.fileId, // imagekit uses fileId
+            filename: uploadResult.name
         })
     } catch (error) {
-        console.error('Error uploading to Cloudinary:', error)
+        console.error('Error uploading to ImageKit:', error)
         return NextResponse.json(
             { error: 'Gagal mengupload file ke Cloud' },
             { status: 500 }
