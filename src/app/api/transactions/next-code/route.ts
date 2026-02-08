@@ -37,15 +37,18 @@ export async function GET(req: Request) {
             // Format: TRX-<INVESTOR>-<YEAR>-<SEQUENCE>
             const prefix = `TRX-${rawPrefix}-${currentYear}`
 
-            // Find the latest transaction for this investor
+            // Find the latest transaction for this investor in the current year
             const latestTransaction = await prisma.transaction.findFirst({
                 where: {
                     unit: {
                         investorId: unit.investor.id
+                    },
+                    transactionCode: {
+                        startsWith: prefix // Only get transactions from current year
                     }
                 },
                 orderBy: {
-                    createdAt: 'desc'
+                    transactionCode: 'desc' // Order by code to get highest number
                 },
                 select: {
                     transactionCode: true
@@ -55,8 +58,7 @@ export async function GET(req: Request) {
             let nextCode = `${prefix}-0001`
 
             if (latestTransaction?.transactionCode) {
-                console.log('Latest transaction code:', latestTransaction.transactionCode)
-                // Try to extract the number part from the code
+                // Extract the number part from the code
                 // Example: TRX-WAH-2026-0007 -> 0007
                 const match = latestTransaction.transactionCode.match(/(\d+)$/)
 
@@ -65,13 +67,10 @@ export async function GET(req: Request) {
                     const lastNum = parseInt(lastNumStr)
                     const nextNum = lastNum + 1
 
-                    // Preserve the padding length
+                    // Preserve the padding length (minimum 4 digits)
                     const padLength = Math.max(lastNumStr.length, 4)
                     nextCode = `${prefix}-${String(nextNum).padStart(padLength, '0')}`
-                    console.log('Generated next code:', nextCode)
                 }
-            } else {
-                console.log('No previous transaction found, using:', nextCode)
             }
 
             return NextResponse.json({ code: nextCode })

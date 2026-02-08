@@ -8,3 +8,156 @@ About to create transaction in DB...
 Payload: {"unitId":"cmkv832e30001xpmbv8314nwz","transactionCode":"TRX-WAH-2026-0014","buyDate":"2026-01-25","buyPrice":42000000,"initialInvestorCapital":42000000,"notes":"","proofs":[{"imageUrl":"https://res.cloudinary.com/djahxdfhq/image/upload/v1769444584/profit-sharing-app/payment-proofs/ghjpgzyuhlgcsdwuvyrv.png","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://res.cloudinary.com/djahxdfhq/image/upload/v1769444584/profit-sharing-app/payment-proofs/ghjpgzyuhlgcsdwuvyrv.png"}
 About to create transaction in DB...
 Transaction created successfully: cmkvdmdni000bw2dzsgh6n9d2
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_kRSmrfmLQ.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_F9JxZxDMo.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_kRSmrfmLQ.jpeg"}
+About to create transaction in DB...
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_aNg13R9Zo.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_g07qJi7BK.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_aNg13R9Zo.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_aNg13R9Zo.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_g07qJi7BK.jpeg","description":"Bukti Transfer Pembelian"}]
+Error Occurred: The "payload" argument must be of type object. Received null
+TypeError: The "payload" argument must be of type object. Received null
+    at cloneSourceMapV3 (node:internal/source_map/source_map:365:3)
+    at new SourceMap (node:internal/source_map/source_map:145:21)
+    at findSourceMap (node:internal/source_map/source_map_cache:339:17)
+    at getSourcemappedFrameIfPossible (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:163:90)
+    at parseAndSourceMap (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:265:39)
+    at sourceMapError (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:288:22)
+    at C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:306:30
+    at AsyncLocalStorage.exit (node:async_hooks:358:14)
+    at errorConstructor.<computed> (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:305:67)
+    at formatValue (node:internal/util/inspect:806:19)
+    at inspect (node:internal/util/inspect:365:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2304:40)
+    at formatWithOptions (node:internal/util/inspect:2166:10)
+    at console.value (node:internal/console/constructor:358:14)
+    at console.error (node:internal/console/constructor:395:61)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:114:12057)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:122:12719)
+    at POST (webpack-internal:///(rsc)/./src/app/api/transactions/route.ts:140:21)
+    at async AppRouteRouteModule.do (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:32847)
+    at async AppRouteRouteModule.handle (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:39868)
+    at async doRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1452:42)
+    at async responseGenerator (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1822:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1832:28)
+    at async DevServer.renderPageComponent (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2257:24)
+    at async DevServer.renderToResponseImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2295:32)
+    at async DevServer.pipeImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:959:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\next-server.js:281:17)
+    at async DevServer.handleRequestImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:853:17)
+    at async C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:371:20
+    at async Span.traceAsyncFn (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\trace\trace.js:153:20)
+    at async DevServer.handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:368:24)
+    at async invokeRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:230:21)
+    at async handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:408:24)
+    at async requestHandlerImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:432:13)
+    at async Server.requestListener (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\start-server.js:146:13)
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Eyp4iM0pi.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_KODl-9IJK.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Eyp4iM0pi.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Eyp4iM0pi.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_KODl-9IJK.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Eyp4iM0pi.jpeg","status":"ON_PROCESS"}
+Error Occurred: The "payload" argument must be of type object. Received null
+TypeError: The "payload" argument must be of type object. Received null
+    at cloneSourceMapV3 (node:internal/source_map/source_map:365:3)
+    at new SourceMap (node:internal/source_map/source_map:145:21)
+    at findSourceMap (node:internal/source_map/source_map_cache:339:17)
+    at getSourcemappedFrameIfPossible (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:163:90)
+    at parseAndSourceMap (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:265:39)
+    at sourceMapError (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:288:22)
+    at C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:306:30
+    at AsyncLocalStorage.exit (node:async_hooks:358:14)
+    at errorConstructor.<computed> (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:305:67)
+    at formatValue (node:internal/util/inspect:806:19)
+    at inspect (node:internal/util/inspect:365:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2304:40)
+    at formatWithOptions (node:internal/util/inspect:2166:10)
+    at console.value (node:internal/console/constructor:358:14)
+    at console.error (node:internal/console/constructor:395:61)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:114:12057)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:122:12719)
+    at POST (webpack-internal:///(rsc)/./src/app/api/transactions/route.ts:156:21)
+    at async AppRouteRouteModule.do (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:32847)
+    at async AppRouteRouteModule.handle (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:39868)
+    at async doRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1452:42)
+    at async responseGenerator (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1822:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1832:28)
+    at async DevServer.renderPageComponent (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2257:24)
+    at async DevServer.renderToResponseImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2295:32)
+    at async DevServer.pipeImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:959:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\next-server.js:281:17)
+    at async DevServer.handleRequestImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:853:17)
+    at async C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:371:20
+    at async Span.traceAsyncFn (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\trace\trace.js:153:20)
+    at async DevServer.handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:368:24)
+    at async invokeRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:230:21)
+    at async handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:408:24)
+    at async requestHandlerImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:432:13)
+    at async Server.requestListener (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\start-server.js:146:13)
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_r5rm5wCRZ.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_UP4nb-SSL.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_r5rm5wCRZ.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_r5rm5wCRZ.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_UP4nb-SSL.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_r5rm5wCRZ.jpeg","status":"ON_PROCESS"}
+Error Occurred: The "payload" argument must be of type object. Received null
+TypeError: The "payload" argument must be of type object. Received null
+    at cloneSourceMapV3 (node:internal/source_map/source_map:365:3)
+    at new SourceMap (node:internal/source_map/source_map:145:21)
+    at findSourceMap (node:internal/source_map/source_map_cache:339:17)
+    at getSourcemappedFrameIfPossible (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:163:90)
+    at parseAndSourceMap (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:265:39)
+    at sourceMapError (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:288:22)
+    at C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:306:30
+    at AsyncLocalStorage.exit (node:async_hooks:358:14)
+    at errorConstructor.<computed> (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\patch-error-inspect.js:305:67)
+    at formatValue (node:internal/util/inspect:806:19)
+    at inspect (node:internal/util/inspect:365:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2304:40)
+    at formatWithOptions (node:internal/util/inspect:2166:10)
+    at console.value (node:internal/console/constructor:358:14)
+    at console.error (node:internal/console/constructor:395:61)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:114:12057)
+    at console.error (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:122:12719)
+    at POST (webpack-internal:///(rsc)/./src/app/api/transactions/route.ts:156:21)
+    at async AppRouteRouteModule.do (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:32847)
+    at async AppRouteRouteModule.handle (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:10:39868)
+    at async doRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1452:42)
+    at async responseGenerator (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1822:28)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:1832:28)
+    at async DevServer.renderPageComponent (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2257:24)
+    at async DevServer.renderToResponseImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:2295:32)
+    at async DevServer.pipeImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:959:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\next-server.js:281:17)
+    at async DevServer.handleRequestImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\base-server.js:853:17)
+    at async C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:371:20
+    at async Span.traceAsyncFn (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\trace\trace.js:153:20)
+    at async DevServer.handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\dev\next-dev-server.js:368:24)
+    at async invokeRender (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:230:21)
+    at async handleRequest (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:408:24)
+    at async requestHandlerImpl (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\router-server.js:432:13)
+    at async Server.requestListener (C:\Users\armud\.gemini\antigravity\scratch\profit_sharing_app\node_modules\next\dist\server\lib\start-server.js:146:13)
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_wkFmCPdD4t.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_bF1Hgq2C0.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_wkFmCPdD4t.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_wkFmCPdD4t.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_bF1Hgq2C0.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_wkFmCPdD4t.jpeg","status":"ON_PROCESS"}
+Outer Error: Message: The "payload" argument must be of type object. Received null, Code: ERR_INVALID_ARG_TYPE
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Np7ZXCY-r.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_ChaSbS1cO.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Np7ZXCY-r.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Np7ZXCY-r.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_ChaSbS1cO.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_Np7ZXCY-r.jpeg","status":"ON_PROCESS"}
+Outer Error: Message: The "payload" argument must be of type object. Received null, Code: ERR_INVALID_ARG_TYPE
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_vyQJM5vLh.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_BVSkflgR1.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_vyQJM5vLh.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_vyQJM5vLh.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_BVSkflgR1.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_vyQJM5vLh.jpeg","status":"ON_PROCESS"}
+Outer Error: Message: The "payload" argument must be of type object. Received null, Code: ERR_INVALID_ARG_TYPE
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_FlMS3l-Sz.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_XET7lEcVR.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_FlMS3l-Sz.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_FlMS3l-Sz.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_XET7lEcVR.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0016","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_FlMS3l-Sz.jpeg","status":"ON_PROCESS"}
+CRITICAL DB ERROR: Code: P2002, Message: 
+Invalid `prisma.transaction.create()` invocation:
+
+
+Unique constraint failed on the fields: (`transactionCode`)
+Outer Error: Message: 
+Invalid `prisma.transaction.create()` invocation:
+
+
+Unique constraint failed on the fields: (`transactionCode`), Code: P2002

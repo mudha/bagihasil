@@ -104,6 +104,15 @@ interface Transaction {
             name: string
         }
     }
+    initialInvestorCapital?: number | null
+    initialManagerCapital?: number | null
+    buyProofImageUrl?: string | null
+    buyProofDescription?: string | null
+    notes?: string | null
+    costs?: {
+        amount: number
+        description: string
+    }[]
 }
 
 interface Unit {
