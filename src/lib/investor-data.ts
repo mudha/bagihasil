@@ -79,7 +79,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     const monthlySalesStatsHijriMap = new Map<string, { month: string, count: number, rank: number }>()
 
     const now = new Date()
-    const months = []
+    const monthsArray = []
 
     // Initialize months based on parameter (including current) for Gregorian
     for (let i = months - 1; i >= 0; i--) {
@@ -89,7 +89,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
         monthlyIncomeStats.set(key, 0)
         monthlyRevenueStats.set(key, 0)
         monthlySalesStats.set(key, 0)
-        months.push({ key, label })
+        monthsArray.push({ key, label })
     }
 
     // Use Transactions for Monthly Stats (Based on PROFIT SHARING)
@@ -141,17 +141,17 @@ export async function getInvestorDashboardData(userId: string, months: number = 
         currentSales.count += 1
     })
 
-    const monthlyChartData = months.map(m => ({
+    const monthlyChartData = monthsArray.map(m => ({
         month: m.label,
         income: monthlyIncomeStats.get(m.key) || 0
     }))
 
-    const monthlySalesTrend = months.map(m => ({
+    const monthlySalesTrend = monthsArray.map(m => ({
         month: m.label,
         count: monthlySalesStats.get(m.key) || 0
     }))
 
-    const monthlyRevenueData = months.map(m => ({
+    const monthlyRevenueData = monthsArray.map(m => ({
         month: m.label,
         revenue: monthlyRevenueStats.get(m.key) || 0
     }))
