@@ -45,7 +45,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { formatHijriFull } from "@/lib/date-utils"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
@@ -167,6 +167,7 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 
 function TransactionsPageContent() {
     const { data: session } = useSession()
+    const router = useRouter()
     const searchParams = useSearchParams()
     // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
