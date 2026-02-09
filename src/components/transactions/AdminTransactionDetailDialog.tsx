@@ -7,6 +7,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
@@ -20,7 +21,9 @@ import {
     Tag,
     Clock,
     DollarSign,
-    Car
+    Car,
+    Pencil,
+    Eye
 } from "lucide-react"
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { useState } from "react"
@@ -63,9 +66,11 @@ interface AdminTransactionDetailDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     transaction: Transaction | null
+    onEdit?: () => void
+    onViewDetail?: () => void
 }
 
-export function AdminTransactionDetailDialog({ open, onOpenChange, transaction }: AdminTransactionDetailDialogProps) {
+export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, onEdit, onViewDetail }: AdminTransactionDetailDialogProps) {
     const [previewImage, setPreviewImage] = useState<string | null>(null)
 
     if (!transaction) return null
@@ -107,7 +112,31 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction }
                                 </DialogTitle>
                                 <p className="text-muted-foreground font-mono mt-1">{transaction.transactionCode}</p>
                             </div>
-                            {getStatusBadge(transaction.status)}
+                            <div className="flex items-center gap-2">
+                                {getStatusBadge(transaction.status)}
+                                {onEdit && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={onEdit}
+                                        className="gap-1.5"
+                                    >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                        Edit
+                                    </Button>
+                                )}
+                                {onViewDetail && (
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={onViewDetail}
+                                        className="gap-1.5"
+                                    >
+                                        <Eye className="h-3.5 w-3.5" />
+                                        Detail
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </DialogHeader>
 

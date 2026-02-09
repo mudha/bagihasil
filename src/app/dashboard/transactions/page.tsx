@@ -1466,6 +1466,17 @@ function TransactionsPageContent() {
                 onOpenChange={(open) => !open && setViewingTransaction(null)}
                 // @ts-ignore
                 transaction={viewingTransaction}
+                onEdit={() => {
+                    if (viewingTransaction) {
+                        handleEdit(viewingTransaction)
+                        setViewingTransaction(null)
+                    }
+                }}
+                onViewDetail={() => {
+                    if (viewingTransaction) {
+                        router.push(`/dashboard/transactions/${viewingTransaction.id}`)
+                    }
+                }}
             />
 
         </div >
