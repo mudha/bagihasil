@@ -33,8 +33,18 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
+    const investorStatus = searchParams.get('investorStatus')
 
-    const where = status ? { status } : {}
+    const where: any = {}
+    if (status) {
+        where.status = status
+    }
+
+    if (investorStatus === 'active') {
+        where.unit = { investor: { isActive: true } }
+    } else if (investorStatus === 'inactive') {
+        where.unit = { investor: { isActive: false } }
+    }
 
     const transactions = await prisma.transaction.findMany({
         where,

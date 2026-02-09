@@ -41,6 +41,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 
 const investorSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
@@ -60,6 +61,7 @@ interface Investor {
     bankAccountDetails: string
     notes: string
     marginPercentage: number
+    isActive: boolean
     userId?: string | null
 }
 
@@ -218,6 +220,49 @@ export default function InvestorsPage() {
         setExportingInvestor(null)
     }
 
+    const handleToggleActive = async (investor: Investor) => {
+        const newStatus = !investor.isActive
+        try {
+            // Optimistic update
+            setInvestors(prev => prev.map(inv =>
+                inv.id === investor.id ? { ...inv, isActive: newStatus } : inv
+            ))
+
+            const res = await fetch(`/api/investors/${investor.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: newStatus }),
+            })
+
+            if (!res.ok) {
+                // Revert if failed
+                setInvestors(prev => prev.map(inv =>
+                    inv.id === investor.id ? { ...inv, isActive: !newStatus } : inv
+                ))
+
+                // Parse and display specific error message
+                let errorMessage = "Gagal mengubah status aktif"
+                try {
+                    const errorData = await res.json()
+                    errorMessage = errorData.error || errorMessage
+                    console.error("API Error:", errorData)
+                } catch (parseError) {
+                    console.error("Failed to parse error response. Status:", res.status, res.statusText)
+                }
+                toast.error(errorMessage)
+            } else {
+                toast.success(`Investor ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}`)
+            }
+        } catch (error) {
+            // Revert if error
+            setInvestors(prev => prev.map(inv =>
+                inv.id === investor.id ? { ...inv, isActive: !newStatus } : inv
+            ))
+            toast.error("Terjadi kesalahan sistem")
+            console.error("Fetch error:", error)
+        }
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex items-center justify-between">
@@ -368,8 +413,19 @@ export default function InvestorsPage() {
                                         <div className="font-semibold text-base">{investor.name}</div>
                                         <div className="text-sm text-muted-foreground">{investor.contactInfo || "-"}</div>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[10px] text-muted-foreground uppercase">Margin</span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded-sm font-medium ${investor.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                {investor.isActive ? 'Aktif' : 'Nonaktif'}
+                                            </span>
+                                            {!isViewer && (
+                                                <Switch
+                                                    checked={investor.isActive}
+                                                    onCheckedChange={() => handleToggleActive(investor)}
+                                                    className="scale-75"
+                                                />
+                                            )}
+                                        </div>
                                         <div className="font-bold text-lg text-emerald-600">
                                             {investor.marginPercentage}%
                                         </div>
@@ -450,6 +506,7 @@ export default function InvestorsPage() {
                             <TableHead>Nama</TableHead>
                             <TableHead>Kontak</TableHead>
                             <TableHead>Margin (%)</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Rekening</TableHead>
                             <TableHead>Terhubung ke Akun</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
@@ -463,6 +520,23 @@ export default function InvestorsPage() {
                                     <TableCell className="font-medium">{investor.name}</TableCell>
                                     <TableCell>{investor.contactInfo}</TableCell>
                                     <TableCell>{investor.marginPercentage}%</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            {!isViewer ? (
+                                                <Switch
+                                                    checked={investor.isActive}
+                                                    onCheckedChange={() => handleToggleActive(investor)}
+                                                />
+                                            ) : (
+                                                <span className={`text-xs px-2 py-1 rounded-full ${investor.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                    {investor.isActive ? 'Aktif' : 'Nonaktif'}
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-muted-foreground w-14">
+                                                {investor.isActive ? 'Aktif' : 'Nonaktif'}
+                                            </span>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{investor.bankAccountDetails}</TableCell>
                                     <TableCell>
                                         {connectedUser ? (

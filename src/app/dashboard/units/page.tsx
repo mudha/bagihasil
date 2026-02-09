@@ -98,6 +98,7 @@ interface Unit {
     investorId: string
     investor: {
         name: string
+        isActive?: boolean
     }
     imageUrl?: string | null
     taxDueDate?: string | Date | null
@@ -239,11 +240,16 @@ function UnitsPageContent() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState("ALL")
+    const [investorStatusFilter, setInvestorStatusFilter] = useState("active")
 
     useEffect(() => {
         const status = searchParams.get('status')
+        const investorStatus = searchParams.get('investorStatus')
         if (status) {
             setStatusFilter(status)
+        }
+        if (investorStatus) {
+            setInvestorStatusFilter(investorStatus)
         }
     }, [searchParams])
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort", "code", "asc")
@@ -705,7 +711,28 @@ function UnitsPageContent() {
         const matchesInvestor = selectedInvestorId === "all" || unit.investorId === selectedInvestorId
         const matchesStatus = statusFilter === "ALL" || unit.status === statusFilter
 
-        return matchesSearch && matchesInvestor && matchesStatus
+        // Investor Status Filter (handled client-side for now since we fetch all units)
+        // Note: unit.investor might be missing in some cases if not joined correctly? 
+        // Logic: if filter is active, check specific criteria.
+        // Assuming unit object has investor details. The API returns include: { investor: true }
+        // But investor object in UI might not have isActive field unless we update Unit interface or API response
+        // Wait, the API returns what prisma returns. If we included investor, does it include isActive?
+        // Yes, if we didn't select specific fields.
+        // Let's verify Unit interface. It has investor: { name: string }. We need to extend it or cast it.
+        // Actually, to be safe, let's look at getDuplicateInfo usage or fetching.
+        // We fetch /api/units. Check API route. It includes investor: true. So it should have all fields.
+        // I will trust that unit.investor has isActive.
+
+        let matchesInvestorStatus = true
+        if (investorStatusFilter === 'active') {
+            // @ts-ignore
+            matchesInvestorStatus = unit.investor?.isActive !== false // Default true
+        } else if (investorStatusFilter === 'inactive') {
+            // @ts-ignore
+            matchesInvestorStatus = unit.investor?.isActive === false
+        }
+
+        return matchesSearch && matchesInvestor && matchesStatus && matchesInvestorStatus
     }).sort((a, b) => {
         let compareValue = 0
 
@@ -1169,6 +1196,22 @@ function UnitsPageContent() {
                         onChange={(event) => setSearchQuery(event.target.value)}
                         className="w-full md:max-w-sm"
                     />
+                    <Select value={investorStatusFilter} onValueChange={(value) => {
+                        setInvestorStatusFilter(value)
+                        const params = new URLSearchParams(searchParams.toString())
+                        if (value) params.set('investorStatus', value)
+                        else params.delete('investorStatus')
+                        window.history.replaceState(null, '', `?${params.toString()}`)
+                    }}>
+                        <SelectTrigger className="w-full md:w-[150px]">
+                            <SelectValue placeholder="Status Pemodal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Pemodal Aktif</SelectItem>
+                            <SelectItem value="inactive">Pemodal Arsip</SelectItem>
+                            <SelectItem value="all">Semua Pemodal</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <div className="flex gap-2 w-full md:w-auto">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full md:w-[150px]">

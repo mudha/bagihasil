@@ -9,6 +9,7 @@ const investorSchema = z.object({
     notes: z.string().optional(),
     bankAccountDetails: z.string().optional(),
     marginPercentage: z.coerce.number().min(0).max(100).optional(),
+    isActive: z.boolean().optional(),
     userId: z.string().optional().nullable(),
 })
 
@@ -24,7 +25,10 @@ export async function PUT(
     try {
         const { id } = await params
         const body = await req.json()
-        const validatedData = investorSchema.parse(body)
+        console.log("PUT /api/investors/[id] - Body:", body) // Debug log
+
+        const validatedData = investorSchema.partial().parse(body)
+        console.log("Validated Data:", validatedData) // Debug log
 
         const investor = await prisma.investor.update({
             where: { id },
@@ -35,6 +39,7 @@ export async function PUT(
     } catch (error) {
         console.error("Error updating investor:", error)
         if (error instanceof z.ZodError) {
+            console.error("Validation Error:", JSON.stringify(error.issues, null, 2)) // Debug log
             return NextResponse.json({ error: "Data tidak valid", details: error.issues }, { status: 400 })
         }
         // Return actual error message for debugging

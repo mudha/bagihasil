@@ -102,6 +102,7 @@ interface Transaction {
         imageUrl?: string | null
         investor: {
             name: string
+            isActive?: boolean
         }
     }
     initialInvestorCapital?: number | null
@@ -184,11 +185,16 @@ function TransactionsPageContent() {
     const [exportingTransactionId, setExportingTransactionId] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState("ALL")
+    const [investorStatusFilter, setInvestorStatusFilter] = useState("active")
 
     useEffect(() => {
         const status = searchParams.get('status')
+        const investorStatus = searchParams.get('investorStatus')
         if (status) {
             setStatusFilter(status)
+        }
+        if (investorStatus) {
+            setInvestorStatusFilter(investorStatus)
         }
     }, [searchParams])
     const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("transactions-sort", "buyDate", "desc")
@@ -258,7 +264,16 @@ function TransactionsPageContent() {
         const matchesInvestor = selectedInvestorId === "all" || trx.unit.investorId === selectedInvestorId
         const matchesStatus = statusFilter === "ALL" || trx.status === statusFilter
 
-        return matchesSearch && matchesInvestor && matchesStatus
+        let matchesInvestorStatus = true
+        if (investorStatusFilter === 'active') {
+            // @ts-ignore
+            matchesInvestorStatus = trx.unit.investor?.isActive !== false
+        } else if (investorStatusFilter === 'inactive') {
+            // @ts-ignore
+            matchesInvestorStatus = trx.unit.investor?.isActive === false
+        }
+
+        return matchesSearch && matchesInvestor && matchesStatus && matchesInvestorStatus
     }).sort((a, b) => {
         let compareValue = 0
 
@@ -888,6 +903,22 @@ function TransactionsPageContent() {
                         onChange={(event) => setSearchQuery(event.target.value)}
                         className="w-full md:max-w-sm"
                     />
+                    <Select value={investorStatusFilter} onValueChange={(value) => {
+                        setInvestorStatusFilter(value)
+                        const params = new URLSearchParams(searchParams.toString())
+                        if (value) params.set('investorStatus', value)
+                        else params.delete('investorStatus')
+                        window.history.replaceState(null, '', `?${params.toString()}`)
+                    }}>
+                        <SelectTrigger className="w-full md:w-[150px]">
+                            <SelectValue placeholder="Status Pemodal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Pemodal Aktif</SelectItem>
+                            <SelectItem value="inactive">Pemodal Arsip</SelectItem>
+                            <SelectItem value="all">Semua Pemodal</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <div className="flex gap-2 w-full md:w-auto">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full md:w-[150px]">

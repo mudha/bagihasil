@@ -27,7 +27,18 @@ export async function GET(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+    const { searchParams } = new URL(req.url)
+    const investorStatus = searchParams.get('investorStatus')
+
+    const where: any = {}
+    if (investorStatus === 'active') {
+        where.investor = { isActive: true }
+    } else if (investorStatus === 'inactive') {
+        where.investor = { isActive: false }
+    }
+
     const units = await prisma.unit.findMany({
+        where,
         include: { investor: true },
         orderBy: { createdAt: 'desc' }
     })
