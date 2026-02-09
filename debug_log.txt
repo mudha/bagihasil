@@ -161,3 +161,11 @@ Invalid `prisma.transaction.create()` invocation:
 
 
 Unique constraint failed on the fields: (`transactionCode`), Code: P2002
+Payload: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0017","buyDate":"2026-01-31","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_sr39cEnuN.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_tAwL2tiGb.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_sr39cEnuN.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_sr39cEnuN.jpeg","description":"Bukti Transfer Pembelian"},{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_22.47.58_tAwL2tiGb.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmldkz6140001nnawkst963za","transactionCode":"TRX-WAH-2026-0017","buyDate":"2026-01-31T00:00:00.000Z","buyPrice":53000000,"initialInvestorCapital":53000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-01-31_at_17.44.44_sr39cEnuN.jpeg","status":"ON_PROCESS"}
+Transaction Base Created. ID: cmldlsq55000lmwlqyj9bloxe
+Creating 2 proofs...
+Proofs created successfully.
+Transaction completed process: cmldlsq55000lmwlqyj9bloxe

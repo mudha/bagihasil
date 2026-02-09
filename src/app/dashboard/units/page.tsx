@@ -49,8 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { format, isPast, isWithinInterval, addDays } from "date-fns"
-import { formatHijriFull } from "@/lib/date-utils"
+import { format, isPast, isWithinInterval, addDays, differenceInMonths } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -172,6 +171,36 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
         purchaseNumber,
         totalDuplicates,
         isBuyback
+    }
+}
+
+// Helper function to get tax status with months difference
+const getTaxStatus = (taxDate: Date) => {
+    const now = new Date()
+    const monthsDiff = differenceInMonths(taxDate, now)
+
+    if (monthsDiff < 0) {
+        // Overdue
+        const monthsOverdue = Math.abs(monthsDiff)
+        return {
+            text: `Mati ${monthsOverdue} bulan`,
+            color: "text-red-600"
+        }
+    } else if (monthsDiff === 0) {
+        return {
+            text: "Kurang 1 bulan lagi",
+            color: "text-amber-600"
+        }
+    } else if (monthsDiff <= 3) {
+        return {
+            text: `Kurang ${monthsDiff} bulan lagi`,
+            color: "text-amber-600"
+        }
+    } else {
+        return {
+            text: `Kurang ${monthsDiff} bulan lagi`,
+            color: "text-green-600"
+        }
     }
 }
 
@@ -586,6 +615,35 @@ function UnitsPageContent() {
 
             if (res.ok) {
                 toast.success(editingUnit ? "Unit berhasil diperbarui" : "Unit berhasil ditambahkan")
+
+                // Reset form and clear all state
+                form.reset({
+                    name: "",
+                    plateNumber: "",
+                    code: "",
+                    investorId: "",
+                    status: "AVAILABLE",
+                    imageUrl: null,
+                    taxDueDate: null,
+                    vehicleType: null,
+                    brand: null,
+                    model: null,
+                    year: null,
+                    color: null,
+                    stnkImageUrl: null,
+                    engineNumber: null,
+                    chassisNumber: null,
+                })
+                setUnitImages([])
+                setStnkImages([])
+                setVehicleType("")
+                setBrand("")
+                setModel("")
+                setCustomModel("")
+                setYear("")
+                setColor("")
+                setCustomColor("")
+
                 setIsOpen(false)
                 setEditingUnit(null)
                 fetchUnits()
@@ -1453,16 +1511,24 @@ function UnitsPageContent() {
                                 </TableCell>
                                 <TableCell>
                                     {unit.taxDueDate ? (
-                                        <span className={cn(
-                                            "font-medium",
-                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
-                                                isWithinInterval(new Date(unit.taxDueDate), {
-                                                    start: new Date(),
-                                                    end: addDays(new Date(), 30)
-                                                }) ? "text-amber-600" : "text-green-600"
-                                        )}>
-                                            {formatHijriFull(new Date(unit.taxDueDate))}
-                                        </span>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className={cn(
+                                                "font-medium text-sm",
+                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                    isWithinInterval(new Date(unit.taxDueDate), {
+                                                        start: new Date(),
+                                                        end: addDays(new Date(), 90)
+                                                    }) ? "text-amber-600" : "text-green-600"
+                                            )}>
+                                                {format(new Date(unit.taxDueDate), "d MMMM yyyy")}
+                                            </span>
+                                            <span className={cn(
+                                                "text-xs font-medium",
+                                                getTaxStatus(new Date(unit.taxDueDate)).color
+                                            )}>
+                                                ({getTaxStatus(new Date(unit.taxDueDate)).text})
+                                            </span>
+                                        </div>
                                     ) : (
                                         <span className="text-muted-foreground italic">-</span>
                                     )}
