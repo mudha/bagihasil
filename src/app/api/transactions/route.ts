@@ -56,7 +56,12 @@ export async function GET(req: Request) {
             },
             costs: true,
             profitSharing: true,
-            paymentHistories: true
+            paymentHistories: true,
+            _count: {
+                select: {
+                    paymentHistories: true
+                }
+            }
         },
         orderBy: { createdAt: 'desc' }
     })

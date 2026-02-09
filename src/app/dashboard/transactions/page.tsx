@@ -36,7 +36,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan } from "lucide-react"
+import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, AlertCircle } from "lucide-react"
 import { MultipleImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -114,6 +114,9 @@ interface Transaction {
         amount: number
         description: string
     }[]
+    _count?: {
+        paymentHistories: number
+    }
 }
 
 interface Unit {
@@ -162,6 +165,48 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
         purchaseNumber,
         totalDuplicates
     }
+}
+
+const getPaymentStatusBadge = (transaction: Transaction) => {
+    if (transaction.status !== "COMPLETED") {
+        return <span className="text-xs text-muted-foreground">-</span>
+    }
+
+    // Check if legacy transaction (sold before: Jan 1, 2026)
+    if (transaction.sellDate) {
+        const sellDate = new Date(transaction.sellDate)
+        const appCreationDate = new Date("2026-01-01")
+        // Reset time part to compare dates only
+        sellDate.setHours(0, 0, 0, 0)
+        appCreationDate.setHours(0, 0, 0, 0)
+
+        if (sellDate < appCreationDate) {
+            return (
+                <Badge variant="default" className="bg-emerald-600 gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Lunas
+                </Badge>
+            )
+        }
+    }
+
+    const paymentCount = transaction._count?.paymentHistories || 0
+
+    if (paymentCount > 0) {
+        return (
+            <Badge variant="default" className="bg-emerald-600 gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Lunas
+            </Badge>
+        )
+    }
+
+    return (
+        <Badge variant="outline" className="border-orange-500 text-orange-700 bg-orange-50 gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Belum Bayar
+        </Badge>
+    )
 }
 
 
@@ -1006,6 +1051,9 @@ function TransactionsPageContent() {
                                             <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
                                                 {trx.status}
                                             </Badge>
+                                            <div className="text-[10px]">
+                                                {getPaymentStatusBadge(trx)}
+                                            </div>
                                         </div>
                                         <div className="font-semibold text-sm line-clamp-1">{trx.unit.name}</div>
                                         <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
@@ -1274,6 +1322,7 @@ function TransactionsPageContent() {
                                     )}
                                 </Button>
                             </TableHead>
+                            <TableHead>Status Bayar</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -1350,6 +1399,9 @@ function TransactionsPageContent() {
                                     <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'}>
                                         {trx.status}
                                     </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    {getPaymentStatusBadge(trx)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
