@@ -1265,17 +1265,24 @@ function UnitsPageContent() {
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Jatuh Tempo Pajak</span>
                                     {unit.taxDueDate ? (
-                                        <span className={cn(
-                                            "font-medium",
-                                            isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
-                                                isWithinInterval(new Date(unit.taxDueDate), {
-                                                    start: new Date(),
-                                                    end: addDays(new Date(), 30)
-                                                }) ? "text-amber-600" : "text-green-600"
-                                        )}>
-                                        )}>
-                                            {formatHijriFull(new Date(unit.taxDueDate))}
-                                        </span>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className={cn(
+                                                "font-medium text-sm",
+                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                    isWithinInterval(new Date(unit.taxDueDate), {
+                                                        start: new Date(),
+                                                        end: addDays(new Date(), 90)
+                                                    }) ? "text-amber-600" : "text-green-600"
+                                            )}>
+                                                {format(new Date(unit.taxDueDate), "d MMMM yyyy")}
+                                            </span>
+                                            <span className={cn(
+                                                "text-xs font-medium",
+                                                getTaxStatus(new Date(unit.taxDueDate)).color
+                                            )}>
+                                                ({getTaxStatus(new Date(unit.taxDueDate)).text})
+                                            </span>
+                                        </div>
                                     ) : (
                                         <span className="text-muted-foreground italic">-</span>
                                     )}
