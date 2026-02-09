@@ -349,6 +349,34 @@ function TransactionsPageContent() {
             case "investor":
                 compareValue = a.unit.investor.name.localeCompare(b.unit.investor.name)
                 break
+            case "duration":
+                const getDuration = (t: Transaction) => {
+                    if (!t.sellDate) return 0
+                    return new Date(t.sellDate).getTime() - new Date(t.buyDate).getTime()
+                }
+                compareValue = getDuration(a) - getDuration(b)
+                break
+            case "paymentStatus":
+                const getStatusValue = (t: Transaction) => {
+                    // Logic: 0 = Not Completed, 1 = Unpaid, 2 = Paid (Legacy or Actual)
+                    if (t.status !== 'COMPLETED') return 0
+
+                    // Check legacy (Sold before Jan 1, 2026)
+                    if (t.sellDate) {
+                        const sellDate = new Date(t.sellDate)
+                        const cutoffDate = new Date("2026-01-01")
+                        sellDate.setHours(0, 0, 0, 0)
+                        cutoffDate.setHours(0, 0, 0, 0)
+                        if (sellDate < cutoffDate) return 2
+                    }
+
+                    // Check actual payment
+                    if ((t._count?.paymentHistories || 0) > 0) return 2
+
+                    return 1
+                }
+                compareValue = getStatusValue(a) - getStatusValue(b)
+                break
             default:
                 compareValue = 0
         }
@@ -1300,7 +1328,27 @@ function TransactionsPageContent() {
                                     )}
                                 </Button>
                             </TableHead>
-                            <TableHead>Durasi</TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "duration") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("duration")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Durasi
+                                    {sortBy === "duration" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
                             <TableHead>
                                 <Button
                                     variant="ghost"
@@ -1322,7 +1370,27 @@ function TransactionsPageContent() {
                                     )}
                                 </Button>
                             </TableHead>
-                            <TableHead>Status Bayar</TableHead>
+                            <TableHead>
+                                <Button
+                                    variant="ghost"
+                                    className="p-0 hover:bg-transparent font-semibold"
+                                    onClick={() => {
+                                        if (sortBy === "paymentStatus") {
+                                            setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                        } else {
+                                            setSortBy("paymentStatus")
+                                            setSortOrder("asc")
+                                        }
+                                    }}
+                                >
+                                    Status Bayar
+                                    {sortBy === "paymentStatus" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground opacity-50" />
+                                    )}
+                                </Button>
+                            </TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
