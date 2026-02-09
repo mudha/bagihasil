@@ -68,12 +68,14 @@ export async function getInvestorDashboardData(userId: string) {
     // Total Received (Payments)
     const totalReceived = investor.paymentHistories.reduce((acc, curr) => acc + curr.amount, 0)
 
-    // Calculate Monthly Stats (Income and Sales Trend)
+    // Calculate Monthly Stats (Income, Revenue, and Sales Trend)
     const monthlyIncomeStats = new Map<string, number>()
+    const monthlyRevenueStats = new Map<string, number>()
     const monthlySalesStats = new Map<string, number>()
 
     // Hijri Maps
     const monthlyIncomeStatsHijriMap = new Map<string, { month: string, income: number, rank: number }>()
+    const monthlyRevenueStatsHijriMap = new Map<string, { month: string, revenue: number, rank: number }>()
     const monthlySalesStatsHijriMap = new Map<string, { month: string, count: number, rank: number }>()
 
     const now = new Date()
@@ -85,6 +87,7 @@ export async function getInvestorDashboardData(userId: string) {
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
         const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })
         monthlyIncomeStats.set(key, 0)
+        monthlyRevenueStats.set(key, 0)
         monthlySalesStats.set(key, 0)
         months.push({ key, label })
     }
@@ -102,6 +105,11 @@ export async function getInvestorDashboardData(userId: string) {
             monthlyIncomeStats.set(key, (monthlyIncomeStats.get(key) || 0) + trx.profitSharing.investorProfitAmount)
         }
 
+        // Revenue (Total Sell Price / Omset)
+        if (monthlyRevenueStats.has(key) && trx.sellPrice) {
+            monthlyRevenueStats.set(key, (monthlyRevenueStats.get(key) || 0) + trx.sellPrice)
+        }
+
         // Sales Trend (Count of units sold)
         if (monthlySalesStats.has(key)) {
             monthlySalesStats.set(key, (monthlySalesStats.get(key) || 0) + 1)
@@ -115,12 +123,18 @@ export async function getInvestorDashboardData(userId: string) {
         if (!monthlyIncomeStatsHijriMap.has(hijriKey)) {
             // We use rank (timestamp) to sort later
             monthlyIncomeStatsHijriMap.set(hijriKey, { month: hijriKey, income: 0, rank: d.getTime() })
+            monthlyRevenueStatsHijriMap.set(hijriKey, { month: hijriKey, revenue: 0, rank: d.getTime() })
             monthlySalesStatsHijriMap.set(hijriKey, { month: hijriKey, count: 0, rank: d.getTime() })
         }
 
         if (trx.profitSharing) {
             const current = monthlyIncomeStatsHijriMap.get(hijriKey)!
             current.income += trx.profitSharing.investorProfitAmount
+        }
+
+        if (trx.sellPrice) {
+            const currentRevenue = monthlyRevenueStatsHijriMap.get(hijriKey)!
+            currentRevenue.revenue += trx.sellPrice
         }
 
         const currentSales = monthlySalesStatsHijriMap.get(hijriKey)!
@@ -137,10 +151,19 @@ export async function getInvestorDashboardData(userId: string) {
         count: monthlySalesStats.get(m.key) || 0
     }))
 
+    const monthlyRevenueData = months.map(m => ({
+        month: m.label,
+        revenue: monthlyRevenueStats.get(m.key) || 0
+    }))
+
     // Convert Hijri maps to sorted arrays
     const monthlyChartDataHijri = Array.from(monthlyIncomeStatsHijriMap.values())
         .sort((a, b) => a.rank - b.rank)
         .map(item => ({ month: item.month, income: item.income }))
+
+    const monthlyRevenueDataHijri = Array.from(monthlyRevenueStatsHijriMap.values())
+        .sort((a, b) => a.rank - b.rank)
+        .map(item => ({ month: item.month, revenue: item.revenue }))
 
     const monthlySalesTrendHijri = Array.from(monthlySalesStatsHijriMap.values())
         .sort((a, b) => a.rank - b.rank)
@@ -163,8 +186,10 @@ export async function getInvestorDashboardData(userId: string) {
         },
         monthlyChartData,
         monthlySalesTrend,
+        monthlyRevenueData,
         monthlyChartDataHijri,
         monthlySalesTrendHijri,
+        monthlyRevenueDataHijri,
         recentTransactions
     }
 }

@@ -8,6 +8,7 @@ import { PaymentsTable } from "@/components/investor/PaymentsTable"
 import { DollarSign, TrendingUp, Package, Wallet, CheckCircle } from "lucide-react"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
+import { InvestorRevenueChart } from "./InvestorRevenueChart"
 
 interface InvestorTabsProps {
     investorName: string
@@ -22,8 +23,10 @@ interface InvestorTabsProps {
     }
     monthlyChartData: any[]
     monthlySalesTrend: any[]
+    monthlyRevenueData: any[]
     monthlyChartDataHijri: any[]
     monthlySalesTrendHijri: any[]
+    monthlyRevenueDataHijri: any[]
     investmentsData: any[]
     paymentsData: any[]
 }
@@ -33,8 +36,10 @@ export function InvestorTabs({
     stats,
     monthlyChartData,
     monthlySalesTrend,
+    monthlyRevenueData,
     monthlyChartDataHijri,
     monthlySalesTrendHijri,
+    monthlyRevenueDataHijri,
     investmentsData,
     paymentsData
 }: InvestorTabsProps) {
@@ -75,6 +80,7 @@ export function InvestorTabs({
 
     const currentMonthlyChartData = calendarMode === 'hijri' ? monthlyChartDataHijri : monthlyChartData
     const currentMonthlySalesTrend = calendarMode === 'hijri' ? monthlySalesTrendHijri : monthlySalesTrend
+    const currentMonthlyRevenueData = calendarMode === 'hijri' ? monthlyRevenueDataHijri : monthlyRevenueData
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -180,8 +186,9 @@ export function InvestorTabs({
                     </Card>
                 </div>
 
-                <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                    <InvestorMonthlyChart data={currentMonthlyChartData} className="lg:col-span-4" />
+                <div className="grid gap-4 grid-cols-1 lg:grid-cols-9">
+                    <InvestorRevenueChart data={currentMonthlyRevenueData} className="lg:col-span-3" />
+                    <InvestorMonthlyChart data={currentMonthlyChartData} className="lg:col-span-3" />
                     <InvestorSalesTrendChart data={currentMonthlySalesTrend} className="lg:col-span-3" />
                 </div>
             </TabsContent>
