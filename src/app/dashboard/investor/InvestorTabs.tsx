@@ -84,33 +84,12 @@ export function InvestorTabs({
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 mb-6">
+            <div className="mb-6">
                 <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="investments">Investasi</TabsTrigger>
                     <TabsTrigger value="payments">Pembayaran</TabsTrigger>
                 </TabsList>
-
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-full border border-slate-200">
-                    <button
-                        onClick={() => setCalendarMode('masehi')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
-                            ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                            : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                    >
-                        Masehi
-                    </button>
-                    <button
-                        onClick={() => setCalendarMode('hijri')}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
-                            ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                            : 'text-slate-500 hover:text-slate-700'
-                            }`}
-                    >
-                        Hijriyah
-                    </button>
-                </div>
             </div>
 
             <TabsContent value="dashboard" className="space-y-6">
@@ -184,6 +163,29 @@ export function InvestorTabs({
                             <p className="text-amber-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
                         </CardContent>
                     </Card>
+                </div>
+
+                <div className="flex justify-end mb-4">
+                    <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-full border border-slate-200">
+                        <button
+                            onClick={() => setCalendarMode('masehi')}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
+                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Masehi
+                        </button>
+                        <button
+                            onClick={() => setCalendarMode('hijri')}
+                            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
+                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Hijriyah
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 lg:grid-cols-9">
