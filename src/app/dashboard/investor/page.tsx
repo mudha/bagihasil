@@ -1,14 +1,42 @@
-import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { getInvestorDashboardData } from "@/lib/investor-data"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { InvestorTabs } from "./InvestorTabs"
 
-export default async function InvestorDashboardPage() {
-    const session = await auth()
-    if (!session?.user) redirect("/login")
+export default function InvestorDashboardPage() {
+    const router = useRouter()
+    const [data, setData] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [monthsRange, setMonthsRange] = useState<string>("6")
 
-    const data = await getInvestorDashboardData(session.user.id!)
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const res = await fetch(`/api/investor/dashboard?months=${monthsRange}`)
+                if (res.status === 401) {
+                    router.push('/login')
+                    return
+                }
+                if (!res.ok) {
+                    throw new Error('Failed to fetch investor data')
+                }
+                const result = await res.json()
+                setData(result)
+            } catch (err) {
+                console.error("Error fetching investor data:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [monthsRange, router])
+
+    if (loading) {
+        return <div className="p-8">Memuat data...</div>
+    }
 
     if (!data) {
         return (
@@ -19,60 +47,20 @@ export default async function InvestorDashboardPage() {
         )
     }
 
-    const { investor, stats } = data
-
-    // Fetch Investments Data
-    const units = await db.unit.findMany({
-        where: { investorId: investor.id },
-        include: {
-            transactions: {
-                where: { OR: [{ status: "ON_PROCESS" }, { status: "COMPLETED" }] },
-                orderBy: { createdAt: "desc" },
-                take: 1
-            }
-        },
-        orderBy: { createdAt: "desc" }
-    })
-
-    const investmentsData = units.map(unit => {
-        const trx = unit.transactions[0]
-        const capital = trx ? (trx.initialInvestorCapital ?? trx.buyPrice) : 0
-        const sellPrice = trx?.status === "COMPLETED" ? (trx.sellPrice ?? 0) : 0
-        const transactionStatus = trx?.status === "ON_PROCESS" ? "Sedang Berjalan" :
-            trx?.status === "COMPLETED" ? "Terjual" : "Belum Transaksi"
-
-        return {
-            id: unit.id,
-            name: unit.name,
-            plateNumber: unit.plateNumber,
-            status: unit.status,
-            imageUrl: unit.imageUrl,
-            capital,
-            sellPrice,
-            transactionStatus,
-            transactionId: trx?.id ?? ""
-        }
-    })
-
-    // Fetch Payments Data
-    const payments = await db.paymentHistory.findMany({
-        where: { investorId: investor.id },
-        include: { transaction: { include: { unit: true } } },
-        orderBy: { paymentDate: "desc" }
-    })
-
     return (
         <InvestorTabs
-            investorName={investor.name}
-            stats={stats}
+            investorName={data.investor.name}
+            stats={data.stats}
             monthlyChartData={data.monthlyChartData}
             monthlySalesTrend={data.monthlySalesTrend}
             monthlyRevenueData={data.monthlyRevenueData}
             monthlyChartDataHijri={data.monthlyChartDataHijri}
             monthlySalesTrendHijri={data.monthlySalesTrendHijri}
             monthlyRevenueDataHijri={data.monthlyRevenueDataHijri}
-            investmentsData={investmentsData}
-            paymentsData={payments}
+            investmentsData={data.investmentsData}
+            paymentsData={data.paymentsData}
+            monthsRange={monthsRange}
+            onMonthsRangeChange={setMonthsRange}
         />
     )
 }

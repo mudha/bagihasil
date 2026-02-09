@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { getHijriMonthYear } from "@/lib/date-utils"
 
-export async function getInvestorDashboardData(userId: string) {
+export async function getInvestorDashboardData(userId: string, months: number = 6) {
     // 1. Find Investor attached to this User
     const investor = await db.investor.findUnique({
         where: { userId },
@@ -81,8 +81,8 @@ export async function getInvestorDashboardData(userId: string) {
     const now = new Date()
     const months = []
 
-    // Initialize last 6 months (including current) for Gregorian
-    for (let i = 5; i >= 0; i--) {
+    // Initialize months based on parameter (including current) for Gregorian
+    for (let i = months - 1; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
         const key = `${d.getFullYear()}-${d.getMonth() + 1}`
         const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })

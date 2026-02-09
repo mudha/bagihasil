@@ -9,6 +9,7 @@ import { DollarSign, TrendingUp, Package, Wallet, CheckCircle } from "lucide-rea
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 import { InvestorRevenueChart } from "./InvestorRevenueChart"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface InvestorTabsProps {
     investorName: string
@@ -29,6 +30,8 @@ interface InvestorTabsProps {
     monthlyRevenueDataHijri: any[]
     investmentsData: any[]
     paymentsData: any[]
+    monthsRange: string
+    onMonthsRangeChange: (months: string) => void
 }
 
 export function InvestorTabs({
@@ -41,7 +44,9 @@ export function InvestorTabs({
     monthlySalesTrendHijri,
     monthlyRevenueDataHijri,
     investmentsData,
-    paymentsData
+    paymentsData,
+    monthsRange,
+    onMonthsRangeChange
 }: InvestorTabsProps) {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [investmentFilter, setInvestmentFilter] = useState("")
@@ -165,13 +170,24 @@ export function InvestorTabs({
                     </Card>
                 </div>
 
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-between items-center mb-4">
+                    <Select value={monthsRange} onValueChange={onMonthsRangeChange}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Rentang Waktu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="6">6 Bulan Terakhir</SelectItem>
+                            <SelectItem value="12">1 Tahun Terakhir</SelectItem>
+                            <SelectItem value="24">2 Tahun Terakhir</SelectItem>
+                        </SelectContent>
+                    </Select>
+
                     <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-full border border-slate-200">
                         <button
                             onClick={() => setCalendarMode('masehi')}
                             className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
-                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Masehi
@@ -179,8 +195,8 @@ export function InvestorTabs({
                         <button
                             onClick={() => setCalendarMode('hijri')}
                             className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
-                                    ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Hijriyah
