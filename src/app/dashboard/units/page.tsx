@@ -179,11 +179,25 @@ const getTaxStatus = (taxDate: Date) => {
     const now = new Date()
     const monthsDiff = differenceInMonths(taxDate, now)
 
+    // Helper to format months as "X tahun Y bulan"
+    const formatMonths = (totalMonths: number) => {
+        const years = Math.floor(totalMonths / 12)
+        const months = totalMonths % 12
+
+        if (years === 0) {
+            return `${months} bulan`
+        } else if (months === 0) {
+            return `${years} tahun`
+        } else {
+            return `${years} tahun ${months} bulan`
+        }
+    }
+
     if (monthsDiff < 0) {
         // Overdue
         const monthsOverdue = Math.abs(monthsDiff)
         return {
-            text: `Mati ${monthsOverdue} bulan`,
+            text: `Mati ${formatMonths(monthsOverdue)}`,
             color: "text-red-600"
         }
     } else if (monthsDiff === 0) {
@@ -198,7 +212,7 @@ const getTaxStatus = (taxDate: Date) => {
         }
     } else {
         return {
-            text: `Kurang ${monthsDiff} bulan lagi`,
+            text: `Kurang ${formatMonths(monthsDiff)} lagi`,
             color: "text-green-600"
         }
     }
