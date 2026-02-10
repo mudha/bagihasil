@@ -26,7 +26,7 @@ export async function parseTransferProofs(
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const models = ["gemini-flash-latest", "gemini-pro"];
+    const models = ["gemini-2.0-flash-lite-001", "gemini-flash-latest"];
     let lastError: any;
 
     for (const modelName of models) {
@@ -137,7 +137,7 @@ export async function parseStnk(
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const models = ["gemini-flash-latest", "gemini-pro"];
+    const models = ["gemini-2.0-flash-lite-001", "gemini-flash-latest"];
     let lastError: any;
 
     for (const modelName of models) {

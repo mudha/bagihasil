@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         // AI Parsing with Gemini
         const result = await withTimeout(
             parseTransferProofs(processedFiles),
-            20000 // 20 seconds max
+            55000 // 55 seconds max
         );
 
         return NextResponse.json({
