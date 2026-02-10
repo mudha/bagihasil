@@ -45,12 +45,36 @@ export function UpdateTransactionProofDialog({
                 const legacyDesc = type === 'BUY' ? transaction.buyProofDescription : transaction.sellProofDescription
 
                 if (legacyUrl) {
-                    initialProofs.push({
-                        id: 'legacy',
-                        file: new File([], "existing-image"), // Dummy file
-                        preview: legacyUrl,
-                        description: legacyDesc || ""
-                    })
+                    if (legacyUrl.trim().startsWith('[') && legacyUrl.trim().endsWith(']')) {
+                        try {
+                            const urls = JSON.parse(legacyUrl)
+                            if (Array.isArray(urls)) {
+                                urls.forEach((url: string, idx: number) => {
+                                    initialProofs.push({
+                                        id: `legacy-${idx}`,
+                                        file: new File([], "existing-image"),
+                                        preview: url,
+                                        description: legacyDesc || ""
+                                    })
+                                })
+                            }
+                        } catch (e) {
+                            // Fallback if parse fails
+                            initialProofs.push({
+                                id: 'legacy',
+                                file: new File([], "existing-image"),
+                                preview: legacyUrl,
+                                description: legacyDesc || ""
+                            })
+                        }
+                    } else {
+                        initialProofs.push({
+                            id: 'legacy',
+                            file: new File([], "existing-image"), // Dummy file
+                            preview: legacyUrl,
+                            description: legacyDesc || ""
+                        })
+                    }
                 }
             }
 

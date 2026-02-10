@@ -1017,7 +1017,23 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             })
         } else if (data.transaction.sellProofImageUrl) {
             // Fallback to legacy field only if modern proofs don't exist
-            addAttachment('Bukti Pelunasan Unit dari Buyer', data.transaction.sellProofDescription, data.transaction.sellProofImageUrl)
+            const legacyUrl = data.transaction.sellProofImageUrl
+            const legacyDesc = data.transaction.sellProofDescription
+
+            if (legacyUrl.trim().startsWith('[') && legacyUrl.trim().endsWith(']')) {
+                try {
+                    const urls = JSON.parse(legacyUrl)
+                    if (Array.isArray(urls)) {
+                        urls.forEach((url: string) => {
+                            addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, url)
+                        })
+                    }
+                } catch (e) {
+                    addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
+                }
+            } else {
+                addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
+            }
         }
 
         // 4. Payment Proofs (Priority 4 - Transfer Bagi Hasil)

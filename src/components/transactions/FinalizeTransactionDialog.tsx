@@ -120,18 +120,17 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
             // Let's assume we store the stringified array if > 1, or just the url if 1 to try and keep some compat.
             // Actually better to always store consistent format if possible, but let's stick to "if array then json" approach.
 
-            let finalProofUrl = null
-            if (proofUrls.length === 1) {
-                finalProofUrl = proofUrls[0]
-            } else if (proofUrls.length > 1) {
-                finalProofUrl = JSON.stringify(proofUrls)
-            }
-
             const payload = {
                 ...values,
                 status: 'COMPLETED',
-                sellProofImageUrl: finalProofUrl,
-                sellProofDescription: "Bukti Pelunasan Unit"
+                // Legacy support: Thumbnail/First Image
+                sellProofImageUrl: proofUrls.length > 0 ? proofUrls[0] : null,
+                sellProofDescription: "Bukti Pelunasan Unit",
+                // Modern support: Relation
+                sellProofs: proofUrls.map(url => ({
+                    imageUrl: url,
+                    description: "Bukti Pelunasan Unit"
+                }))
             }
 
             // Using PUT to update transaction status and details
