@@ -26,70 +26,96 @@ export async function parseTransferProofs(
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
+    const models = ["gemini-2.0-flash-001", "gemini-2.0-flash-lite-001"];
+    let lastError: any;
 
-        const prompt = `
-            Andalah asisten ahli pembaca bukti transaksi/struk/nota untuk aplikasi manajemen operasional.
-            Analisis ${files.length} gambar yang dikirimkan ini. Ini bisa berupa bukti pembayaran DP dan Pelunasan, atau transaksi terpisah.
-            
-            Tugas Anda:
-            1. Total Nominal: Jumlahkan semua nominal uang yang valid dari SEMUA gambar. Abaikan saldo akhir, cari nominal transfer/bayar.
-            2. Tanggal: Cari tanggal dari setiap gambar. Ambil tanggal PALING AKHIR (terbaru) sebagai tanggal utama.
-            3. Deskripsi: Buat ringkasan deskripsi gabungan. Contoh: "Transfer 1: [Tgl] [Nominal], Transfer 2: [Tgl] [Nominal]".
-            4. Kategori: Tentukan kategori umum (dominan).
+    for (const modelName of models) {
+        try {
+            console.log(`Attempting analysis with model: ${modelName}`);
+            const model = genAI.getGenerativeModel({ model: modelName });
 
-            Pilihan Kategori:
-            - INSPECTION, TRANSPORT, MEAL, TOLL, ADS, REPAIR, GAS, PARKING, STAMP_DUTY, BROKER, SALES, OTHER
+            const prompt = `
+                Andalah asisten ahli pembaca bukti transaksi/struk/nota untuk aplikasi manajemen operasional.
+                Analisis ${files.length} gambar yang dikirimkan ini. Ini bisa berupa bukti pembayaran DP dan Pelunasan, atau transaksi terpisah.
+                
+                Tugas Anda:
+                1. Total Nominal: Jumlahkan semua nominal uang yang valid dari SEMUA gambar. Abaikan saldo akhir, cari nominal transfer/bayar.
+                2. Tanggal: Cari tanggal dari setiap gambar. Ambil tanggal PALING AKHIR (terbaru) sebagai tanggal utama.
+                3. Deskripsi: Buat ringkasan deskripsi gabungan. Contoh: "Transfer 1: [Tgl] [Nominal], Transfer 2: [Tgl] [Nominal]".
+                4. Kategori: Tentukan kategori umum (dominan).
+    
+                Pilihan Kategori:
+                - INSPECTION, TRANSPORT, MEAL, TOLL, ADS, REPAIR, GAS, PARKING, STAMP_DUTY, BROKER, SALES, OTHER
+    
+                Kembalikan hasil dalam format JSON murni dengan key: 
+                - "totalAmount" (number, total jumlahan)
+                - "latestDate" (string YYYY-MM-DD or null, tanggal terbaru)
+                - "combinedDescription" (string, deskripsi gabungan)
+                - "costType" (string)
+    
+                Hanya kembalikan JSON, jangan sertakan markdown.
+            `;
 
-            Kembalikan hasil dalam format JSON murni dengan key: 
-            - "totalAmount" (number, total jumlahan)
-            - "latestDate" (string YYYY-MM-DD or null, tanggal terbaru)
-            - "combinedDescription" (string, deskripsi gabungan)
-            - "costType" (string)
+            const imageParts = files.map(file => ({
+                inlineData: {
+                    data: file.buffer.toString("base64"),
+                    mimeType: file.mimeType,
+                },
+            }));
 
-            Hanya kembalikan JSON, jangan sertakan markdown.
-        `;
+            const result = await model.generateContent([prompt, ...imageParts]);
+            const response = await result.response;
+            const text = response.text();
 
-        const imageParts = files.map(file => ({
-            inlineData: {
-                data: file.buffer.toString("base64"),
-                mimeType: file.mimeType,
-            },
-        }));
+            // Robust JSON extraction
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                console.error(`No JSON found in Gemini response (${modelName}):`, text);
+                throw new Error("Gagal mengambil data dari gambar.");
+            }
 
-        const result = await model.generateContent([prompt, ...imageParts]);
-        const response = await result.response;
-        const text = response.text();
+            const cleanText = jsonMatch[0];
+            const data = JSON.parse(cleanText);
 
-        // Robust JSON extraction
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            console.error("No JSON found in Gemini response from multipage:", text);
-            throw new Error("Gagal mengambil data dari gambar.");
+            // Map new fields to interface, ensuring backward compatibility
+            return {
+                totalAmount: data.totalAmount || 0,
+                amount: data.totalAmount || 0,
+                latestDate: data.latestDate || null,
+                date: data.latestDate || null,
+                combinedDescription: data.combinedDescription || "",
+                description: data.combinedDescription || "",
+                costType: data.costType || "OTHER"
+            } as ParsedReceipt;
+
+        } catch (error: any) {
+            console.error(`Error with model ${modelName}:`, error);
+            lastError = error;
+
+            // If quota error (429) or Service Unavailable (503), try next model with a small delay
+            if (error.status === 429 || error.status === 503 || error.message?.includes("Quota")) {
+                console.warn(`Model ${modelName} hit rate limit or unavailable. Switching to fallback...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1s delay
+                continue;
+            }
+
+            // For other errors (checking if it's not the last model), we might still want to try next model 
+            // incase one model is broken but another works (e.g. 404).
+            // But usually 400 is prompt error. Let's be aggressive and fallback on most errors except config ones.
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
         }
+    }
 
-        const cleanText = jsonMatch[0];
-        const data = JSON.parse(cleanText);
-
-        // Map new fields to interface, ensuring backward compatibility
-        return {
-            totalAmount: data.totalAmount || 0,
-            amount: data.totalAmount || 0,
-            latestDate: data.latestDate || null,
-            date: data.latestDate || null,
-            combinedDescription: data.combinedDescription || "",
-            description: data.combinedDescription || "",
-            costType: data.costType || "OTHER"
-        } as ParsedReceipt;
-
-    } catch (error: any) {
-        console.error("Error parsing receipts with Gemini:", error);
-        if (error.status === 429) {
+    // If loop finishes without return
+    if (lastError) {
+        if (lastError.status === 429) {
             throw new Error("Quota AI (Gemini) sudah habis. Coba lagi nanti.");
         }
-        throw error;
+        throw lastError;
     }
+    throw new Error("Gagal memproses gambar setelah mencoba beberapa model.");
+
 }
 
 export interface ParsedStnk {
@@ -111,78 +137,98 @@ export async function parseStnk(
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
+    const models = ["gemini-2.0-flash-001", "gemini-2.0-flash-lite-001"];
+    let lastError: any;
 
-        const prompt = `
-            Andalah AI ahli pembaca dokumen STNK Indonesia (Surat Tanda Nomor Kendaraan).
-            Analisis gambar STNK ini dan ekstrak data berikut dengan sangat teliti.
+    for (const modelName of models) {
+        try {
+            console.log(`Attempting STNK analysis with model: ${modelName}`);
+            const model = genAI.getGenerativeModel({ model: modelName });
 
-            **Konteks Validasi:**
-            - **Jenis Kendaraan**: "Mobil" atau "Motor". (Mobil biasanya > 1000cc, Motor < 1000cc, atau lihat bentuk fisik jika ada foto kendaraan).
-            - **Merek Populer**: Toyota, Honda, Yamaha, Suzuki, Mitsubishi, Daihatsu, Kawasaki, Vespa, dll.
-            - **Warna Populer**: Hitam, Putih, Silver, Abu-abu, Merah, Biru, Cokelat, Hijau, Kuning, Oranye, Ungu.
+            const prompt = `
+                Andalah AI ahli pembaca dokumen STNK Indonesia (Surat Tanda Nomor Kendaraan).
+                Analisis gambar STNK ini dan ekstrak data berikut dengan sangat teliti.
+    
+                **Konteks Validasi:**
+                - **Jenis Kendaraan**: "Mobil" atau "Motor". (Mobil biasanya > 1000cc, Motor < 1000cc, atau lihat bentuk fisik jika ada foto kendaraan).
+                - **Merek Populer**: Toyota, Honda, Yamaha, Suzuki, Mitsubishi, Daihatsu, Kawasaki, Vespa, dll.
+                - **Warna Populer**: Hitam, Putih, Silver, Abu-abu, Merah, Biru, Cokelat, Hijau, Kuning, Oranye, Ungu.
+    
+                **Tugas Ekstraksi:**
+                1. **Nomor Polisi (Plate Number)**: Cari format B 1234 ABC. Hapus spasi berlebih.
+                2. **Masa Berlaku Pajak (Tax Due Date)**: Cari tanggal "Berlaku s/d" atau tanggal validitas pajak. Format YYYY-MM-DD.
+                3. **Nomor Mesin (Engine Number)**: Label "No. Mesin".
+                4. **Nomor Rangka (Chassis Number)**: Label "No. Rangka" atau "NIK".
+                5. **Warna Kendaraan (Color)**: Cari label "Warna". Coba cocokkan dengan daftar warna populer di atas.
+                6. **Jenis Kendaraan (Vehicle Type)**: Tentukan apakah "Mobil" atau "Motor" berdasarkan Merek, Model, atau Isi Silinder.
+                7. **Merek (Brand)**: Contoh: Toyota, Honda, Yamaha.
+                8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
+                9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
+    
+                **Format Output JSON Murni:**
+                {
+                    "plateNumber": "string/null",
+                    "taxDueDate": "YYYY-MM-DD/null",
+                    "engineNumber": "string/null",
+                    "chassisNumber": "string/null",
+                    "color": "string/null",
+                    "vehicleType": "Mobil/Motor/null",
+                    "brand": "string/null",
+                    "model": "string/null",
+                    "year": "string/null"
+                }
+            `;
 
-            **Tugas Ekstraksi:**
-            1. **Nomor Polisi (Plate Number)**: Cari format B 1234 ABC. Hapus spasi berlebih.
-            2. **Masa Berlaku Pajak (Tax Due Date)**: Cari tanggal "Berlaku s/d" atau tanggal validitas pajak. Format YYYY-MM-DD.
-            3. **Nomor Mesin (Engine Number)**: Label "No. Mesin".
-            4. **Nomor Rangka (Chassis Number)**: Label "No. Rangka" atau "NIK".
-            5. **Warna Kendaraan (Color)**: Cari label "Warna". Coba cocokkan dengan daftar warna populer di atas.
-            6. **Jenis Kendaraan (Vehicle Type)**: Tentukan apakah "Mobil" atau "Motor" berdasarkan Merek, Model, atau Isi Silinder.
-            7. **Merek (Brand)**: Contoh: Toyota, Honda, Yamaha.
-            8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
-            9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
+            const imagePart = {
+                inlineData: {
+                    data: file.buffer.toString("base64"),
+                    mimeType: file.mimeType,
+                },
+            };
 
-            **Format Output JSON Murni:**
-            {
-                "plateNumber": "string/null",
-                "taxDueDate": "YYYY-MM-DD/null",
-                "engineNumber": "string/null",
-                "chassisNumber": "string/null",
-                "color": "string/null",
-                "vehicleType": "Mobil/Motor/null",
-                "brand": "string/null",
-                "model": "string/null",
-                "year": "string/null"
+            const result = await model.generateContent([prompt, imagePart]);
+            const response = await result.response;
+            const text = response.text();
+
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                console.error(`No JSON found in STNK response (${modelName}):`, text);
+                throw new Error("Gagal mengenali data STNK.");
             }
-        `;
 
-        const imagePart = {
-            inlineData: {
-                data: file.buffer.toString("base64"),
-                mimeType: file.mimeType,
-            },
-        };
+            const data = JSON.parse(jsonMatch[0]);
 
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = await result.response;
-        const text = response.text();
+            return {
+                plateNumber: data.plateNumber || null,
+                taxDueDate: data.taxDueDate || null,
+                engineNumber: data.engineNumber || null,
+                chassisNumber: data.chassisNumber || null,
+                color: data.color || null,
+                vehicleType: data.vehicleType || null,
+                brand: data.brand || null,
+                model: data.model || null,
+                year: data.year || null
+            };
 
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            console.error("No JSON found in STNK response:", text);
-            throw new Error("Gagal mengenali data STNK.");
+        } catch (error: any) {
+            console.error(`Error with model ${modelName}:`, error);
+            lastError = error;
+
+            if (error.status === 429 || error.status === 503 || error.message?.includes("Quota")) {
+                console.warn(`Model ${modelName} hit rate limit or unavailable. Switching to fallback...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            continue;
         }
+    }
 
-        const data = JSON.parse(jsonMatch[0]);
-
-        return {
-            plateNumber: data.plateNumber || null,
-            taxDueDate: data.taxDueDate || null,
-            engineNumber: data.engineNumber || null,
-            chassisNumber: data.chassisNumber || null,
-            color: data.color || null,
-            vehicleType: data.vehicleType || null,
-            brand: data.brand || null,
-            model: data.model || null,
-            year: data.year || null
-        };
-    } catch (error: any) {
-        console.error("Error parsing STNK:", error);
-        if (error.status === 429) {
+    if (lastError) {
+        if (lastError.status === 429) {
             throw new Error("Quota AI habis.");
         }
-        throw new Error("Gagal memproses STNK: " + error.message);
+        throw new Error("Gagal memproses STNK: " + lastError.message);
     }
+    throw new Error("Gagal memproses STNK setelah mencoba beberapa model.");
 }
