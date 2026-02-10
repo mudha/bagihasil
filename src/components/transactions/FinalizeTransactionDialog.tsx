@@ -29,6 +29,22 @@ import { validateImageFile } from "@/lib/image-utils"
 
 // ... (keep sellSchema and Props same)
 
+const sellSchema = z.object({
+    sellDate: z.string().min(1, "Tanggal jual harus diisi"),
+    sellPrice: z.number().min(0, "Harga laku harus lebih dari 0"),
+    investorSharePercentage: z.number().min(0).max(100),
+    managerSharePercentage: z.number().min(0).max(100),
+    notes: z.string().optional(),
+})
+
+type SellFormValues = z.infer<typeof sellSchema>
+
+interface FinalizeTransactionDialogProps {
+    transactionId: string
+    onSuccess: () => void
+    defaultShares?: { investor: number, manager: number }
+}
+
 export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultShares = { investor: 40, manager: 60 } }: FinalizeTransactionDialogProps) {
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
