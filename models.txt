@@ -1,35 +1,47 @@
-[dotenv@17.2.3] injecting env (10) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (10) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 Available Models:
-- models/gemini-2.5-flash (Gemini 2.5 Flash)
-- models/gemini-2.5-pro (Gemini 2.5 Pro)
-- models/gemini-2.0-flash-exp (Gemini 2.0 Flash Experimental)
-- models/gemini-2.0-flash (Gemini 2.0 Flash)
-- models/gemini-2.0-flash-001 (Gemini 2.0 Flash 001)
-- models/gemini-2.0-flash-exp-image-generation (Gemini 2.0 Flash (Image Generation) Experimental)
-- models/gemini-2.0-flash-lite-001 (Gemini 2.0 Flash-Lite 001)
-- models/gemini-2.0-flash-lite (Gemini 2.0 Flash-Lite)
-- models/gemini-2.0-flash-lite-preview-02-05 (Gemini 2.0 Flash-Lite Preview 02-05)
-- models/gemini-2.0-flash-lite-preview (Gemini 2.0 Flash-Lite Preview)
-- models/gemini-exp-1206 (Gemini Experimental 1206)
-- models/gemini-2.5-flash-preview-tts (Gemini 2.5 Flash Preview TTS)
-- models/gemini-2.5-pro-preview-tts (Gemini 2.5 Pro Preview TTS)
-- models/gemma-3-1b-it (Gemma 3 1B)
-- models/gemma-3-4b-it (Gemma 3 4B)
-- models/gemma-3-12b-it (Gemma 3 12B)
-- models/gemma-3-27b-it (Gemma 3 27B)
-- models/gemma-3n-e4b-it (Gemma 3n E4B)
-- models/gemma-3n-e2b-it (Gemma 3n E2B)
-- models/gemini-flash-latest (Gemini Flash Latest)
-- models/gemini-flash-lite-latest (Gemini Flash-Lite Latest)
-- models/gemini-pro-latest (Gemini Pro Latest)
-- models/gemini-2.5-flash-lite (Gemini 2.5 Flash-Lite)
-- models/gemini-2.5-flash-image (Nano Banana)
-- models/gemini-2.5-flash-preview-09-2025 (Gemini 2.5 Flash Preview Sep 2025)
-- models/gemini-2.5-flash-lite-preview-09-2025 (Gemini 2.5 Flash-Lite Preview Sep 2025)
-- models/gemini-3-pro-preview (Gemini 3 Pro Preview)
-- models/gemini-3-flash-preview (Gemini 3 Flash Preview)
-- models/gemini-3-pro-image-preview (Nano Banana Pro)
-- models/nano-banana-pro-preview (Nano Banana Pro)
-- models/gemini-robotics-er-1.5-preview (Gemini Robotics-ER 1.5 Preview)
-- models/gemini-2.5-computer-use-preview-10-2025 (Gemini 2.5 Computer Use Preview 10-2025)
-- models/deep-research-pro-preview-12-2025 (Deep Research Pro Preview (Dec-12-2025))
+- models/gemini-2.5-flash (001) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.5-pro (2.5) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.0-flash (2.0) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.0-flash-001 (2.0) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.0-flash-exp-image-generation (2.0) [Methods: generateContent, countTokens, bidiGenerateContent]
+- models/gemini-2.0-flash-lite-001 (2.0) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.0-flash-lite (2.0) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-exp-1206 (2.5-exp-03-25) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.5-flash-preview-tts (gemini-2.5-flash-exp-tts-2025-05-19) [Methods: countTokens, generateContent]
+- models/gemini-2.5-pro-preview-tts (gemini-2.5-pro-preview-tts-2025-05-19) [Methods: countTokens, generateContent, batchGenerateContent]
+- models/gemma-3-1b-it (001) [Methods: generateContent, countTokens]
+- models/gemma-3-4b-it (001) [Methods: generateContent, countTokens]
+- models/gemma-3-12b-it (001) [Methods: generateContent, countTokens]
+- models/gemma-3-27b-it (001) [Methods: generateContent, countTokens]
+- models/gemma-3n-e4b-it (001) [Methods: generateContent, countTokens]
+- models/gemma-3n-e2b-it (001) [Methods: generateContent, countTokens]
+- models/gemini-flash-latest (Gemini Flash Latest) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-flash-lite-latest (Gemini Flash-Lite Latest) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-pro-latest (Gemini Pro Latest) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.5-flash-lite (001) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.5-flash-image (2.0) [Methods: generateContent, countTokens, batchGenerateContent]
+- models/gemini-2.5-flash-preview-09-2025 (Gemini 2.5 Flash Preview 09-2025) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-2.5-flash-lite-preview-09-2025 (2.5-preview-09-25) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-3-pro-preview (3-pro-preview-11-2025) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-3-flash-preview (3-flash-preview-12-2025) [Methods: generateContent, countTokens, createCachedContent, batchGenerateContent]
+- models/gemini-3-pro-image-preview (3.0) [Methods: generateContent, countTokens, batchGenerateContent]
+- models/nano-banana-pro-preview (3.0) [Methods: generateContent, countTokens, batchGenerateContent]
+- models/gemini-robotics-er-1.5-preview (1.5-preview) [Methods: generateContent, countTokens]
+- models/gemini-2.5-computer-use-preview-10-2025 (Gemini 2.5 Computer Use Preview 10-2025) [Methods: generateContent, countTokens]
+- models/deep-research-pro-preview-12-2025 (deepthink-exp-05-20) [Methods: generateContent, countTokens]
+- models/gemini-embedding-001 (001) [Methods: embedContent, countTextTokens, countTokens, asyncBatchEmbedContent]
+- models/aqa (001) [Methods: generateAnswer]
+- models/imagen-4.0-generate-preview-06-06 (01) [Methods: predict]
+- models/imagen-4.0-ultra-generate-preview-06-06 (01) [Methods: predict]
+- models/imagen-4.0-generate-001 (001) [Methods: predict]
+- models/imagen-4.0-ultra-generate-001 (001) [Methods: predict]
+- models/imagen-4.0-fast-generate-001 (001) [Methods: predict]
+- models/veo-2.0-generate-001 (2.0) [Methods: predictLongRunning]
+- models/veo-3.0-generate-001 (3.0) [Methods: predictLongRunning]
+- models/veo-3.0-fast-generate-001 (3.0) [Methods: predictLongRunning]
+- models/veo-3.1-generate-preview (3.1) [Methods: predictLongRunning]
+- models/veo-3.1-fast-generate-preview (3.1) [Methods: predictLongRunning]
+- models/gemini-2.5-flash-native-audio-latest (Gemini 2.5 Flash Native Audio Latest) [Methods: countTokens, bidiGenerateContent]
+- models/gemini-2.5-flash-native-audio-preview-09-2025 (gemini-2.5-flash-preview-native-audio-dialog-2025-05-19) [Methods: countTokens, bidiGenerateContent]
+- models/gemini-2.5-flash-native-audio-preview-12-2025 (12-2025) [Methods: countTokens, bidiGenerateContent]

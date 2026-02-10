@@ -27,7 +27,7 @@ export async function parseTransferProofs(
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
 
         const prompt = `
             Andalah asisten ahli pembaca bukti transaksi/struk/nota untuk aplikasi manajemen operasional.
@@ -112,7 +112,7 @@ export async function parseStnk(
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" });
 
         const prompt = `
             Andalah AI ahli pembaca dokumen STNK Indonesia (Surat Tanda Nomor Kendaraan).
