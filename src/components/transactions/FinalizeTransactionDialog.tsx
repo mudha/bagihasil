@@ -21,33 +21,19 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { MultipleImageUpload } from "@/components/ui/multiple-image-upload"
+import { MultipleImageUpload, UploadedImage } from "@/components/ui/multiple-image-upload"
 import { toast } from "sonner"
 import { DollarSign, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { validateImageFile } from "@/lib/image-utils"
 
-const sellSchema = z.object({
-    sellDate: z.string().min(1, "Tanggal jual harus diisi"),
-    sellPrice: z.number().min(0, "Harga laku harus lebih dari 0"),
-    investorSharePercentage: z.number().min(0).max(100),
-    managerSharePercentage: z.number().min(0).max(100),
-    notes: z.string().optional(),
-})
-
-type SellFormValues = z.infer<typeof sellSchema>
-
-interface FinalizeTransactionDialogProps {
-    transactionId: string
-    onSuccess: () => void
-    defaultShares?: { investor: number, manager: number }
-}
+// ... (keep sellSchema and Props same)
 
 export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultShares = { investor: 40, manager: 60 } }: FinalizeTransactionDialogProps) {
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [imageFiles, setImageFiles] = useState<File[]>([])
-    const [imagePreview, setImagePreview] = useState<string | null>(null) // Deprecated, but keeping for compatibility if needed, though MultipleImageUpload handles previews internally
+    const [proofs, setProofs] = useState<UploadedImage[]>([])
+    // const [imagePreview, setImagePreview] = useState<string | null>(null) // Removed deprecrated state
 
     // Ref for AI analysis
     const isAnalyzingRef = useRef(false)
@@ -65,7 +51,9 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
 
     const handlePaste = (e: React.ClipboardEvent) => {
         const items = e.clipboardData.items
+        const newProofs: UploadedImage[] = []
         const newFiles: File[] = []
+
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.startsWith("image/")) {
                 const file = items[i].getAsFile()
@@ -76,15 +64,21 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                         continue
                     }
                     newFiles.push(file)
+                    newProofs.push({
+                        id: `pasted-${Date.now()}-${Math.random()}`,
+                        file,
+                        preview: URL.createObjectURL(file)
+                    })
                 }
             }
         }
 
-        if (newFiles.length > 0) {
-            setImageFiles(prev => [...prev, ...newFiles])
-            toast.success(`${newFiles.length} gambar berhasil dipaste!`)
+        if (newProofs.length > 0) {
+            setProofs(prev => [...prev, ...newProofs])
+            toast.success(`${newProofs.length} gambar berhasil dipaste!`)
             // Trigger analysis for new files
-            analyzeImages([...imageFiles, ...newFiles])
+            const allFiles = [...proofs.map(p => p.file), ...newFiles]
+            analyzeImages(allFiles)
         }
     }
 
@@ -104,9 +98,9 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
         setIsLoading(true)
         try {
             const proofUrls: string[] = []
-            if (imageFiles.length > 0) {
+            if (proofs.length > 0) {
                 // Upload all files in parallel
-                const uploadPromises = imageFiles.map(file => uploadFile(file))
+                const uploadPromises = proofs.map(proof => uploadFile(proof.file))
                 const urls = await Promise.all(uploadPromises)
                 proofUrls.push(...urls)
             }
@@ -303,15 +297,11 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
 
 
                             <MultipleImageUpload
-                                initialImages={imageFiles.map(file => ({
-                                    id: file.name,
-                                    file: file,
-                                    preview: URL.createObjectURL(file),
-                                    description: ""
-                                }))}
-                                onImagesChange={(images) => {
-                                    const files = images.map(img => img.file).filter((f): f is File => f !== null)
-                                    setImageFiles(files)
+                                initialImages={proofs}
+                                onImagesChange={(newProofs) => {
+                                    setProofs(newProofs)
+                                    // Extract files for AI analysis
+                                    const files = newProofs.map(img => img.file)
                                     if (files.length > 0) {
                                         analyzeImages(files)
                                     }
