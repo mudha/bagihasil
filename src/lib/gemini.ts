@@ -128,6 +128,7 @@ export interface ParsedStnk {
     brand: string | null;
     model: string | null;
     year: string | null;
+    vehicleTypeCode?: string | null; // Added field for raw type code
 }
 
 export async function parseStnk(
@@ -164,10 +165,7 @@ export async function parseStnk(
                 7. **Merek (Brand)**: Contoh: Toyota, Honda, Yamaha.
                 8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
                 9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
-    
-                **Aturan Khusus Tipe Kendaraan:**
-                - Jika menemukan Tipe/Model tertulis "BG6 AT" atau "BPV AT", maka itu adalah Merek: "Yamaha", Model: "XMAX".
-                - Prioritaskan Merek dan Model dari kode tipe tersebut jika ada.
+                10. **Kode Tipe Kendaraan (Vehicle Type Code)**: Cari label "Type", "Tipe", "Model", atau "Jenis". Salin persis apa yang tertulis (misal: "BG6 AT", "BPV AT", "SPD. MOTOR").
 
                 **Format Output JSON Murni:**
                 {
@@ -179,7 +177,8 @@ export async function parseStnk(
                     "vehicleType": "Mobil/Motor/null",
                     "brand": "string/null",
                     "model": "string/null",
-                    "year": "string/null"
+                    "year": "string/null",
+                    "vehicleTypeCode": "string/null"
                 }
             `;
 
@@ -202,6 +201,18 @@ export async function parseStnk(
 
             const data = JSON.parse(jsonMatch[0]);
 
+            // Post-processing logic for specific vehicle codes
+            let finalBrand = data.brand;
+            let finalModel = data.model;
+
+            const typeCode = data.vehicleTypeCode ? data.vehicleTypeCode.toUpperCase() : "";
+
+            // Force mapping for BG6 AT and BPV AT
+            if (typeCode.includes("BG6 AT") || typeCode.includes("BPV AT")) {
+                finalBrand = "Yamaha";
+                finalModel = "XMAX";
+            }
+
             return {
                 plateNumber: data.plateNumber || null,
                 taxDueDate: data.taxDueDate || null,
@@ -209,9 +220,10 @@ export async function parseStnk(
                 chassisNumber: data.chassisNumber || null,
                 color: data.color || null,
                 vehicleType: data.vehicleType || null,
-                brand: data.brand || null,
-                model: data.model || null,
-                year: data.year || null
+                brand: finalBrand || null,
+                model: finalModel || null,
+                year: data.year || null,
+                vehicleTypeCode: data.vehicleTypeCode || null
             };
 
         } catch (error: any) {
