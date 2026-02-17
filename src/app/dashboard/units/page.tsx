@@ -553,6 +553,11 @@ function UnitsPageContent() {
                 if (data.brand) {
                     // @ts-ignore
                     const brandList = BRANDS[data.vehicleType] || [];
+                    console.log("[STNK Scan] Brand matching:", {
+                        vehicleType: data.vehicleType,
+                        apiBrand: data.brand,
+                        brandList
+                    });
 
                     // 1. Try exact match first (case-insensitive)
                     let matchedBrand = brandList.find((b: string) => b.toLowerCase() === data.brand.toLowerCase());
@@ -562,6 +567,8 @@ function UnitsPageContent() {
                         matchedBrand = brandList.find((b: string) => data.brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(data.brand.toLowerCase()));
                     }
 
+                    console.log("[STNK Scan] Brand match result:", { matchedBrand });
+
                     if (matchedBrand) {
                         setBrand(matchedBrand);
 
@@ -569,6 +576,12 @@ function UnitsPageContent() {
                         if (data.model) {
                             // @ts-ignore
                             const modelList = MODELS[data.vehicleType]?.[matchedBrand] || [];
+                            console.log("[STNK Scan] Model matching:", {
+                                vehicleType: data.vehicleType,
+                                brand: matchedBrand,
+                                apiModel: data.model,
+                                modelList
+                            });
 
                             // 1. Try exact match first
                             let matchedModel = modelList.find((m: string) => m.toLowerCase() === data.model.toLowerCase());
@@ -578,6 +591,8 @@ function UnitsPageContent() {
                                 matchedModel = modelList.find((m: string) => m.toLowerCase().includes(data.model.toLowerCase()) || data.model.toLowerCase().includes(m.toLowerCase()));
                             }
 
+                            console.log("[STNK Scan] Model match result:", { matchedModel });
+
                             if (matchedModel) {
                                 setModel(matchedModel);
                             } else {
@@ -586,6 +601,7 @@ function UnitsPageContent() {
                             }
                         }
                     } else {
+                        console.log("[STNK Scan] Brand not matched, setting to Lainnya");
                         // If brand not found, defaulting to Lainnya
                         if (brandList.includes("Lainnya")) {
                             setBrand("Lainnya");
