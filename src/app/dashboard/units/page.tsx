@@ -607,7 +607,8 @@ function UnitsPageContent() {
                                         setModel("Lainnya");
                                         setCustomModel(data.model);
                                     }
-                                }, 50); // 50ms delay for model
+                                }
+                            }, 50); // 50ms delay for model
                         }
                     } else {
                         console.log("[STNK Scan] Brand not matched, setting to Lainnya");
