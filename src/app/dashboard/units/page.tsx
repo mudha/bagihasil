@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { format, isPast, isWithinInterval, addDays, differenceInMonths } from "date-fns"
+import { format, isPast, isWithinInterval, addDays, differenceInMonths, differenceInCalendarMonths, differenceInDays } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -176,9 +176,17 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 }
 
 // Helper function to get tax status with months difference
-const getTaxStatus = (taxDate: Date) => {
+// Helper function to get tax status with months difference
+const getTaxStatus = (dateInput: Date | string) => {
+    const taxDate = new Date(dateInput)
     const now = new Date()
-    const monthsDiff = differenceInMonths(taxDate, now)
+    // Reset time components for accurate date comparisons
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const targetDate = new Date(taxDate.getFullYear(), taxDate.getMonth(), taxDate.getDate())
+
+    // differenceInCalendarMonths(dateLeft, dateRight) -> months
+    // If targetDate < today, diff is negative. e.g. target(Jan) - today(Feb) = -1
+    const monthsDiff = differenceInCalendarMonths(targetDate, today)
 
     // Helper to format months as "X tahun Y bulan"
     const formatMonths = (totalMonths: number) => {
@@ -195,16 +203,34 @@ const getTaxStatus = (taxDate: Date) => {
     }
 
     if (monthsDiff < 0) {
-        // Overdue
+        // Overdue status (Target date is in a past month relative to today)
         const monthsOverdue = Math.abs(monthsDiff)
         return {
             text: `Mati ${formatMonths(monthsOverdue)}`,
             color: "text-red-600"
         }
     } else if (monthsDiff === 0) {
-        return {
-            text: "Kurang 1 bulan lagi",
-            color: "text-amber-600"
+        // Same month
+        const daysDiff = differenceInDays(targetDate, today)
+
+        if (daysDiff < 0) {
+            // Overdue by days in the same month
+            const daysOverdue = Math.abs(daysDiff)
+            return {
+                text: `Mati kelewat ${daysOverdue} hari`,
+                color: "text-red-600"
+            }
+        } else if (daysDiff === 0) {
+            return {
+                text: "Hari ini jatuh tempo",
+                color: "text-amber-600"
+            }
+        } else {
+            // Future in same month
+            return {
+                text: `Kurang ${daysDiff} hari lagi`,
+                color: "text-amber-600"
+            }
         }
     } else if (monthsDiff <= 3) {
         return {
