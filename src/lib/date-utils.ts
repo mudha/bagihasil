@@ -13,6 +13,8 @@ const HIJRI_MONTHS = [
     'Zulhijah'
 ]
 
+const TIMEZONE = 'Asia/Jakarta'
+
 export function formatHijri(date: Date | string): string {
     const d = new Date(date)
     // Get numeric values for day, month, year in Islamic calendar
@@ -20,7 +22,8 @@ export function formatHijri(date: Date | string): string {
         calendar: 'islamic-umalqura',
         day: 'numeric',
         month: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: TIMEZONE
     })
 
     const parts = formatter.formatToParts(d)
@@ -38,7 +41,8 @@ export function formatHijriFull(date: Date | string): string {
     const masehi = new Intl.DateTimeFormat('id-ID', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: TIMEZONE
     }).format(d)
 
     const hijri = formatHijri(d)
@@ -49,7 +53,8 @@ export function getHijriMonthYear(date: Date): { month: string, year: string, ke
     const formatter = new Intl.DateTimeFormat('id-ID', {
         calendar: 'islamic-umalqura',
         month: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: TIMEZONE
     })
 
     const parts = formatter.formatToParts(date)

@@ -128,7 +128,7 @@ export async function GET(req: Request) {
         for (let i = 0; i < monthsRange; i++) {
             const d = new Date()
             d.setMonth(d.getMonth() - i)
-            const key = d.toLocaleString('default', { month: 'short', year: 'numeric' }) // e.g., "Dec 2025"
+            const key = d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) // e.g., "Dec 2025"
             monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
         }
 
@@ -137,7 +137,7 @@ export async function GET(req: Request) {
             const sellDate = profit.transaction?.sellDate
             if (!sellDate) return // Skip if no sell date
 
-            const key = sellDate.toLocaleString('default', { month: 'short', year: 'numeric' })
+            const key = sellDate.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
             if (monthlyStatsMap.has(key)) {
                 const current = monthlyStatsMap.get(key)!
                 current.totalMargin += profit.netMargin
