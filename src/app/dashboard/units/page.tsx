@@ -551,17 +551,30 @@ function UnitsPageContent() {
                 if (data.brand) {
                     // @ts-ignore
                     const brandList = BRANDS[data.vehicleType] || [];
-                    // Fuzzy match brand
-                    const matchedBrand = brandList.find((b: string) => b.toLowerCase() === data.brand.toLowerCase());
+
+                    // 1. Try exact match first (case-insensitive)
+                    let matchedBrand = brandList.find((b: string) => b.toLowerCase() === data.brand.toLowerCase());
+
+                    // 2. If no exact match, try fuzzy match
+                    if (!matchedBrand) {
+                        matchedBrand = brandList.find((b: string) => data.brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(data.brand.toLowerCase()));
+                    }
 
                     if (matchedBrand) {
                         setBrand(matchedBrand);
 
-                        // Map Model (only if brand is valid)
+                        // Map Model
                         if (data.model) {
                             // @ts-ignore
                             const modelList = MODELS[data.vehicleType]?.[matchedBrand] || [];
-                            const matchedModel = modelList.find((m: string) => m.toLowerCase().includes(data.model.toLowerCase()) || data.model.toLowerCase().includes(m.toLowerCase()));
+
+                            // 1. Try exact match first
+                            let matchedModel = modelList.find((m: string) => m.toLowerCase() === data.model.toLowerCase());
+
+                            // 2. If no exact match, match by inclusion
+                            if (!matchedModel) {
+                                matchedModel = modelList.find((m: string) => m.toLowerCase().includes(data.model.toLowerCase()) || data.model.toLowerCase().includes(m.toLowerCase()));
+                            }
 
                             if (matchedModel) {
                                 setModel(matchedModel);
@@ -571,14 +584,7 @@ function UnitsPageContent() {
                             }
                         }
                     } else {
-                        // If brand not found, we can't select it in dropdown easily without "Lainnya" logic for brand (which we don't have in UI yet for Brand)
-                        // But if user allows generic "Lainnya"? 
-                        // Check constants again: Brands has "Lainnya".
-                        setBrand("Lainnya");
-                        // If brand is Lainnya, model is free text?
-                        // UI for Brand "Lainnya" isn't explicitly shown in my mental model, need to double check if Brand select handles "Lainnya" well.
-                        // For now, let's assume if brand not found, we leave it empty or user fills it.
-                        // Or try to set it if "Lainnya" exists.
+                        // If brand not found, defaulting to Lainnya
                         if (brandList.includes("Lainnya")) {
                             setBrand("Lainnya");
                         }
