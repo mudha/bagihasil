@@ -531,6 +531,8 @@ function UnitsPageContent() {
 
             const data = await res.json();
 
+            console.log("[STNK Scan] API Response:", data);
+
             if (data.plateNumber) form.setValue("plateNumber", data.plateNumber);
             if (data.taxDueDate) form.setValue("taxDueDate", new Date(data.taxDueDate));
             if (data.engineNumber) form.setValue("engineNumber", data.engineNumber);
