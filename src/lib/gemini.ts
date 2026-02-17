@@ -165,6 +165,10 @@ export async function parseStnk(
                 8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
                 9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
     
+                **Aturan Khusus Tipe Kendaraan:**
+                - Jika menemukan Tipe/Model tertulis "BG6 AT" atau "BPV AT", maka itu adalah Merek: "Yamaha", Model: "XMAX".
+                - Prioritaskan Merek dan Model dari kode tipe tersebut jika ada.
+
                 **Format Output JSON Murni:**
                 {
                     "plateNumber": "string/null",
