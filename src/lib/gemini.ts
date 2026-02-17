@@ -204,6 +204,7 @@ export async function parseStnk(
             // Post-processing logic for specific vehicle codes
             let finalBrand = data.brand;
             let finalModel = data.model;
+            let finalVehicleType = data.vehicleType;
 
             const typeCode = data.vehicleTypeCode ? data.vehicleTypeCode.toUpperCase() : "";
 
@@ -211,6 +212,7 @@ export async function parseStnk(
             if (typeCode.includes("BG6 AT") || typeCode.includes("BPV AT")) {
                 finalBrand = "Yamaha";
                 finalModel = "XMAX";
+                finalVehicleType = "Motor";
             }
 
             return {
@@ -219,7 +221,7 @@ export async function parseStnk(
                 engineNumber: data.engineNumber || null,
                 chassisNumber: data.chassisNumber || null,
                 color: data.color || null,
-                vehicleType: data.vehicleType || null,
+                vehicleType: finalVehicleType || null,
                 brand: finalBrand || null,
                 model: finalModel || null,
                 year: data.year || null,
