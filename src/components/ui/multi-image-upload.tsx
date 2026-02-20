@@ -66,8 +66,8 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
 
             let fileToProcess = file;
 
-            // 2. Compress if Size > 5MB and is Image
-            if (file.size > 5 * 1024 * 1024 && file.type.startsWith('image/')) {
+            // 2. Compress if Size > 500KB and is Image
+            if (file.size > 500 * 1024 && file.type.startsWith('image/')) {
                 const toastId = toast.loading(`Mengompres ${file.name}...`)
                 try {
                     fileToProcess = await compressImage(file)
@@ -163,8 +163,8 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
 
                         let fileToProcess = file;
 
-                        // 2. Compress if Size > 5MB
-                        if (file.size > 5 * 1024 * 1024) {
+                        // 2. Compress if Size > 500KB
+                        if (file.size > 500 * 1024) {
                             const toastId = toast.loading("Mengompres gambar yang dipaste...")
                             try {
                                 fileToProcess = await compressImage(file)
