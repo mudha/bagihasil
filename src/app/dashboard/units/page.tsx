@@ -656,7 +656,14 @@ function UnitsPageContent() {
                     body: formData
                 })
 
-                if (!uploadRes.ok) throw new Error("Failed to upload image")
+                if (!uploadRes.ok) {
+                    let errMsg = "Failed to upload image";
+                    try {
+                        const errData = await uploadRes.json();
+                        errMsg = errData.error || errMsg;
+                    } catch (e) { }
+                    throw new Error(errMsg);
+                }
                 const uploadData = await uploadRes.json()
                 imageUrl = uploadData.url
             } else if (unitImages.length === 0) {
@@ -678,7 +685,14 @@ function UnitsPageContent() {
                     body: formData
                 })
 
-                if (!uploadRes.ok) throw new Error("Failed to upload STNK")
+                if (!uploadRes.ok) {
+                    let errMsg = "Failed to upload STNK";
+                    try {
+                        const errData = await uploadRes.json();
+                        errMsg = errData.error || errMsg;
+                    } catch (e) { }
+                    throw new Error(errMsg);
+                }
                 const uploadData = await uploadRes.json()
                 stnkImageUrl = uploadData.url
             } else if (stnkImages.length === 0) {
