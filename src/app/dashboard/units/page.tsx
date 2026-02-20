@@ -735,8 +735,9 @@ function UnitsPageContent() {
 
                 toast.error(errorMessage)
             }
-        } catch (error) {
-            toast.error("Terjadi kesalahan")
+        } catch (error: any) {
+            console.error("Submit error details:", error)
+            toast.error(error.message || String(error) || "Terjadi kesalahan")
         }
     }
 
