@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
             publicId: uploadResult.fileId, // imagekit uses fileId
             filename: uploadResult.name
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error uploading to ImageKit:', error)
         return NextResponse.json(
-            { error: 'Gagal mengupload file ke Cloud' },
+            { error: error?.message || typeof error === 'string' ? error : 'Gagal mengupload file ke Cloud (ImageKit)' },
             { status: 500 }
         )
     }
