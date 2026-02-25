@@ -164,12 +164,7 @@ export function AddCostDialog({
         // This prevents overwriting user data if they upload multiple images later
         // But we update the ref immediately to avoid retrying even if we don't analyze
         if (newImage && newImage.file) {
-            if (form.getValues("amount") === 0) {
-                analyzeImage(newImage.file, newImage.id)
-            } else {
-                // Even if we don't analyze, mark it as "seen" to prevent future triggers
-                lastAnalyzedImageIdRef.current = newImage.id
-            }
+            analyzeImage(newImage.file, newImage.id)
         }
     }, [images, form])
 
@@ -312,7 +307,7 @@ export function AddCostDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Jenis Biaya</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger className={cn(isAnalyzing && "border-blue-300 bg-blue-50/30")}>
                                                     <SelectValue placeholder="Pilih jenis biaya" />
@@ -343,7 +338,7 @@ export function AddCostDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Dibayar Oleh</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Siapa yang bayar?" />
