@@ -44,8 +44,19 @@ export async function parseTransferProofs(
                 3. Deskripsi: Buat ringkasan deskripsi gabungan. Contoh: "Transfer 1: [Tgl] [Nominal], Transfer 2: [Tgl] [Nominal]".
                 4. Kategori: Tentukan kategori umum (dominan).
     
-                Pilihan Kategori:
-                - INSPECTION, TRANSPORT, MEAL, TOLL, ADS, REPAIR, GAS, PARKING, STAMP_DUTY, BROKER, SALES, OTHER
+                Pilihan Kategori (Pilih salah satu yang paling cocok):
+                - TRANSPORT: Ojek online (Gojek, Grab, Maxim), taksi, tiket kereta/travel
+                - GAS: Struk SPBU (Pertamina, Shell, BP), bensin, solar
+                - MEAL: Makanan, restoran, warung, GrabFood/GoFood, minuman
+                - TOLL: Struk top-up e-Toll, struk gerbang tol
+                - PARKING: Karcis/struk parkir
+                - REPAIR: Bengkel, sparepart, ganti oli, cuci mobil/motor
+                - INSPECTION: Biaya cek fisik, jasa inspeksi kendaraan
+                - ADS: Iklan (OLX, Facebook Ads, dll)
+                - STAMP_DUTY: Pembelian materai
+                - BROKER: Fee makelar/perantara
+                - SALES: Komisi penjualan
+                - OTHER: Jika tidak masuk ke kategori mana pun di atas
     
                 Kembalikan hasil dalam format JSON murni dengan key: 
                 - "totalAmount" (number, total jumlahan)
