@@ -219,13 +219,19 @@ export async function parseStnk(
 
             const typeCode = data.vehicleTypeCode ? data.vehicleTypeCode.toUpperCase() : "";
 
-            // Force mapping for BG6 AT and BPV AT
+            // Force mapping for specific vehicle codes
             if (typeCode.includes("BG6") || typeCode.includes("BPV")) {
                 console.log(`[STNK] Forcing Yamaha XMAX mapping. Original typeCode: ${data.vehicleTypeCode}, brand: ${data.brand}, model: ${data.model}`);
                 finalBrand = "Yamaha";
                 finalModel = "XMAX";
                 finalVehicleType = "Motor";
+            } else if (typeCode.includes("BEJ")) {
+                console.log(`[STNK] Forcing Yamaha Fazzio mapping. Original typeCode: ${data.vehicleTypeCode}, brand: ${data.brand}, model: ${data.model}`);
+                finalBrand = "Yamaha";
+                finalModel = "Fazzio";
+                finalVehicleType = "Motor";
             }
+
 
             return {
                 plateNumber: data.plateNumber || null,
