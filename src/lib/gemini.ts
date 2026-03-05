@@ -41,7 +41,7 @@ export async function parseTransferProofs(
                 Tugas Anda:
                 1. Total Nominal: Jumlahkan semua nominal uang yang valid dari SEMUA gambar. Abaikan saldo akhir, cari nominal transfer/bayar.
                 2. Tanggal: Cari tanggal dari setiap gambar. Ambil tanggal PALING AKHIR (terbaru) sebagai tanggal utama.
-                3. Deskripsi: Buat ringkasan deskripsi gabungan. Contoh: "Transfer 1: [Tgl] [Nominal], Transfer 2: [Tgl] [Nominal]".
+                3. Deskripsi: Ekstrak secara langsung catatan, pesan, atau berita transfer yang ada di gambar tanpa diubah. JANGAN sertakan tanggal atau awalan seperti "Transfer 1:" di dalam deskripsi ini. Cukup ambil isi beritanya saja secara mentah (contoh: "bagi hasil project ke 47"). Jika tidak ada catatan, biarkan string kosong. Jika ada beberapa gambar, gabungkan dengan koma.
                 4. Kategori: Tentukan kategori umum (dominan).
     
                 Pilihan Kategori (Pilih salah satu yang paling cocok):

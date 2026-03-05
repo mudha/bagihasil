@@ -169,3 +169,11 @@ Transaction Base Created. ID: cmldlsq55000lmwlqyj9bloxe
 Creating 2 proofs...
 Proofs created successfully.
 Transaction completed process: cmldlsq55000lmwlqyj9bloxe
+Payload: {"unitId":"cmmatbq4g0001o0ytx3y66xkl","transactionCode":"TRX-ACH-2026-0004","buyDate":"2026-02-20","buyPrice":12000000,"initialInvestorCapital":12000000,"notes":"","proofs":[{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-02-20_at_17.17.57_m6E_9egfH9.jpeg","description":"Bukti Transfer Pembelian"}],"buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-02-20_at_17.17.57_m6E_9egfH9.jpeg"}
+About to create transaction in DB...
+Proofs to create: [{"imageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-02-20_at_17.17.57_m6E_9egfH9.jpeg","description":"Bukti Transfer Pembelian"}]
+Creating Transaction Base with: {"unitId":"cmmatbq4g0001o0ytx3y66xkl","transactionCode":"TRX-ACH-2026-0004","buyDate":"2026-02-20T00:00:00.000Z","buyPrice":12000000,"initialInvestorCapital":12000000,"notes":"","buyProofImageUrl":"https://ik.imagekit.io/abuNaurah/profit-sharing-app/payment-proofs/WhatsApp_Image_2026-02-20_at_17.17.57_m6E_9egfH9.jpeg","status":"ON_PROCESS"}
+Transaction Base Created. ID: cmmatgqbb0004o0yttfegqk2s
+Creating 1 proofs...
+Proofs created successfully.
+Transaction completed process: cmmatgqbb0004o0yttfegqk2s

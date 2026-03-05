@@ -164,9 +164,7 @@ export default function TransactionDetailPage() {
                     <div>
                         <h2 className="text-xl md:text-3xl font-bold tracking-tight flex flex-wrap items-center gap-2 md:gap-3 break-all">
                             {transaction.transactionCode}
-                            {transaction.status !== 'COMPLETED' && (
-                                <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
-                            )}
+                            <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                         </h2>
                         <div className="text-muted-foreground flex flex-wrap items-center gap-2 mt-1">
                             {transaction.unit.imageUrl && (
@@ -433,8 +431,9 @@ export default function TransactionDetailPage() {
                 </TabsContent>
                 <TabsContent value="details">
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Informasi Detail</CardTitle>
+                            <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
