@@ -26,13 +26,13 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Plus, Pencil, Download, FileText, FileSpreadsheet } from "lucide-react"
+import { Plus, Pencil, Download, FileText, FileSpreadsheet, Sheet } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "sonner"
-import { exportInvestorReportXLSX, exportInvestorReportPDF } from "@/lib/export-utils"
+import { exportInvestorReportXLSX, exportInvestorReportPDF, exportAllInvestorsXLSX } from "@/lib/export-utils"
 import { useSession } from "next-auth/react"
 import {
     Select,
@@ -76,6 +76,7 @@ export default function InvestorsPage() {
     const [isOpen, setIsOpen] = useState(false)
     const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
+    const [isExportingAll, setIsExportingAll] = useState(false)
     const [users, setUsers] = useState<User[]>([])
     const { data: session } = useSession()
     // @ts-ignore
@@ -220,6 +221,19 @@ export default function InvestorsPage() {
         setExportingInvestor(null)
     }
 
+    const handleExportAll = async () => {
+        setIsExportingAll(true)
+        toast.loading('Mengekspor data semua pemodal...')
+        const result = await exportAllInvestorsXLSX()
+        toast.dismiss()
+        if (result.success) {
+            toast.success('Laporan semua pemodal berhasil diunduh!')
+        } else {
+            toast.error(result.error || 'Gagal mengekspor laporan')
+        }
+        setIsExportingAll(false)
+    }
+
     const handleToggleActive = async (investor: Investor) => {
         const newStatus = !investor.isActive
         try {
@@ -267,6 +281,15 @@ export default function InvestorsPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold tracking-tight">Data Pemodal</h2>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleExportAll}
+                        disabled={isExportingAll}
+                    >
+                        <Sheet className="mr-2 h-4 w-4" />
+                        {isExportingAll ? 'Mengekspor...' : 'Ekspor Semua (Excel)'}
+                    </Button>
                 {!isViewer && (
                     <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
                         <DialogTrigger asChild>
@@ -395,6 +418,7 @@ export default function InvestorsPage() {
                         </DialogContent>
                     </Dialog>
                 )}
+                </div>
             </div>
 
             {/* Mobile Card View */}

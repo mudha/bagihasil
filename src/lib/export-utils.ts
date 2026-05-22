@@ -1248,3 +1248,388 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         return { success: false, error: 'Gagal mengekspor laporan transaksi PDF' }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export SEMUA PEMODAL ke satu file Excel — 1 sheet per pemodal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface AllInvestorTx {
+    transactionCode: string
+    unitName: string
+    unitPlateNumber: string
+    buyDate: string
+    sellDate: string | null
+    buyPrice: number
+    sellPrice: number
+    initialInvestorCapital: number
+    initialManagerCapital: number
+    investorCosts: number
+    managerCosts: number
+    totalCosts: number
+    netMargin: number
+    investorProfitAmount: number
+    managerProfitAmount: number
+    paymentStatus: string
+    status: string
+    totalPaid: number
+    costs: Array<{
+        costType: string
+        description: string
+        payer: string
+        amount: number
+        date: string
+    }>
+    paymentHistories: Array<{
+        amount: number
+        paymentDate: string
+        method: string
+        notes: string
+    }>
+}
+
+interface AllInvestorData {
+    investor: {
+        id: string
+        name: string
+        contactInfo: string
+        bankAccountDetails: string
+        marginPercentage: number
+        isActive: boolean
+    }
+    transactions: AllInvestorTx[]
+}
+
+const fmt = (v: number) =>
+    new Intl.NumberFormat('id-ID').format(v)
+
+const fmtDate = (d: string | null | undefined) => {
+    if (!d) return '-'
+    return format(new Date(d), 'dd/MM/yyyy')
+}
+
+// Warna tema
+const BLACK    = 'FF1A1A2E'   // header gelap
+const GOLD     = 'FFFFD700'   // teks gold
+const BLUE_HDR = 'FF1E3A5F'   // sub-header biru tua
+const WHITE    = 'FFFFFFFF'
+const GREEN_BG = 'FFD9F0D9'   // baris total
+const COST_BG  = 'FFEEF4FF'   // baris biaya detail
+const GRAY_ROW = 'FFF8F8F8'   // alternating row
+const RED_LOSS = 'FFFFF0F0'   // merah muda untuk rugi
+
+function applyHeaderStyle(cell: ExcelJS.Cell, bgArgb: string, fgArgb: string, size = 9) {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } }
+    cell.font = { bold: true, color: { argb: fgArgb }, size, name: 'Calibri' }
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+    cell.border = {
+        top:    { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        left:   { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        right:  { style: 'thin', color: { argb: 'FFCCCCCC' } },
+    }
+}
+
+function applyDataStyle(cell: ExcelJS.Cell, bgArgb?: string, bold = false, align: 'left'|'right'|'center' = 'left') {
+    if (bgArgb) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } }
+    }
+    cell.font = { size: 8, name: 'Calibri', bold }
+    cell.alignment = { vertical: 'middle', horizontal: align, wrapText: false }
+    cell.border = {
+        top:    { style: 'hair', color: { argb: 'FFDDDDDD' } },
+        left:   { style: 'hair', color: { argb: 'FFDDDDDD' } },
+        bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } },
+        right:  { style: 'hair', color: { argb: 'FFDDDDDD' } },
+    }
+}
+
+export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; error?: string }> {
+    try {
+        const response = await fetch('/api/reports/all-investors')
+        if (!response.ok) throw new Error('Gagal mengambil data laporan')
+
+        const allData: AllInvestorData[] = await response.json()
+
+        const workbook = new ExcelJS.Workbook()
+        workbook.creator = 'BagiHasil App'
+        workbook.created = new Date()
+
+        for (const { investor, transactions } of allData) {
+            // ── Kumpulkan semua jenis biaya unik untuk sheet ini ──────────
+            const costTypeSet = new Set<string>()
+            transactions.forEach(tx => {
+                tx.costs?.forEach(c => costTypeSet.add(c.costType))
+            })
+            // Urutkan alfabetis agar kolom konsisten
+            const costTypes = Array.from(costTypeSet).sort()
+
+            // ── Definisi kolom tetap (sebelum & sesudah kolom biaya) ──────
+            // FIXED KIRI  : No, Kode, Unit, Polisi, Tgl Beli, Tgl Jual, Harga Beli, Harga Jual, Modal Pemodal, Modal Pengelola
+            // DINAMIS     : [costTypes…]  ← kolom biaya per jenis
+            // FIXED KANAN : Total Biaya, Biaya Pemodal, Biaya Pengelola, Margin, BH Pemodal, BH Pengelola, Total Transfer, Status Bayar, Status Tx
+
+            const FIXED_LEFT  = 10  // kolom 1-10
+            const COST_START  = FIXED_LEFT + 1          // kolom pertama biaya dinamis
+            const COST_END    = FIXED_LEFT + costTypes.length  // kolom terakhir biaya
+            const FIXED_RIGHT = 9   // jumlah kolom kanan tetap
+            const TOTAL_COLS  = FIXED_LEFT + costTypes.length + FIXED_RIGHT
+
+            // Nama sheet: max 31 karakter, hapus karakter ilegal Excel
+            const sheetName = investor.name
+                .replace(/[:\\/?*[\]]/g, '')
+                .substring(0, 31)
+
+            const sheet = workbook.addWorksheet(sheetName, {
+                properties: { tabColor: { argb: '1E3A5F' } },
+            })
+
+            // ── Lebar kolom ──────────────────────────────────────────────
+            const colDefs: Partial<ExcelJS.Column>[] = [
+                { key: 'c1',  width: 4  },  // No
+                { key: 'c2',  width: 14 },  // Kode
+                { key: 'c3',  width: 22 },  // Nama Unit
+                { key: 'c4',  width: 12 },  // No Polisi
+                { key: 'c5',  width: 12 },  // Tgl Beli
+                { key: 'c6',  width: 12 },  // Tgl Jual
+                { key: 'c7',  width: 16 },  // Harga Beli
+                { key: 'c8',  width: 16 },  // Harga Jual
+                { key: 'c9',  width: 16 },  // Modal Pemodal
+                { key: 'c10', width: 16 },  // Modal Pengelola
+            ]
+            // Kolom dinamis biaya
+            costTypes.forEach((_, i) => colDefs.push({ key: `cost_${i}`, width: 15 }))
+            // Kolom kanan tetap
+            colDefs.push(
+                { key: 'totalBiaya',      width: 15 },
+                { key: 'biayaPemodal',    width: 15 },
+                { key: 'biayaPengelola',  width: 15 },
+                { key: 'margin',          width: 16 },
+                { key: 'bhPemodal',       width: 16 },
+                { key: 'bhPengelola',     width: 16 },
+                { key: 'totalTransfer',   width: 16 },
+                { key: 'statusBayar',     width: 12 },
+                { key: 'statusTx',        width: 10 },
+            )
+            sheet.columns = colDefs
+
+            // ── Helper: dapatkan addr dari index kolom (1-based) ──────────
+            const colAddr = (colIdx: number) =>
+                sheet.getColumn(colIdx).letter
+
+            const lastCol = colAddr(TOTAL_COLS)
+
+            // ── Baris 1: Judul besar ──────────────────────────────────────
+            sheet.mergeCells(`A1:${lastCol}1`)
+            const titleCell = sheet.getCell('A1')
+            titleCell.value = `LAPORAN PEMODAL — ${investor.name.toUpperCase()}`
+            titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLACK } }
+            titleCell.font  = { bold: true, size: 13, color: { argb: GOLD }, name: 'Calibri' }
+            titleCell.alignment = { vertical: 'middle', horizontal: 'center' }
+            sheet.getRow(1).height = 32
+
+            // ── Baris 2: Info pemodal ─────────────────────────────────────
+            const q2 = Math.floor(TOTAL_COLS / 4)
+            const ranges2 = [
+                [1,           q2],
+                [q2+1,        q2*2],
+                [q2*2+1,      q2*3],
+                [q2*3+1,      TOTAL_COLS],
+            ]
+            const vals2 = [
+                `Kontak: ${investor.contactInfo}`,
+                `Rekening: ${investor.bankAccountDetails}`,
+                `Margin: ${investor.marginPercentage}%`,
+                `Status: ${investor.isActive ? 'Aktif' : 'Nonaktif'}  |  Dibuat: ${format(new Date(), 'dd MMM yyyy HH:mm')}`,
+            ]
+            ranges2.forEach(([s, e], ri) => {
+                const startAddr = colAddr(s)
+                const endAddr   = colAddr(e)
+                if (s !== e) sheet.mergeCells(`${startAddr}2:${endAddr}2`)
+                const c = sheet.getCell(`${startAddr}2`)
+                c.value = vals2[ri]
+                c.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLUE_HDR } }
+                c.font  = { size: 8, color: { argb: WHITE }, name: 'Calibri' }
+                c.alignment = { vertical: 'middle', horizontal: 'left' }
+            })
+            sheet.getRow(2).height = 18
+
+            // ── Baris 3: kosong ───────────────────────────────────────────
+            sheet.getRow(3).height = 6
+
+            // ── Baris 4: Header tabel ─────────────────────────────────────
+            const TXN_HDR_ROW = 4
+            const hdrFixed = [
+                'No', 'Kode Transaksi', 'Nama Unit', 'No Polisi',
+                'Tgl Beli', 'Tgl Jual',
+                'Harga Beli (Rp)', 'Harga Jual (Rp)',
+                'Modal Pemodal (Rp)', 'Modal Pengelola (Rp)',
+            ]
+            const hdrCosts = costTypes.map(t => `Biaya\n${t} (Rp)`)
+            const hdrRight = [
+                'Total Biaya (Rp)',
+                'Biaya Pemodal (Rp)', 'Biaya Pengelola (Rp)',
+                'Margin Bersih (Rp)',
+                'BH Pemodal (Rp)', 'BH Pengelola (Rp)',
+                'Total Transfer (Rp)', 'Status Bayar', 'Status Transaksi',
+            ]
+            const headers = [...hdrFixed, ...hdrCosts, ...hdrRight]
+
+            const hdrRow = sheet.getRow(TXN_HDR_ROW)
+            hdrRow.height = 42
+            headers.forEach((h, i) => {
+                const cell = hdrRow.getCell(i + 1)
+                cell.value = h
+                // Kolom biaya dinamis: warna sedikit berbeda (biru tua) agar mudah dibedakan
+                const isCostCol = i >= FIXED_LEFT && i < FIXED_LEFT + costTypes.length
+                applyHeaderStyle(cell, isCostCol ? BLUE_HDR : BLACK, isCostCol ? WHITE : GOLD, 8)
+            })
+
+            // ── Baris data ────────────────────────────────────────────────
+            let currentRow = TXN_HDR_ROW + 1
+
+            let sumInvestorCapital = 0
+            let sumManagerCapital  = 0
+            let sumInvestorCosts   = 0
+            let sumManagerCosts    = 0
+            let sumTotalCosts      = 0
+            let sumNetMargin       = 0
+            let sumInvestorProfit  = 0
+            let sumManagerProfit   = 0
+            let sumTotalTransfer   = 0
+            // Akumulasi per jenis biaya
+            const sumCostByType: Record<string, number> = {}
+            costTypes.forEach(t => { sumCostByType[t] = 0 })
+
+            transactions.forEach((tx, idx) => {
+                const isEven = idx % 2 === 0
+                const rowBg  = tx.netMargin < 0 ? RED_LOSS : (isEven ? WHITE : GRAY_ROW)
+
+                const totalTransfer = (tx.initialInvestorCapital ?? 0) + (tx.investorProfitAmount ?? 0)
+
+                sumInvestorCapital += tx.initialInvestorCapital ?? 0
+                sumManagerCapital  += tx.initialManagerCapital  ?? 0
+                sumInvestorCosts   += tx.investorCosts ?? 0
+                sumManagerCosts    += tx.managerCosts ?? 0
+                sumTotalCosts      += tx.totalCosts ?? 0
+                sumNetMargin       += tx.netMargin ?? 0
+                sumInvestorProfit  += tx.investorProfitAmount ?? 0
+                sumManagerProfit   += tx.managerProfitAmount ?? 0
+                sumTotalTransfer   += totalTransfer
+
+                // Hitung biaya per jenis untuk transaksi ini
+                const costByType: Record<string, number> = {}
+                costTypes.forEach(t => { costByType[t] = 0 })
+                tx.costs?.forEach(c => {
+                    costByType[c.costType] = (costByType[c.costType] ?? 0) + c.amount
+                    sumCostByType[c.costType] = (sumCostByType[c.costType] ?? 0) + c.amount
+                })
+
+                const txRow = sheet.getRow(currentRow)
+                txRow.height = 18
+
+                // Nilai kolom kiri tetap
+                const valuesLeft = [
+                    idx + 1,
+                    tx.transactionCode,
+                    tx.unitName,
+                    tx.unitPlateNumber,
+                    fmtDate(tx.buyDate),
+                    fmtDate(tx.sellDate),
+                    tx.buyPrice,
+                    tx.sellPrice,
+                    tx.initialInvestorCapital,
+                    tx.initialManagerCapital,
+                ]
+                // Nilai kolom biaya dinamis
+                const valuesCosts = costTypes.map(t => costByType[t] ?? 0)
+                // Nilai kolom kanan tetap
+                const valuesRight = [
+                    tx.totalCosts,
+                    tx.investorCosts,
+                    tx.managerCosts,
+                    tx.netMargin,
+                    tx.investorProfitAmount,
+                    tx.managerProfitAmount,
+                    totalTransfer,
+                    tx.paymentStatus,
+                    tx.status,
+                ]
+
+                const allValues = [...valuesLeft, ...valuesCosts, ...valuesRight]
+                allValues.forEach((v, i) => {
+                    const cell = txRow.getCell(i + 1)
+                    cell.value = v as ExcelJS.CellValue
+                    const isNumLeft  = i >= 6 && i <= 9          // harga beli-jual, modal
+                    const isNumCost  = i >= FIXED_LEFT && i < FIXED_LEFT + costTypes.length
+                    const isNumRight = i >= FIXED_LEFT + costTypes.length && i <= FIXED_LEFT + costTypes.length + 6  // sampai totalTransfer
+                    const isNum = isNumLeft || isNumCost || isNumRight
+                    const align = isNum ? 'right' : (i < 4 ? 'left' : 'center')
+                    applyDataStyle(cell, rowBg, false, align)
+                    if (isNum) cell.numFmt = '#,##0'
+                })
+
+                currentRow++
+            })
+
+            // ── Baris Total ────────────────────────────────────────────────
+            if (transactions.length > 0) {
+                const totRow = sheet.getRow(currentRow)
+                totRow.height = 22
+
+                const totLeft: (string|number)[] = [
+                    '', 'TOTAL', '', '', '', '',
+                    '', '', sumInvestorCapital, sumManagerCapital,
+                ]
+                const totCosts = costTypes.map(t => sumCostByType[t] ?? 0)
+                const totRight: (string|number)[] = [
+                    sumTotalCosts,
+                    sumInvestorCosts,
+                    sumManagerCosts,
+                    sumNetMargin,
+                    sumInvestorProfit,
+                    sumManagerProfit,
+                    sumTotalTransfer,
+                    '', '',
+                ]
+                const totAll = [...totLeft, ...totCosts, ...totRight]
+                totAll.forEach((v, i) => {
+                    const cell = totRow.getCell(i + 1)
+                    cell.value = v as ExcelJS.CellValue
+                    const isNumLeft  = i >= 8 && i <= 9
+                    const isNumCost  = i >= FIXED_LEFT && i < FIXED_LEFT + costTypes.length
+                    const isNumRight = i >= FIXED_LEFT + costTypes.length && i <= FIXED_LEFT + costTypes.length + 6
+                    const isNum = isNumLeft || isNumCost || isNumRight
+                    applyDataStyle(cell, GREEN_BG, true, isNum ? 'right' : (i === 1 ? 'center' : 'left'))
+                    if (isNum) cell.numFmt = '#,##0'
+                })
+                // Merge label "TOTAL"
+                sheet.mergeCells(`B${currentRow}:${colAddr(FIXED_LEFT)}${currentRow}`)
+            }
+
+            // Freeze baris 1-4 + 2 kolom pertama
+            sheet.views = [{ state: 'frozen', xSplit: 2, ySplit: TXN_HDR_ROW, activeCell: 'C5' }]
+        }
+
+        // ── Download ───────────────────────────────────────────────────────
+        const buffer = await workbook.xlsx.writeBuffer()
+        const fileName = `Laporan_Semua_Pemodal_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => {
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+        }, 150)
+
+        return { success: true }
+    } catch (error) {
+        console.error('Error exporting all investors XLSX:', error)
+        return { success: false, error: 'Gagal mengekspor laporan semua pemodal' }
+    }
+}
