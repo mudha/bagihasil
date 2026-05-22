@@ -1,4 +1,5 @@
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { auth } from "@/lib/auth"
 
 type ActionType = "CREATE" | "UPDATE" | "DELETE"
@@ -27,7 +28,8 @@ export async function logActivity(
             }
         }
 
-        await db.activityLog.create({
+        await prisma.activityLog.create({
+
             data: {
                 action,
                 entity,

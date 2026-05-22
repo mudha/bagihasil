@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
     // @ts-ignore
     if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
-    const users = await db.user.findMany({
+    const users = await prisma.user.findMany({
         select: {
             id: true,
             name: true,
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
         const validatedData = userSchema.parse(body)
 
         // Check if username already exists
-        const existingUsername = await db.user.findUnique({
+        const existingUsername = await prisma.user.findUnique({
             where: { username: validatedData.username }
         })
 
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
         // Check if email already exists (if provided)
         if (validatedData.email && validatedData.email !== "") {
-            const existingEmail = await db.user.findUnique({
+            const existingEmail = await prisma.user.findUnique({
                 where: { email: validatedData.email }
             })
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(validatedData.password, 10)
 
-        const user = await db.user.create({
+        const user = await prisma.user.create({
             data: {
                 name: validatedData.name,
                 username: validatedData.username,

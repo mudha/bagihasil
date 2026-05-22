@@ -69,7 +69,7 @@ export function Navbar({ type = "admin" }: NavbarProps) {
             <div className="flex items-center gap-2">
                 <div className="hidden sm:flex flex-col items-end mr-1">
                     <span className="text-sm font-medium leading-none">{session?.user?.name || "User"}</span>
-                    <span className="text-xs text-muted-foreground capitalize">{session?.user?.role?.toLowerCase() || "Viewer"}</span>
+                    <span className="text-xs text-muted-foreground capitalize">{(session?.user as any)?.role?.toLowerCase() || "Viewer"}</span>
                 </div>
                 <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
                     <AvatarImage src={session?.user?.image || ""} />

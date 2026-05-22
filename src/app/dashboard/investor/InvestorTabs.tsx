@@ -18,7 +18,6 @@ interface InvestorTabsProps {
         activeCapital: number
         totalProfit: number
         activeUnitsCount: number
-        activeUnitsCount: number
         soldUnitsCount: number
         totalUnitsCount: number
     }

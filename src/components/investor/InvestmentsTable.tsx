@@ -272,8 +272,6 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                                     src={unit.imageUrl}
                                                     alt={unit.name}
                                                     className="h-full w-full object-cover"
-                                                    width={48}
-                                                    height={48}
                                                 />
                                             </div>
                                         ) : (

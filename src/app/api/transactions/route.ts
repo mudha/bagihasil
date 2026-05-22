@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
 import { logActivity } from "@/lib/activity-logger"
 
 const transactionSchema = z.object({
@@ -40,10 +39,33 @@ export async function GET(req: Request) {
         where.status = status
     }
 
-    if (investorStatus === 'active') {
-        where.unit = { investor: { isActive: true } }
-    } else if (investorStatus === 'inactive') {
-        where.unit = { investor: { isActive: false } }
+    // RBAC: Filter khusus untuk role INVESTOR
+    // @ts-ignore
+    const userRole = session.user?.role
+    if (userRole === "INVESTOR") {
+        // Cari ID investor berdasarkan user ID
+        const investor = await prisma.investor.findUnique({
+            where: { userId: session.user?.id }
+        })
+        
+        if (investor) {
+            // Tambahkan filter investorId
+            where.unit = {
+                investorId: investor.id
+            }
+        } else {
+            // Jika data investor tidak ditemukan untuk user ini, return kosong untuk keamanan
+            return NextResponse.json([])
+        }
+    }
+
+    // Admin filter (hanya diproses jika bukan Investor yang melihat data mereka sendiri)
+    if (userRole === "ADMIN" || !userRole) {
+        if (investorStatus === 'active') {
+            where.unit = { ...where.unit, investor: { isActive: true } }
+        } else if (investorStatus === 'inactive') {
+            where.unit = { ...where.unit, investor: { isActive: false } }
+        }
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -76,13 +98,9 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json()
-        try {
-            const fs = require('fs');
-            fs.appendFileSync('debug_log.txt', `Payload: ${JSON.stringify(body)}\n`);
-        } catch (e) { }
         const validatedData = transactionSchema.parse(body)
 
-        // Check for active transaction
+        // Cek apakah unit sudah punya transaksi aktif
         const activeTransaction = await prisma.transaction.findFirst({
             where: {
                 unitId: validatedData.unitId,
@@ -96,77 +114,30 @@ export async function POST(req: Request) {
 
         const { proofs, ...transactionData } = validatedData
 
-        try {
-            const fs = require('fs');
-            fs.appendFileSync('debug_log.txt', `About to create transaction in DB...\n`);
-
-            // Validate data consistency before DB call
-            if (proofs && proofs.length > 0) {
-                fs.appendFileSync('debug_log.txt', `Proofs to create: ${JSON.stringify(proofs)}\n`);
-            }
-        } catch (e) { }
-
-        let transaction;
-        try {
-            const createData = {
-                ...transactionData,
-                status: "ON_PROCESS"
-            };
-
-            try {
-                const fs = require('fs');
-                fs.appendFileSync('debug_log.txt', `Creating Transaction Base with: ${JSON.stringify(createData)}\n`);
-            } catch (e) { }
-
-            transaction = await db.transaction.create({
-                data: createData,
+        // Atomic: buat transaction + proofs dalam satu DB transaction
+        const transaction = await prisma.$transaction(async (tx) => {
+            const created = await tx.transaction.create({
+                data: {
+                    ...transactionData,
+                    status: "ON_PROCESS"
+                },
             })
 
-            try {
-                const fs = require('fs');
-                fs.appendFileSync('debug_log.txt', `Transaction Base Created. ID: ${transaction.id}\n`);
-            } catch (e) { }
-
             if (proofs && proofs.length > 0) {
-                try {
-                    const fs = require('fs');
-                    fs.appendFileSync('debug_log.txt', `Creating ${proofs.length} proofs...\n`);
-                } catch (e) { }
-
-                await db.transactionProof.createMany({
+                await tx.transactionProof.createMany({
                     data: proofs.map(p => ({
-                        transactionId: transaction.id,
+                        transactionId: created.id,
                         proofType: 'BUY',
                         imageUrl: p.imageUrl,
                         description: p.description
                     }))
                 })
-                try {
-                    const fs = require('fs');
-                    fs.appendFileSync('debug_log.txt', `Proofs created successfully.\n`);
-                } catch (e) { }
             }
 
-        } catch (dbError: any) {
-            try {
-                const fs = require('fs');
-                // Use a safer error logging to avoid source-map crashes
-                const safeMsg = dbError.code ? `Code: ${dbError.code}, Message: ${dbError.message}` : String(dbError);
-                fs.appendFileSync('debug_log.txt', `CRITICAL DB ERROR: ${safeMsg}\n`);
-            } catch (e) { }
+            return created
+        })
 
-            // If transaction was created but proofs failed, we might want to delete the transaction? 
-            // For now, just let it throw, but user might end up with partial state. 
-            // Ideally we use interactive transaction, but let's debug first.
-            throw dbError;
-        }
-
-        try {
-            const fs = require('fs');
-            fs.appendFileSync('debug_log.txt', `Transaction completed process: ${transaction.id}\n`);
-        } catch (e) { }
-
-        // Log Activity - wrap in try-catch to prevent blocking
+        // Log Activity - jangan blokir response jika gagal
         try {
             await logActivity(
                 "CREATE",
@@ -174,22 +145,12 @@ export async function POST(req: Request) {
                 transaction.id,
                 `Created transaction ${transaction.transactionCode} for unit ${transaction.unitId}`
             )
-        } catch (logError) {
-            // DO NOT use console.error - source map crash
-            // Don't fail the request if activity logging fails
+        } catch {
+            // Activity log failure tidak membatalkan response
         }
 
         return NextResponse.json(transaction)
     } catch (error: any) {
-        // DO NOT use console.error - it triggers source map crash
-        try {
-            const fs = require('fs');
-            const errorMsg = `Message: ${error?.message || 'Unknown'}, Code: ${error?.code || 'N/A'}`;
-            fs.appendFileSync('debug_log.txt', `Outer Error: ${errorMsg}\n`);
-        } catch (e) {
-            // Logging failed, continue
-        }
-
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.issues }, { status: 400 })
         }

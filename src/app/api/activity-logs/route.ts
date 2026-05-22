@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 
 export async function GET(req: Request) {
     try {
@@ -12,7 +13,8 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url)
         const limit = parseInt(searchParams.get("limit") || "50")
 
-        const logs = await db.activityLog.findMany({
+        const logs = await prisma.activityLog.findMany({
+
             take: limit,
             orderBy: {
                 createdAt: 'desc'

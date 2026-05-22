@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
 import { logActivity } from "@/lib/activity-logger"
+
 
 const unitSchema = z.object({
     investorId: z.string(),
@@ -55,7 +55,8 @@ export async function POST(req: Request) {
         const body = await req.json()
         const validatedData = unitSchema.parse(body)
 
-        const unit = await db.unit.create({
+        const unit = await prisma.unit.create({
+
             data: {
                 ...validatedData,
                 taxDueDate: validatedData.taxDueDate ? new Date(validatedData.taxDueDate) : null

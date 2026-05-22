@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
@@ -38,7 +39,7 @@ export async function PUT(
             updateData.passwordHash = await bcrypt.hash(validatedData.password, 10)
         }
 
-        const user = await db.user.update({
+        const user = await prisma.user.update({
             where: { id },
             data: updateData,
             select: {
@@ -77,7 +78,7 @@ export async function DELETE(
             return NextResponse.json({ error: "Tidak dapat menghapus akun sendiri" }, { status: 400 })
         }
 
-        await db.user.delete({
+        await prisma.user.delete({
             where: { id }
         })
 

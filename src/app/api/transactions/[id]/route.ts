@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
 import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
+
 
 const transactionUpdateSchema = z.object({
     unitId: z.string().optional(),

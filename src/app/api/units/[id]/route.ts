@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { db } from "@/lib/db"
 import { logActivity } from "@/lib/activity-logger"
+
 
 const unitSchema = z.object({
     investorId: z.string(),
@@ -31,15 +31,15 @@ export async function PUT(
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     // @ts-ignore
     if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    // @ts-ignore
-    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
 
     try {
         const { id } = await params
         const body = await req.json()
         const validatedData = unitSchema.parse(body)
 
-        const unit = await db.unit.update({
+        const unit = await prisma.unit.update({
+
             where: { id },
             data: validatedData
         })
@@ -67,7 +67,8 @@ export async function DELETE(
 
     try {
         const { id } = await params
-        await db.unit.delete({
+        await prisma.unit.delete({
+
             where: { id }
         })
 

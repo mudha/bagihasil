@@ -361,7 +361,6 @@ function UnitsPageContent() {
                 brand: editingUnit.brand,
                 model: editingUnit.model,
                 year: editingUnit.year,
-                year: editingUnit.year,
                 color: editingUnit.color,
                 stnkImageUrl: editingUnit.stnkImageUrl,
                 engineNumber: editingUnit.engineNumber,
@@ -459,7 +458,6 @@ function UnitsPageContent() {
                 brand: null,
                 model: null,
                 year: null,
-                year: null,
                 color: null,
                 stnkImageUrl: null,
                 engineNumber: null,
@@ -552,10 +550,11 @@ function UnitsPageContent() {
                 // Use setTimeout to ensure vehicleType state has propagated
                 setTimeout(() => {
 
+                    // @ts-ignore
+                    const brandList = BRANDS[data.vehicleType] || [];
+
                     // Map Brand (only if vehicle type is valid)
                     if (data.brand) {
-                        // @ts-ignore
-                        const brandList = BRANDS[data.vehicleType] || [];
                         console.log("[STNK Scan] Brand matching:", {
                             vehicleType: data.vehicleType,
                             apiBrand: data.brand,
@@ -1758,9 +1757,9 @@ function UnitsPageContent() {
             />
 
             <ImagePreviewDialog
-                open={!!previewUrl}
+                isOpen={!!previewUrl}
                 onOpenChange={(open) => !open && setPreviewUrl(null)}
-                imageUrl={previewUrl || ""}
+                src={previewUrl || ""}
             />
 
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

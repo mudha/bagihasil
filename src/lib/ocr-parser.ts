@@ -102,7 +102,10 @@ function extractDataFromText(text: string): ParsedReceipt {
         amount,
         date,
         description,
-        costType
+        costType,
+        totalAmount: amount,
+        combinedDescription: description,
+        latestDate: date
     };
 }
 

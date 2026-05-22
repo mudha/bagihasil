@@ -27,7 +27,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  captionLayout = "dropdown-buttons",
+  captionLayout = "dropdown",
   fromYear = 1960,
   toYear = new Date().getFullYear() + 10,
   buttonVariant = "ghost",

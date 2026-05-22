@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -10,7 +11,8 @@ export default async function InvestorProfilePage() {
     if (!session?.user) redirect("/login")
 
     // Get Investor
-    const investor = await db.investor.findUnique({
+    const investor = await prisma.investor.findUnique({
+
         where: { userId: session.user.id }
     })
 

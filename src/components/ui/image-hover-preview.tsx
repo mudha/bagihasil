@@ -31,7 +31,7 @@ export function ImageHoverPreview({
     const [position, setPosition] = useState({ x: 0, y: 0 })
     const [imageLoaded, setImageLoaded] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
-    const timeoutRef = useRef<NodeJS.Timeout>()
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         // Preload the image

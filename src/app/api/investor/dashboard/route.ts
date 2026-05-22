@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { getInvestorDashboardData } from "@/lib/investor-data"
 
 export async function GET(request: NextRequest) {
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
         const { investor, stats } = data
 
         // Fetch Investments Data
-        const units = await db.unit.findMany({
+        const units = await prisma.unit.findMany({
+
             where: { investorId: investor.id },
             include: {
                 transactions: {
@@ -55,7 +57,8 @@ export async function GET(request: NextRequest) {
         })
 
         // Fetch Payments Data
-        const payments = await db.paymentHistory.findMany({
+        const payments = await prisma.paymentHistory.findMany({
+
             where: { investorId: investor.id },
             include: { transaction: { include: { unit: true } } },
             orderBy: { paymentDate: "desc" }

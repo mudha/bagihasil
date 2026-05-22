@@ -1,9 +1,10 @@
-import { db } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
+
 import { getHijriMonthYear } from "@/lib/date-utils"
 
 export async function getInvestorDashboardData(userId: string, months: number = 6) {
     // 1. Find Investor attached to this User
-    const investor = await db.investor.findUnique({
+    const investor = await prisma.investor.findUnique({
         where: { userId },
         include: {
             units: {
@@ -19,7 +20,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     // We need to fetch transactions where this investor participated.
 
     // Fetch all transactions for units owned by this investor
-    const transactions = await db.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({
         where: {
             unit: {
                 investorId: investor.id
@@ -39,10 +40,10 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     let activeCapital = 0
     let totalProfit = 0
     const activeUnitsCount = investor.units.length
-    const totalUnitsCount = await db.unit.count({ where: { investorId: investor.id } })
+    const totalUnitsCount = await prisma.unit.count({ where: { investorId: investor.id } })
 
     // Total Invested & Active Capital Calculation
-    const allInvestorUnits = await db.unit.findMany({
+    const allInvestorUnits = await prisma.unit.findMany({
         where: { investorId: investor.id },
         include: { transactions: true }
     })
@@ -180,8 +181,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
             totalProfit,
             totalReceived,
             activeUnitsCount,
-            activeUnitsCount,
-            soldUnitsCount: await db.unit.count({ where: { investorId: investor.id, status: "SOLD" } }),
+            soldUnitsCount: await prisma.unit.count({ where: { investorId: investor.id, status: "SOLD" } }),
             totalUnitsCount
         },
         monthlyChartData,
