@@ -214,7 +214,6 @@ function TransactionsPageContent() {
     const { data: session } = useSession()
     const router = useRouter()
     const searchParams = useSearchParams()
-    // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
 
     const [transactions, setTransactions] = useState<Transaction[]>([])

@@ -15,7 +15,6 @@ export default async function InvestorLayout({
         redirect("/login")
     }
 
-    // @ts-ignore
     if (session.user.role !== "INVESTOR") {
         // If Admin tries to access, maybe allow? But for now stick to separation.
         // Or redirect to main dashboard if not investor

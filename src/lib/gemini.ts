@@ -177,6 +177,10 @@ export async function parseStnk(
                 8. **Model**: Contoh: Avanza, XMAX, Beat, Brio. (Ambil kata kunci model utama).
                 9. **Tahun Pembuatan (Year)**: Cari label "Tahun Pembuatan" atau "Thn Rakit". Ambil 4 digit tahun (YYYY).
                 10. **Kode Tipe Kendaraan (Vehicle Type Code)**: Cari label "Tipe" atau "Type" (BUKAN label "Jenis"). Ini biasanya berisi kode seperti "BG6 AT", "BPV AT", "AVANZA 1.3 E M/T". Salin persis apa yang tertulis.
+                
+                **Instruksi Khusus (Wajib Diikuti):**
+                - Jika Kode Tipe Kendaraan mengandung "BG6" atau "BPV", maka pastikan Brand="Yamaha", Model="XMAX", vehicleType="Motor".
+                - Jika Kode Tipe Kendaraan mengandung "BEJ", maka pastikan Brand="Yamaha", Model="Fazzio", vehicleType="Motor".
 
                 **Format Output JSON Murni:**
                 {
@@ -212,25 +216,10 @@ export async function parseStnk(
 
             const data = JSON.parse(jsonMatch[0]);
 
-            // Post-processing logic for specific vehicle codes
+            // We removed hardcoded typescript mappings. The LLM prompt now handles specific vehicle codes.
             let finalBrand = data.brand;
             let finalModel = data.model;
             let finalVehicleType = data.vehicleType;
-
-            const typeCode = data.vehicleTypeCode ? data.vehicleTypeCode.toUpperCase() : "";
-
-            // Force mapping for specific vehicle codes
-            if (typeCode.includes("BG6") || typeCode.includes("BPV")) {
-                console.log(`[STNK] Forcing Yamaha XMAX mapping. Original typeCode: ${data.vehicleTypeCode}, brand: ${data.brand}, model: ${data.model}`);
-                finalBrand = "Yamaha";
-                finalModel = "XMAX";
-                finalVehicleType = "Motor";
-            } else if (typeCode.includes("BEJ")) {
-                console.log(`[STNK] Forcing Yamaha Fazzio mapping. Original typeCode: ${data.vehicleTypeCode}, brand: ${data.brand}, model: ${data.model}`);
-                finalBrand = "Yamaha";
-                finalModel = "Fazzio";
-                finalVehicleType = "Motor";
-            }
 
 
             return {

@@ -85,7 +85,6 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 <div className="space-y-1">
                     {routes.filter(route => {
                         if (route.adminOnly) {
-                            // @ts-ignore
                             return session?.user?.role === "ADMIN"
                         }
                         return true

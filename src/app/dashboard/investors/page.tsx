@@ -79,7 +79,6 @@ export default function InvestorsPage() {
     const [isExportingAll, setIsExportingAll] = useState(false)
     const [users, setUsers] = useState<User[]>([])
     const { data: session } = useSession()
-    // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
 
     const form = useForm<InvestorFormValues>({

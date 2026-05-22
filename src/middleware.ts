@@ -8,7 +8,6 @@ export default auth((req) => {
     const isLoggedIn = !!req.auth
     const { nextUrl } = req
 
-    // @ts-ignore
     const role = req.auth?.user?.role
 
     const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth")

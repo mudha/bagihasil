@@ -249,7 +249,6 @@ const getTaxStatus = (dateInput: Date | string) => {
 function UnitsPageContent() {
     const { data: session } = useSession()
     const searchParams = useSearchParams()
-    // @ts-ignore
     const isViewer = session?.user?.role === "VIEWER"
 
     const [units, setUnits] = useState<Unit[]>([])

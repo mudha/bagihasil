@@ -72,7 +72,6 @@ export default function UsersPage() {
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const { data: session, status: sessionStatus } = useSession()
 
-    // @ts-ignore
     const isAdmin = session?.user?.role === "ADMIN"
 
     const form = useForm<UserFormValues>({
