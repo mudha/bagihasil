@@ -271,6 +271,9 @@ function UnitsPageContent() {
     const [statusFilter, setStatusFilter] = useState("ALL")
     const [investorStatusFilter, setInvestorStatusFilter] = useState("active")
 
+    // Retrieve unique existing types for autocomplete suggestions
+    const existingTypes = Array.from(new Set(units.map(u => u.type).filter(Boolean))) as string[]
+
     useEffect(() => {
         const status = searchParams.get('status')
         const investorStatus = searchParams.get('investorStatus')
@@ -1103,7 +1106,14 @@ function UnitsPageContent() {
                                                         <FormItem>
                                                             <FormLabel>Tipe</FormLabel>
                                                             <FormControl>
-                                                                <Input placeholder="Contoh: 1.5 G CVT, ABS, TRD" {...field} value={field.value || ""} />
+                                                                <div className="relative">
+                                                                    <Input placeholder="Contoh: 1.5 G CVT, ABS, TRD" list="existing-types" {...field} value={field.value || ""} />
+                                                                    <datalist id="existing-types">
+                                                                        {existingTypes.map((t) => (
+                                                                            <option key={t} value={t} />
+                                                                        ))}
+                                                                    </datalist>
+                                                                </div>
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
