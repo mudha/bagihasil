@@ -82,8 +82,10 @@ const unitSchema = z.object({
     vehicleType: z.string().optional().nullable(),
     brand: z.string().optional().nullable(),
     model: z.string().optional().nullable(),
+    type: z.string().optional().nullable(),
     year: z.string().optional().nullable(),
     color: z.string().optional().nullable(),
+    kilometer: z.number().optional().nullable(),
     stnkImageUrl: z.string().optional().nullable(),
     engineNumber: z.string().optional().nullable(),
     chassisNumber: z.string().optional().nullable(),
@@ -105,8 +107,10 @@ interface Unit {
     vehicleType?: string | null
     brand?: string | null
     model?: string | null
+    type?: string | null
     year?: string | null
     color?: string | null
+    kilometer?: number | null
     stnkImageUrl?: string | null
     engineNumber?: string | null
     chassisNumber?: string | null
@@ -305,8 +309,10 @@ function UnitsPageContent() {
             vehicleType: null,
             brand: null,
             model: null,
+            type: null,
             year: null,
             color: null,
+            kilometer: null,
             stnkImageUrl: null,
             engineNumber: null,
             chassisNumber: null,
@@ -359,8 +365,10 @@ function UnitsPageContent() {
                 vehicleType: editingUnit.vehicleType,
                 brand: editingUnit.brand,
                 model: editingUnit.model,
+                type: editingUnit.type,
                 year: editingUnit.year,
                 color: editingUnit.color,
+                kilometer: editingUnit.kilometer,
                 stnkImageUrl: editingUnit.stnkImageUrl,
                 engineNumber: editingUnit.engineNumber,
                 chassisNumber: editingUnit.chassisNumber,
@@ -456,8 +464,10 @@ function UnitsPageContent() {
                 vehicleType: null,
                 brand: null,
                 model: null,
+                type: null,
                 year: null,
                 color: null,
+                kilometer: null,
                 stnkImageUrl: null,
                 engineNumber: null,
                 chassisNumber: null,
@@ -720,8 +730,10 @@ function UnitsPageContent() {
                     vehicleType: null,
                     brand: null,
                     model: null,
+                    type: null,
                     year: null,
                     color: null,
+                    kilometer: null,
                     stnkImageUrl: null,
                     engineNumber: null,
                     chassisNumber: null,
@@ -1084,6 +1096,20 @@ function UnitsPageContent() {
                                                     </div>
                                                 )}
 
+                                                <FormField
+                                                    control={form.control}
+                                                    name="type"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Tipe</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="Contoh: 1.5 G CVT, ABS, TRD" {...field} value={field.value || ""} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
                                                 <div className="space-y-2">
                                                     <Label>Warna</Label>
                                                     <Select value={color} onValueChange={setColor}>
@@ -1103,6 +1129,26 @@ function UnitsPageContent() {
                                                         />
                                                     )}
                                                 </div>
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="kilometer"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Kilometer</FormLabel>
+                                                            <FormControl>
+                                                                <Input 
+                                                                    type="number" 
+                                                                    placeholder="Contoh: 15000" 
+                                                                    {...field} 
+                                                                    value={field.value || ""} 
+                                                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
 
                                                 <div className="mt-4 pt-4 border-t">
                                                     <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>

@@ -96,8 +96,10 @@ model Unit {
   vehicleType String?
   brand       String?
   model       String?
+  type        String?
   year        String?
   color       String?
+  kilometer   Int?
 }
 
 model Transaction {

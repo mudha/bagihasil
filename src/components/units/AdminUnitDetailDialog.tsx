@@ -30,8 +30,10 @@ interface Unit {
     vehicleType?: string | null
     brand?: string | null
     model?: string | null
+    type?: string | null
     year?: string | null
     color?: string | null
+    kilometer?: number | null
     stnkImageUrl?: string | null
     engineNumber?: string | null
     chassisNumber?: string | null
@@ -146,12 +148,20 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                         <p className="font-medium">{unit.model || "-"}</p>
                                     </div>
                                     <div>
+                                        <p className="text-muted-foreground text-xs">Tipe</p>
+                                        <p className="font-medium">{unit.type || "-"}</p>
+                                    </div>
+                                    <div>
                                         <p className="text-muted-foreground text-xs">Tahun</p>
                                         <p className="font-medium">{unit.year || "-"}</p>
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground text-xs">Warna</p>
                                         <p className="font-medium">{unit.color || "-"}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Kilometer</p>
+                                        <p className="font-medium">{unit.kilometer ? `${unit.kilometer.toLocaleString("id-ID")} km` : "-"}</p>
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground text-xs">Jenis</p>
