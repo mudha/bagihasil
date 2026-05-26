@@ -487,6 +487,8 @@ function UnitsPageContent() {
         }
     }, [editingUnit, form])
 
+    const typeValue = form.watch("type");
+
     // Update name based on selections
     useEffect(() => {
         if (isOpen) {
@@ -496,12 +498,13 @@ function UnitsPageContent() {
             const parts = [
                 brand !== "Lainnya" ? brand : "",
                 selectedModelFinal,
+                typeValue,
                 year,
                 selectedColorFinal ? `warna ${selectedColorFinal}` : ""
             ].filter(Boolean);
 
             if (parts.length > 0) {
-                const generatedName = parts.join(" ");
+                const generatedName = parts.join(" ").replace(/\s+/g, ' ').trim();
                 // Set name if we have generated parts. 
                 // For editing, we might overwrite existing name, BUT user asked for dropdowns to be easy.
                 // So if they touch the dropdowns, it updates the name.
@@ -515,7 +518,7 @@ function UnitsPageContent() {
                 form.setValue("color", selectedColorFinal)
             }
         }
-    }, [vehicleType, brand, model, customModel, year, color, customColor, isOpen, form]);
+    }, [vehicleType, brand, model, customModel, typeValue, year, color, customColor, isOpen, form]);
 
     const handleScanStnk = async () => {
         const file = stnkImages[0]?.file;
