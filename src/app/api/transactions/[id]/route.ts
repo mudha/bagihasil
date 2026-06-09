@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
+import { canAccessTransaction, forbidden } from "@/lib/api-auth"
 
 
 const transactionUpdateSchema = z.object({
@@ -71,6 +72,10 @@ export async function GET(
 
         if (!transaction) {
             return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+        }
+
+        if (!(await canAccessTransaction(session, id))) {
+            return forbidden()
         }
 
         // Calculate payment info

@@ -1,7 +1,7 @@
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { requireAdmin } from "@/lib/api-auth"
 
 const costSchema = z.object({
     costType: z.string(),
@@ -18,8 +18,8 @@ export async function PUT(
     req: Request,
     { params }: { params: Promise<{ id: string; costId: string }> }
 ) {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
 
     try {
         const { costId } = await params
@@ -55,8 +55,8 @@ export async function DELETE(
     req: Request,
     { params }: { params: Promise<{ id: string; costId: string }> }
 ) {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
 
     try {
         const { costId } = await params

@@ -106,8 +106,6 @@ async function convertImageToBase64(url: string): Promise<string> {
 }
 
 import ExcelJS from 'exceljs'
-import * as XLSX from 'xlsx'
-
 export async function exportInvestorReportXLSX(investorId: string, investorName: string) {
     try {
         const response = await fetch(`/api/reports/investor/${investorId}`)

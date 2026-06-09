@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseStnk } from "@/lib/gemini";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireAdmin();
+    if ("response" in authResult) return authResult.response;
 
     try {
         const formData = await req.formData();

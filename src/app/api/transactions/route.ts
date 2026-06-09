@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
+import { canReadAdminData } from "@/lib/api-auth"
 
 const transactionSchema = z.object({
     unitId: z.string(),
@@ -56,10 +57,12 @@ export async function GET(req: Request) {
             // Jika data investor tidak ditemukan untuk user ini, return kosong untuk keamanan
             return NextResponse.json([])
         }
+    } else if (!canReadAdminData(session)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // Admin filter (hanya diproses jika bukan Investor yang melihat data mereka sendiri)
-    if (userRole === "ADMIN" || !userRole) {
+    if (canReadAdminData(session)) {
         if (investorStatus === 'active') {
             where.unit = { ...where.unit, investor: { isActive: true } }
         } else if (investorStatus === 'inactive') {

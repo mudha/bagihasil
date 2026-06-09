@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { notifyPaymentProof } from '@/lib/notifications'
+import { requireAdmin } from '@/lib/api-auth'
 
 const paymentHistorySchema = z.object({
     transactionId: z.string(),
@@ -17,6 +18,9 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
+
     try {
         const { id: transactionId } = await params
         const body = await request.json()
@@ -37,6 +41,13 @@ export async function POST(
             return NextResponse.json(
                 { error: 'Transaksi tidak ditemukan' },
                 { status: 404 }
+            )
+        }
+
+        if (validatedData.investorId !== transaction.unit.investorId) {
+            return NextResponse.json(
+                { error: 'Investor tidak sesuai dengan transaksi' },
+                { status: 400 }
             )
         }
 
@@ -62,34 +73,20 @@ export async function POST(
         const total = totalPaid._sum.amount || 0
 
         // Calculate what investor should receive to determine payment status
-        const investorCapital = transaction.initialInvestorCapital || transaction.buyPrice
         const profitSharing = await prisma.profitSharing.findUnique({
             where: { transactionId }
         })
 
-        // Get investor costs
-        const costs = await prisma.cost.findMany({
-            where: { transactionId }
-        })
-        const investorCosts = costs
-            .filter(c => c.payer === 'INVESTOR')
-            .reduce((sum, c) => sum + c.amount, 0)
+        const investorShouldReceive = profitSharing?.investorProfitAmount || 0
 
-        const investorShouldReceive = investorCapital - investorCosts + (profitSharing?.investorProfitAmount || 0)
-
-        // Update payment status - Force to PAID as per user request
-        // The logic to calculate based on amount is bypassed
-        const paymentStatus = 'PAID'
-        /*
         let paymentStatus: string
-        if (total >= investorShouldReceive) {
+        if (total >= investorShouldReceive - 100) {
             paymentStatus = 'PAID'
         } else if (total > 0) {
             paymentStatus = 'PARTIAL'
         } else {
             paymentStatus = 'UNPAID'
         }
-        */
 
         await prisma.transaction.update({
             where: { id: transactionId },

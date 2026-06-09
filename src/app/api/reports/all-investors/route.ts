@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireRole } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
-    const session = await auth()
-    if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authResult = await requireRole(["ADMIN", "VIEWER"])
+    if ("response" in authResult) return authResult.response
 
     try {
         const investors = await prisma.investor.findMany({

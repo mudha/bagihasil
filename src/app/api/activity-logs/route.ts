@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requireRole } from "@/lib/api-auth"
 
 
 export async function GET(req: Request) {
     try {
-        const session = await auth()
-        if (!session?.user) {
-            return new NextResponse("Unauthorized", { status: 401 })
-        }
+        const authResult = await requireRole(["ADMIN", "VIEWER"])
+        if ("response" in authResult) return authResult.response
 
         const { searchParams } = new URL(req.url)
         const limit = parseInt(searchParams.get("limit") || "50")

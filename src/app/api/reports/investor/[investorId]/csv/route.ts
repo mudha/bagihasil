@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
+import { canAccessInvestor, forbidden, requireAuth } from '@/lib/api-auth'
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ investorId: string }> }
 ) {
+    const authResult = await requireAuth()
+    if ("response" in authResult) return authResult.response
+
     try {
         const { investorId } = await params
+
+        if (!(await canAccessInvestor(authResult.session, investorId))) {
+            return forbidden()
+        }
 
         // Fetch investor details
         const investor = await prisma.investor.findUnique({

@@ -1,7 +1,7 @@
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { requireAdmin } from "@/lib/api-auth"
 
 const sellSchema = z.object({
     sellDate: z.string().transform((str) => new Date(str)),
@@ -10,14 +10,17 @@ const sellSchema = z.object({
     managerSharePercentage: z.number().min(0).max(100).default(60),
     lossBearer: z.enum(["INVESTOR", "MANAGER", "SHARED"]).optional(),
     notes: z.string().optional(),
+}).refine((data) => data.investorSharePercentage + data.managerSharePercentage === 100, {
+    message: "Total persentase bagi hasil harus 100",
+    path: ["managerSharePercentage"],
 })
 
 export async function POST(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
 
     try {
         const { id } = await params

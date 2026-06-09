@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
+import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 
 
 const unitSchema = z.object({
@@ -33,10 +34,19 @@ export async function GET(req: Request) {
     const investorStatus = searchParams.get('investorStatus')
 
     const where: any = {}
-    if (investorStatus === 'active') {
-        where.investor = { isActive: true }
-    } else if (investorStatus === 'inactive') {
-        where.investor = { isActive: false }
+
+    if (session.user.role === "INVESTOR") {
+        const investor = await getInvestorForSession(session)
+        if (!investor) return NextResponse.json([])
+        where.investorId = investor.id
+    } else if (canReadAdminData(session)) {
+        if (investorStatus === 'active') {
+            where.investor = { isActive: true }
+        } else if (investorStatus === 'inactive') {
+            where.investor = { isActive: false }
+        }
+    } else {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const units = await prisma.unit.findMany({

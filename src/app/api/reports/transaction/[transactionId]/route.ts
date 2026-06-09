@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { canAccessTransaction, forbidden, requireAuth } from '@/lib/api-auth'
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ transactionId: string }> }
 ) {
+    const authResult = await requireAuth()
+    if ("response" in authResult) return authResult.response
+
     try {
         const { transactionId } = await params
+
+        if (!(await canAccessTransaction(authResult.session, transactionId))) {
+            return forbidden()
+        }
 
         // Fetch transaction details with all related data
         const transaction = await prisma.transaction.findUnique({

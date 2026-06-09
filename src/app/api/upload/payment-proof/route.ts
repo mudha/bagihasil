@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import ImageKit from 'imagekit'
+import { requireAdmin } from '@/lib/api-auth'
 
 // Configure ImageKit
 const imagekit = new ImageKit({
@@ -9,6 +10,9 @@ const imagekit = new ImageKit({
 })
 
 export async function POST(request: NextRequest) {
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
+
     try {
         const formData = await request.formData()
         const file = formData.get('file') as File | null
@@ -64,7 +68,7 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('Error uploading to ImageKit:', error)
         return NextResponse.json(
-            { error: error?.message || typeof error === 'string' ? error : 'Gagal mengupload file ke Cloud (ImageKit)' },
+            { error: error?.message || (typeof error === 'string' ? error : 'Gagal mengupload file ke Cloud (ImageKit)') },
             { status: 500 }
         )
     }

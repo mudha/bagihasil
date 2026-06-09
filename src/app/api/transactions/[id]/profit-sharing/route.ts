@@ -1,20 +1,23 @@
 
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { requireAdmin } from "@/lib/api-auth"
 
 const updateProfitSharingSchema = z.object({
     investorSharePercentage: z.number().min(0).max(100),
     managerSharePercentage: z.number().min(0).max(100),
+}).refine((data) => data.investorSharePercentage + data.managerSharePercentage === 100, {
+    message: "Total persentase bagi hasil harus 100",
+    path: ["managerSharePercentage"],
 })
 
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth()
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
 
     try {
         const { id } = await params

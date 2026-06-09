@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseTransferProofs } from '@/lib/gemini'
+import { requireAdmin } from '@/lib/api-auth'
 
 export async function POST(request: NextRequest) {
+    const authResult = await requireAdmin()
+    if ("response" in authResult) return authResult.response
+
     try {
         const formData = await request.formData()
 

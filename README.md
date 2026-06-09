@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mudha Profit Sharing App
 
-## Getting Started
+Aplikasi internal untuk mencatat unit kendaraan, transaksi jual-beli, biaya, bukti pembayaran, laporan bagi hasil, dan portal investor.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router, React, TypeScript
+- NextAuth credentials login
+- Prisma ORM dengan PostgreSQL
+- Tailwind CSS, Radix UI, lucide-react
+- ImageKit untuk upload bukti/foto
+- Gemini API untuk parsing gambar
+- Excel/PDF export utilities
+
+## Menjalankan Lokal
 
 ```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma migrate dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Seed admin lokal bila database masih kosong:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx tsx prisma/seed.ts
+```
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+Minimal:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `AUTH_SECRET`
+- `AUTH_URL` atau `NEXTAUTH_URL`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Fitur tambahan:
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`
+- `IMAGEKIT_PRIVATE_KEY`
+- `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`
+- `GEMINI_API_KEY`
+- `FONNTE_TOKEN`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Set semua environment variable di Vercel.
+2. Gunakan database PostgreSQL production, bukan SQLite lokal.
+3. Jalankan migration production dengan `npx prisma migrate deploy`.
+4. Pastikan file bukti pembayaran disimpan di ImageKit atau storage eksternal, bukan di `public/uploads`.
+
+## Catatan Keamanan
+
+- Jangan commit `.env`, database lokal, export data, atau file bukti pembayaran.
+- API mutasi finansial dibatasi untuk role `ADMIN`.
+- Role `INVESTOR` hanya boleh membaca data investor yang terhubung ke akunnya.
+- Role `VIEWER` hanya untuk akses baca area admin.

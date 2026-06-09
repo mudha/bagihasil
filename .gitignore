@@ -20,6 +20,9 @@
 # production
 /build
 
+# generated exports / local data snapshots
+data-export.json
+
 # misc
 .DS_Store
 *.pem
@@ -40,6 +43,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# local database and uploaded payment proofs must not be committed
+/prisma/dev.db
+/public/uploads/
 
 # typescript
 *.tsbuildinfo

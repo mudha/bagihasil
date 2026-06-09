@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 
 const investorSchema = z.object({
     name: z.string().min(1),
@@ -18,6 +19,21 @@ const investorSchema = z.object({
 export async function GET(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    if (session.user.role === "INVESTOR") {
+        const investor = await getInvestorForSession(session)
+        if (!investor) return NextResponse.json([])
+
+        const ownInvestor = await prisma.investor.findMany({
+            where: { id: investor.id },
+            orderBy: { createdAt: 'desc' }
+        })
+        return NextResponse.json(ownInvestor)
+    }
+
+    if (!canReadAdminData(session)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     const investors = await prisma.investor.findMany({
         orderBy: { createdAt: 'desc' }

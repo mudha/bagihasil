@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getHijriMonthYear } from "@/lib/date-utils"
+import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -9,9 +10,17 @@ export async function GET(req: Request) {
 
     try {
         const { searchParams } = new URL(req.url)
-        const investorId = searchParams.get('investorId')
+        let investorId = searchParams.get('investorId')
         const monthsParam = searchParams.get('months')
         const monthsRange = monthsParam ? parseInt(monthsParam) : 6 // Default 6 months as requested
+
+        if (session.user.role === "INVESTOR") {
+            const investor = await getInvestorForSession(session)
+            if (!investor) return NextResponse.json({ error: "Investor not found" }, { status: 404 })
+            investorId = investor.id
+        } else if (!canReadAdminData(session)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
 
         // 1. General Stats
         const unitWhere: any = { status: "AVAILABLE" }
