@@ -22,11 +22,11 @@ export default async function InvestorLayout({
     }
 
     return (
-        <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex min-h-dvh flex-col overflow-x-hidden bg-gray-100 dark:bg-gray-900">
             <Navbar type="investor" />
-            <div className="flex flex-1 overflow-hidden">
-                <InvestorSidebar className="hidden md:flex" />
-                <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="flex flex-1 min-h-0">
+                <InvestorSidebar className="hidden lg:flex" />
+                <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-8 touch-scroll">
                     {children}
                 </main>
             </div>

@@ -67,7 +67,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <div className="flex justify-between items-start mr-8">
                             <div>
@@ -78,11 +78,11 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                         </div>
                     </DialogHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Left Column: Images & Basic Info */}
                         <div className="space-y-6">
                             {/* Images Section */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
                                         <ImageIcon className="h-3 w-3" /> Foto Unit

@@ -240,7 +240,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                     <DollarSign className="mr-2 h-4 w-4" /> Finalisasi Penjualan
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onPaste={handlePaste}>
+            <DialogContent className="max-w-md" onPaste={handlePaste}>
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
@@ -327,7 +327,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="investorSharePercentage"

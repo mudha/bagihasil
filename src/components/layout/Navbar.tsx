@@ -38,15 +38,15 @@ export function Navbar({ type = "admin" }: NavbarProps) {
     }
 
     return (
-        <div className="flex items-center justify-between p-4 md:hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm transition-all duration-300">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 lg:hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm transition-all duration-300">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="md:hidden hover:bg-transparent -ml-2">
+                        <Button variant="ghost" size="icon" className="lg:hidden hover:bg-transparent -ml-2 shrink-0">
                             <Menu className="h-6 w-6 text-gray-700 dark:text-gray-200" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[280px] border-none bg-background shadow-xl">
+                    <SheetContent side="left" className="p-0 w-[min(86vw,280px)] border-none bg-background shadow-xl">
                         <SheetTitle className="sr-only">Navigasi Menu</SheetTitle>
                         <SheetDescription className="sr-only">Menu Navigasi Utama</SheetDescription>
                         {type === "admin" ? (
@@ -56,8 +56,8 @@ export function Navbar({ type = "admin" }: NavbarProps) {
                         )}
                     </SheetContent>
                 </Sheet>
-                <div className="flex flex-col">
-                    <span className={`font-bold text-lg leading-none ${type === "admin" ? "text-blue-600" : "text-emerald-600"}`}>
+                <div className="flex min-w-0 flex-col">
+                    <span className={`truncate font-bold text-base leading-none sm:text-lg ${type === "admin" ? "text-blue-600" : "text-emerald-600"}`}>
                         {type === "admin" ? "Mudha Profit Share" : "Mudha Profit Share"}
                     </span>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">

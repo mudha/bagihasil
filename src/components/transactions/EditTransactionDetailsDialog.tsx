@@ -213,7 +213,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
                     Edit Detail
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <FormField
                                 control={form.control}
                                 name="transactionCode"
@@ -301,7 +301,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
                         <div className="space-y-2 border p-4 rounded-md">
                             <h4 className="text-sm font-medium">Modal Awal (Opsional)</h4>
                             <p className="text-xs text-muted-foreground mb-4">Isi jika berbeda dengan harga beli</p>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="initialInvestorCapital"

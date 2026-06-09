@@ -93,8 +93,8 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative w-full max-w-sm">
+            <div className="flex flex-col gap-3 lg:flex-row">
+                <div className="relative w-full lg:max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari unit atau status..."
@@ -129,9 +129,9 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                         </Button>
                     )}
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                     <select
-                        className="h-10 w-full sm:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-10 w-full lg:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
@@ -141,7 +141,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     </select>
 
                     <select
-                        className="h-10 w-full sm:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-10 w-full lg:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
                         value={sortOption}
                         onChange={(e) => setSortOption(e.target.value)}
                     >
@@ -154,7 +154,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
+            <div className="space-y-3 lg:hidden">
                 {sortedData.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                         {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
@@ -166,7 +166,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                             className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
                             onClick={() => handleUnitClick(unit.transactionId)}
                         >
-                            <div className="flex gap-4">
+                            <div className="flex flex-col gap-4 sm:flex-row">
                                 {unit.imageUrl && (
                                     <div className="relative h-24 w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border">
                                         <Image
@@ -214,7 +214,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
+            <div className="hidden rounded-md border lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>

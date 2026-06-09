@@ -29,7 +29,7 @@ export function InvestorMonthlyChart({ data, className }: InvestorMonthlyChartPr
                 <CardTitle>Pendapatan Bulanan (6 Bulan Terakhir)</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
-                <div className="h-[350px] w-full">
+                <div className="h-[280px] w-full sm:h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
                             <XAxis

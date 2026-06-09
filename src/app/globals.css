@@ -126,4 +126,22 @@
 html,
 body {
   overscroll-behavior-y: none;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+@layer utilities {
+  .safe-pb {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-pt {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
 }

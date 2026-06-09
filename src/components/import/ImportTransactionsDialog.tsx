@@ -189,7 +189,7 @@ export function ImportTransactionsDialog({ onImportSuccess }: ImportTransactions
                             <Input
                                 type="file"
                                 accept=".csv"
-                                className="w-[250px]"
+                                className="w-full sm:w-[250px]"
                                 onChange={handleFileUpload}
                                 disabled={isLoading}
                             />

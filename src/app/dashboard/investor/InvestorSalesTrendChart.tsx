@@ -20,7 +20,7 @@ export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendC
                 <CardTitle>Tren Penjualan Unit (6 Bulan Terakhir)</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
-                <div className="h-[350px] w-full">
+                <div className="h-[280px] w-full sm:h-[350px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />

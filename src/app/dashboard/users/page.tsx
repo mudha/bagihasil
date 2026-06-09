@@ -219,9 +219,9 @@ export default function UsersPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Kelola User</h2>
+                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Kelola User</h2>
                     <p className="text-muted-foreground">Tambah dan atur hak akses pengguna aplikasi.</p>
                 </div>
                 <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
@@ -320,7 +320,7 @@ export default function UsersPage() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {users.length === 0 ? (
                     <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
                         Belum ada data user.
@@ -381,7 +381,7 @@ export default function UsersPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
+            <div className="hidden rounded-md border lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>

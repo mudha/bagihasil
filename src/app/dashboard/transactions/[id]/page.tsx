@@ -154,15 +154,15 @@ export default function TransactionDetailPage() {
 
     return (
         <div className="space-y-8 pb-20">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start md:items-center gap-4">
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <div className="flex items-start gap-3 sm:gap-4 lg:items-center">
                     <Link href="/dashboard/transactions">
                         <Button variant="outline" size="icon" className="mt-1 md:mt-0">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <div>
-                        <h2 className="text-xl md:text-3xl font-bold tracking-tight flex flex-wrap items-center gap-2 md:gap-3 break-all">
+                    <div className="min-w-0">
+                        <h2 className="flex flex-wrap items-center gap-2 break-all text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
                             {transaction.transactionCode}
                             <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                         </h2>
@@ -203,73 +203,73 @@ export default function TransactionDetailPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
                     {transaction.status === 'COMPLETED' && (
                         <Button
                             variant="outline"
                             onClick={handleExportPDF}
                             disabled={isExporting}
-                            className="flex-1 md:flex-none"
+                            className="flex-1 lg:flex-none"
                         >
                             <FileText className="h-4 w-4 mr-2" />
                             {isExporting ? "Exporting..." : "Laporan PDF"}
                         </Button>
                     )}
-                    <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-lg px-4 py-1 h-10 flex items-center justify-center flex-1 md:flex-none">
+                    <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="flex h-10 flex-1 items-center justify-center px-4 py-1 text-base lg:flex-none lg:text-lg">
                         {transaction.status}
                     </Badge>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4 md:gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
                 <Card className="bg-blue-50 border-blue-200">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs md:text-sm font-medium text-blue-800">Modal dari Pemodal</CardTitle>
+                        <CardTitle className="text-xs font-medium text-blue-800 sm:text-sm">Modal dari Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-base md:text-2xl font-bold text-blue-900 break-words">
+                        <div className="break-words text-base font-bold text-blue-900 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseInvestorCapital)}
                         </div>
-                        <p className="text-[10px] md:text-xs text-blue-700 mt-1">
+                        <p className="mt-1 text-[10px] text-blue-700 sm:text-xs">
                             {transaction.initialInvestorCapital ? "Modal awal custom" : "Harga Beli Unit"}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-blue-100 border-blue-300">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs md:text-sm font-medium text-blue-800">Total Modal Pemodal</CardTitle>
+                        <CardTitle className="text-xs font-medium text-blue-800 sm:text-sm">Total Modal Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-base md:text-2xl font-bold text-blue-900 break-words">
+                        <div className="break-words text-base font-bold text-blue-900 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalInvestor)}
                         </div>
-                        <p className="text-[10px] md:text-xs text-blue-700 mt-1">
+                        <p className="mt-1 text-[10px] text-blue-700 sm:text-xs">
                             Beli + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsInvestor)})
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-purple-50 border-purple-200">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs md:text-sm font-medium text-purple-800">Total Modal Pengelola</CardTitle>
+                        <CardTitle className="text-xs font-medium text-purple-800 sm:text-sm">Total Modal Pengelola</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-base md:text-2xl font-bold text-purple-900 break-words">
+                        <div className="break-words text-base font-bold text-purple-900 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalManager)}
                         </div>
-                        <p className="text-[10px] md:text-xs text-purple-700 mt-1">
+                        <p className="mt-1 text-[10px] text-purple-700 sm:text-xs">
                             Modal ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseManagerCapital)}) + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsManager)})
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-green-50 border-green-200">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs md:text-sm font-medium text-green-800">Total Modal Keseluruhan</CardTitle>
+                        <CardTitle className="text-xs font-medium text-green-800 sm:text-sm">Total Modal Keseluruhan</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-base md:text-2xl font-bold text-green-900 break-words">
+                        <div className="break-words text-base font-bold text-green-900 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapital)}
                         </div>
-                        <p className="text-[10px] md:text-xs text-green-700 mt-1">
+                        <p className="mt-1 text-[10px] text-green-700 sm:text-xs">
                             Pemodal + Pengelola
                         </p>
                     </CardContent>
@@ -319,15 +319,15 @@ export default function TransactionDetailPage() {
             )}
 
             <Tabs defaultValue="costs" className="w-full">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-2 sm:w-fit">
                     <TabsTrigger value="costs">Biaya Operasional</TabsTrigger>
                     <TabsTrigger value="details">Detail Transaksi</TabsTrigger>
                 </TabsList>
                 <TabsContent value="costs" className="space-y-4">
-                    <div className="flex justify-end">
+                    <div className="flex justify-stretch sm:justify-end">
                         {transaction.status !== 'COMPLETED' && (
                             <>
-                                <Button variant="outline" onClick={() => setIsCostOpen(true)}>
+                                <Button variant="outline" onClick={() => setIsCostOpen(true)} className="w-full sm:w-auto">
                                     <Plus className="mr-2 h-4 w-4" /> Tambah Biaya
                                 </Button>
                                 <AddCostDialog
@@ -436,7 +436,7 @@ export default function TransactionDetailPage() {
                             <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <span className="font-medium">Kode Transaksi:</span>
                                     <p>{transaction.transactionCode}</p>
@@ -470,7 +470,7 @@ export default function TransactionDetailPage() {
                         Dokumen & Bukti Transaksi
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3 md:gap-4 p-4 pt-0">
+                <CardContent className="grid grid-cols-1 gap-3 p-4 pt-0 sm:grid-cols-2 sm:gap-4">
                     <div className="border border-slate-200 rounded-lg p-3 md:p-5 bg-white dark:bg-slate-950 hover:shadow-md transition-shadow flex flex-col justify-between h-full">
                         <div className="flex flex-col gap-2 mb-3">
                             <div className="flex justify-between items-start">
@@ -553,7 +553,7 @@ export default function TransactionDetailPage() {
                     <CardContent>
                         {transaction.paymentHistories && transaction.paymentHistories.length > 0 ? (
                             <div className="space-y-4">
-                                <div className="grid gap-2 md:grid-cols-3 mb-4">
+                                <div className="mb-4 grid gap-2 sm:grid-cols-3">
                                     <div className="bg-blue-50 p-4 rounded-lg">
                                         <p className="text-sm font-medium text-blue-800">Total Harus Dibayar</p>
                                         <p className="text-xl font-bold text-blue-900">
@@ -628,7 +628,7 @@ export default function TransactionDetailPage() {
             )}
 
             {transaction.status !== 'COMPLETED' && (
-                <div className="flex justify-end pt-4 border-t sticky bottom-0 bg-background p-4 shadow-top">
+                <div className="sticky bottom-0 flex justify-stretch border-t bg-background p-3 pt-4 shadow-top safe-pb sm:justify-end">
                     <FinalizeTransactionDialog
                         transactionId={transaction.id}
                         onSuccess={fetchTransaction}

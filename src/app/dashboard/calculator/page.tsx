@@ -62,14 +62,14 @@ export default function CalculatorPage() {
     }
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex-1 space-y-4">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Kalkulator Estimasi Profit</h2>
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Kalkulator Estimasi Profit</h2>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* INPUT SECTION */}
-                <Card className="col-span-4 lg:col-span-3 border-emerald-100 shadow-sm">
+                <Card className="lg:col-span-3 border-emerald-100 shadow-sm">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-emerald-700">
                             <Calculator className="h-5 w-5" />
@@ -95,7 +95,7 @@ export default function CalculatorPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="repairCost">Estimasi Perbaikan</Label>
                                 <Input
@@ -158,7 +158,7 @@ export default function CalculatorPage() {
                 </Card>
 
                 {/* RESULT SECTION */}
-                <div className="col-span-4 space-y-4">
+                <div className="space-y-4 lg:col-span-4">
                     <div className="grid gap-4 md:grid-cols-2">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -199,7 +199,7 @@ export default function CalculatorPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm">
+                                <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border shadow-sm sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium leading-none">Bagian Pemodal ({investorSharePct}%)</p>
                                         <p className="text-xs text-muted-foreground">Return on Investment</p>
@@ -208,7 +208,7 @@ export default function CalculatorPage() {
                                         {formatCurrency(results.investorShare)}
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm">
+                                <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border shadow-sm sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium leading-none">Bagian Pengelola ({100 - investorSharePct}%)</p>
                                         <p className="text-xs text-muted-foreground">Operational Success</p>

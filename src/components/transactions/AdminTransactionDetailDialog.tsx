@@ -102,7 +102,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <div className="flex justify-between items-start mr-8">
                             <div>
@@ -140,7 +140,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                         </div>
                     </DialogHeader>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Left Column: Unit & Transaction Info */}
                         <div className="space-y-6">
 

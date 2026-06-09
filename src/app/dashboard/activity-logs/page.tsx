@@ -49,9 +49,9 @@ export default function ActivityLogsPage() {
     }
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex-1 space-y-4">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Log Aktivitas</h2>
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Log Aktivitas</h2>
             </div>
 
             <Card>
@@ -72,7 +72,7 @@ export default function ActivityLogsPage() {
                     ) : (
                         <>
                             {/* Mobile Card View */}
-                            <div className="md:hidden space-y-4">
+                            <div className="space-y-4 lg:hidden">
                                 {logs.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground text-sm border rounded-md bg-slate-50">
                                         Belum ada aktivitas tercatat.
@@ -110,7 +110,7 @@ export default function ActivityLogsPage() {
                             </div>
 
                             {/* Desktop Table View */}
-                            <div className="hidden md:block">
+                            <div className="hidden lg:block">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>

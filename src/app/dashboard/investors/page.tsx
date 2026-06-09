@@ -278,9 +278,9 @@ export default function InvestorsPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Data Pemodal</h2>
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Data Pemodal</h2>
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
                     <Button
                         variant="outline"
                         onClick={handleExportAll}
@@ -421,7 +421,7 @@ export default function InvestorsPage() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {investors.length === 0 ? (
                     <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
                         Belum ada data pemodal.
@@ -522,7 +522,7 @@ export default function InvestorsPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
+            <div className="hidden rounded-md border lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>

@@ -98,11 +98,11 @@ export function InvestorTabs({
 
             <TabsContent value="dashboard" className="space-y-6">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Assalamu&apos;alaikum, {investorName}</h2>
+                    <h2 className="break-words text-2xl font-bold tracking-tight sm:text-3xl">Assalamu&apos;alaikum, {investorName}</h2>
                     <p className="text-muted-foreground">Ringkasan performa investasi Anda.</p>
                 </div>
 
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Akumulasi</CardTitle>
@@ -169,9 +169,9 @@ export function InvestorTabs({
                     </Card>
                 </div>
 
-                <div className="flex justify-between items-center mb-4">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <Select value={monthsRange} onValueChange={onMonthsRangeChange}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Rentang Waktu" />
                         </SelectTrigger>
                         <SelectContent>
@@ -181,7 +181,7 @@ export function InvestorTabs({
                         </SelectContent>
                     </Select>
 
-                    <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-full border border-slate-200">
+                    <div className="grid grid-cols-2 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 p-1 sm:flex sm:space-x-2">
                         <button
                             onClick={() => setCalendarMode('masehi')}
                             className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
@@ -203,7 +203,7 @@ export function InvestorTabs({
                     </div>
                 </div>
 
-                <div className="grid gap-4 grid-cols-1 lg:grid-cols-9">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
                     <InvestorRevenueChart data={currentMonthlyRevenueData} className="lg:col-span-3" />
                     <InvestorMonthlyChart data={currentMonthlyChartData} className="lg:col-span-3" />
                     <InvestorSalesTrendChart data={currentMonthlySalesTrend} className="lg:col-span-3" />
@@ -215,7 +215,7 @@ export function InvestorTabs({
                     <CardHeader>
                         <CardTitle>Daftar Unit Didanai</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-3 sm:px-6">
                         <InvestmentsTable data={investmentsData} defaultFilter={investmentFilter} />
                     </CardContent>
                 </Card>
@@ -226,7 +226,7 @@ export function InvestorTabs({
                     <CardHeader>
                         <CardTitle>Riwayat Pembayaran</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-3 sm:px-6">
                         <PaymentsTable data={paymentsData} />
                     </CardContent>
                 </Card>

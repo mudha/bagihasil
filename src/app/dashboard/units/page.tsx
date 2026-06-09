@@ -941,9 +941,9 @@ function UnitsPageContent() {
 
     return (
         <div className="space-y-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Manajemen Unit</h2>
-                <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Manajemen Unit</h2>
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
                     {/* ... (Alert Dialogs & Import Buttons) ... */}
                     {selectedIds.length > 0 && !isViewer && (
                         <AlertDialog>
@@ -980,7 +980,7 @@ function UnitsPageContent() {
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                                <DialogContent className="max-w-2xl">
                                     <DialogHeader>
                                         <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                     </DialogHeader>
@@ -1028,7 +1028,7 @@ function UnitsPageContent() {
 
                                             <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
                                                 {/* ... existing vehicle details fields ... */}
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div className="space-y-2">
                                                         <Label>Jenis Kendaraan</Label>
                                                         <Select value={vehicleType} onValueChange={(v) => {
@@ -1177,7 +1177,7 @@ function UnitsPageContent() {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
                                                     name="plateNumber"
@@ -1206,7 +1206,7 @@ function UnitsPageContent() {
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
                                                     name="engineNumber"
@@ -1320,9 +1320,9 @@ function UnitsPageContent() {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
-                    <div className="relative w-full md:max-w-sm">
+            <div className="flex flex-col justify-between gap-4 py-4 lg:flex-row lg:items-center">
+                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
+                    <div className="relative w-full lg:max-w-sm">
                         <Input
                             placeholder="Cari unit..."
                             value={searchQuery}
@@ -1363,7 +1363,7 @@ function UnitsPageContent() {
                         else params.delete('investorStatus')
                         window.history.replaceState(null, '', `?${params.toString()}`)
                     }}>
-                        <SelectTrigger className="w-full md:w-[150px]">
+                        <SelectTrigger className="w-full lg:w-[150px]">
                             <SelectValue placeholder="Status Pemodal" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1372,9 +1372,9 @@ function UnitsPageContent() {
                             <SelectItem value="all">Semua Pemodal</SelectItem>
                         </SelectContent>
                     </Select>
-                    <div className="flex gap-2 w-full md:w-auto">
+                    <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full md:w-[150px]">
+                            <SelectTrigger className="w-full lg:w-[150px]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1386,7 +1386,7 @@ function UnitsPageContent() {
                         </Select>
 
                         {/* Mobile Sort Dropdown */}
-                        <div className="md:hidden w-full">
+                        <div className="w-full lg:hidden">
                             <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Urutkan" />
@@ -1403,7 +1403,7 @@ function UnitsPageContent() {
                 </div>
 
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectTrigger className="w-full lg:w-[200px]">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1418,7 +1418,7 @@ function UnitsPageContent() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedUnits.length === 0 ? (
                     <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
                         {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
@@ -1542,7 +1542,7 @@ function UnitsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-md border">
+            <div className="hidden rounded-md border lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>

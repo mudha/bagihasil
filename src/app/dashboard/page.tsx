@@ -183,10 +183,10 @@ export default function DashboardPage() {
     const currentMonthlyStats = calendarMode === 'hijri' ? (stats.monthlyStatsHijri || []) : (stats.monthlyStats || [])
 
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
+        <div className="space-y-6 lg:space-y-8">
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h2>
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
                     <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
                         <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Pilih Investor" />
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                         </SelectContent>
                     </Select>
 
-                    <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-[180px]">
+                    <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-full sm:w-[180px]">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="gregorian">Masehi</TabsTrigger>
                             <TabsTrigger value="hijri">Hijri</TabsTrigger>
@@ -258,7 +258,7 @@ export default function DashboardPage() {
             </div>
 
             {/* General Stats */}
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                 <Link href="/dashboard/units?status=AVAILABLE">
                     <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -371,7 +371,7 @@ export default function DashboardPage() {
                         <CardTitle>Total Omset Bulanan</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[350px]">
+                        <div className="h-[280px] sm:h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -406,7 +406,7 @@ export default function DashboardPage() {
                         <CardTitle>Total Profit Bulanan</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[350px]">
+                        <div className="h-[280px] sm:h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -443,7 +443,7 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[350px]">
+                        <div className="h-[280px] sm:h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -482,7 +482,7 @@ export default function DashboardPage() {
                         <CardTitle>Unit Terjual</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <div className="h-[350px]">
+                        <div className="h-[280px] sm:h-[350px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={currentMonthlyStats}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -516,14 +516,14 @@ export default function DashboardPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* Recent Transactions */}
-                <Card className="col-span-4">
+                <Card className="lg:col-span-4">
                     <CardHeader>
                         <CardTitle>Aktivitas Terbaru</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
                             {stats.recentTransactions?.map((tx) => (
-                                <div key={tx.id} className="flex items-center">
+                                <div key={tx.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <div className="space-y-1 flex-1">
                                         <p className="text-sm font-medium leading-none">{tx.code} - {tx.unitName}</p>
                                         <p className="text-xs text-muted-foreground">
@@ -546,14 +546,14 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* Investor Stats */}
-                <Card className="col-span-3">
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Performa Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-8">
                             {stats.investorStats?.map((investor) => (
-                                <div key={investor.id} className="flex items-center">
+                                <div key={investor.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <div className="space-y-1 flex-1">
                                         <p className="text-sm font-medium leading-none">{investor.name}</p>
                                         <p className="text-xs text-muted-foreground">

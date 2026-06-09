@@ -55,8 +55,8 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }: Pa
     };
 
     return (
-        <div className="flex items-center justify-end space-x-2 py-4">
-            <div className="text-sm text-muted-foreground mr-4">
+        <div className="flex flex-col items-stretch gap-3 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+            <div className="text-center text-sm text-muted-foreground sm:mr-4 sm:text-left">
                 Page {currentPage} of {totalPages}
             </div>
 
@@ -82,7 +82,7 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }: Pa
                 <span className="sr-only">Previous page</span>
             </Button>
 
-            <div className="flex items-center space-x-1">
+            <div className="hidden items-center space-x-1 sm:flex">
                 {getPageNumbers().map((page, index) => (
                     <Button
                         key={index}
@@ -95,6 +95,10 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }: Pa
                         {page}
                     </Button>
                 ))}
+            </div>
+
+            <div className="flex items-center justify-center px-2 text-sm font-medium sm:hidden">
+                {currentPage} / {totalPages}
             </div>
 
             <Button
