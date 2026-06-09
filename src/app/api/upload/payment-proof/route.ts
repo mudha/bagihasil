@@ -2,12 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import ImageKit from 'imagekit'
 import { requireAdmin } from '@/lib/api-auth'
 
-// Configure ImageKit
-const imagekit = new ImageKit({
-    publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
-    urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
-})
+let imagekit: ImageKit | null = null
+
+function getImageKit() {
+    const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY
+    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY
+    const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+
+    if (!publicKey || !privateKey || !urlEndpoint) {
+        throw new Error("ImageKit environment variables are not configured")
+    }
+
+    if (!imagekit) {
+        imagekit = new ImageKit({
+            publicKey,
+            privateKey,
+            urlEndpoint,
+        })
+    }
+
+    return imagekit
+}
 
 export async function POST(request: NextRequest) {
     const authResult = await requireAdmin()
@@ -47,8 +62,9 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(bytes)
 
         // Upload to ImageKit
+        const imagekitClient = getImageKit()
         const uploadResult = await new Promise((resolve, reject) => {
-            imagekit.upload({
+            imagekitClient.upload({
                 file: buffer, // required
                 fileName: file.name, // required
                 folder: '/profit-sharing-app/payment-proofs',
