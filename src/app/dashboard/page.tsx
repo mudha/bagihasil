@@ -577,23 +577,31 @@ export default function DashboardPage() {
                     <CardContent>
                         <div className="space-y-3">
                             {stats.recentTransactions?.map((tx) => (
-                                <div key={tx.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
-                                    <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700">
-                                        <ReceiptText className="size-5" />
+                                <Link
+                                    key={tx.id}
+                                    href={`/dashboard/transactions/${tx.id}`}
+                                    className="group flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3 transition hover:border-teal-200 hover:bg-teal-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 sm:flex-row sm:items-center"
+                                >
+                                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                                        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700 transition group-hover:bg-teal-600 group-hover:text-white">
+                                            <ReceiptText className="size-5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="break-words text-sm font-black leading-snug text-slate-950 transition group-hover:text-teal-800">
+                                                {tx.code} - {tx.unitName}
+                                            </p>
+                                            <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">
+                                                {formatHijriFull(new Date(tx.date))} • {tx.type}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-black text-slate-950">{tx.code} - {tx.unitName}</p>
-                                        <p className="mt-1 truncate text-xs text-slate-500">
-                                            {formatHijriFull(new Date(tx.date))} • {tx.type}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
+                                    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200/70 pt-3 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
                                         <div className="text-sm font-black text-slate-950">{formatCurrencyShort(tx.amount)}</div>
-                                        <Badge variant={tx.status === "COMPLETED" ? "default" : "secondary"} className="mt-1 text-[10px]">
+                                        <Badge variant={tx.status === "COMPLETED" ? "default" : "secondary"} className="text-[10px] sm:mt-1">
                                             {tx.status}
                                         </Badge>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                             {stats.recentTransactions.length === 0 && (
                                 <p className="py-6 text-center text-sm text-muted-foreground">Belum ada transaksi.</p>
