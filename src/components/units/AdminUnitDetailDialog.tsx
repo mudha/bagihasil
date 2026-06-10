@@ -67,18 +67,20 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-teal-900/10 p-0">
+                    <div className="bg-[#073f3b] p-5 text-white sm:p-6">
                     <DialogHeader>
                         <div className="flex justify-between items-start mr-8">
                             <div>
-                                <DialogTitle className="text-xl">{unit.name}</DialogTitle>
-                                <p className="text-muted-foreground font-mono mt-1">{unit.plateNumber}</p>
+                                    <DialogTitle className="text-2xl font-black tracking-tight">{unit.name}</DialogTitle>
+                                    <p className="mt-2 w-fit rounded-full bg-white/10 px-3 py-1 font-mono text-sm text-teal-50">{unit.plateNumber}</p>
                             </div>
                             {getStatusBadge(unit.status)}
                         </div>
                     </DialogHeader>
+                    </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-2">
                         {/* Left Column: Images & Basic Info */}
                         <div className="space-y-6">
                             {/* Images Section */}
@@ -87,7 +89,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                     <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
                                         <ImageIcon className="h-3 w-3" /> Foto Unit
                                     </p>
-                                    <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden border flex items-center justify-center">
+                                    <div className="aspect-video overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100 flex items-center justify-center">
                                         {unit.imageUrl ? (
                                             <ImageHoverPreview
                                                 src={unit.imageUrl}
@@ -110,7 +112,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                     <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
                                         <FileText className="h-3 w-3" /> Foto STNK
                                     </p>
-                                    <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden border flex items-center justify-center">
+                                    <div className="aspect-video overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100 flex items-center justify-center">
                                         {unit.stnkImageUrl ? (
                                             <ImageHoverPreview
                                                 src={unit.stnkImageUrl}
@@ -174,7 +176,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                         {/* Right Column: Technical & Admin */}
                         <div className="space-y-6">
                             {/* Technical Specs */}
-                            <div className="bg-slate-50 p-4 rounded-lg space-y-3 border">
+                            <div className="space-y-3 rounded-lg border border-teal-900/10 bg-teal-50/60 p-4">
                                 <h4 className="text-sm font-semibold flex items-center gap-2">
                                     <Fingerprint className="h-4 w-4" /> Detail Teknis
                                 </h4>
@@ -192,7 +194,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                             </div>
 
                             {/* Admin Data */}
-                            <div className="space-y-3 border p-4 rounded-lg">
+                            <div className="space-y-3 rounded-lg border border-teal-900/10 p-4">
                                 <h4 className="text-sm font-semibold flex items-center gap-2">
                                     <Hash className="h-4 w-4" /> Data Administrasi
                                 </h4>

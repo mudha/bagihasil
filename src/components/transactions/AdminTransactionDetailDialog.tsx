@@ -102,15 +102,16 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-teal-900/10 p-0">
+                    <div className="bg-[#073f3b] p-5 text-white sm:p-6">
                     <DialogHeader>
                         <div className="flex justify-between items-start mr-8">
                             <div>
-                                <DialogTitle className="text-xl flex items-center gap-2">
+                                    <DialogTitle className="flex items-center gap-2 text-2xl font-black tracking-tight">
                                     <Receipt className="h-5 w-5" />
                                     Detail Transaksi
                                 </DialogTitle>
-                                <p className="text-muted-foreground font-mono mt-1">{transaction.transactionCode}</p>
+                                    <p className="mt-2 w-fit rounded-full bg-white/10 px-3 py-1 font-mono text-sm text-teal-50">{transaction.transactionCode}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 {getStatusBadge(transaction.status)}
@@ -139,19 +140,20 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                             </div>
                         </div>
                     </DialogHeader>
+                    </div>
 
-                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-2">
                         {/* Left Column: Unit & Transaction Info */}
                         <div className="space-y-6">
 
                             {/* Unit Info Card */}
-                            <div className="border rounded-lg p-4 bg-slate-50 space-y-3">
+                            <div className="space-y-3 rounded-lg border border-teal-900/10 bg-teal-50/60 p-4">
                                 <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
                                     <Car className="h-4 w-4" /> Unit Kendaraan
                                 </h4>
                                 <div className="flex gap-4">
                                     {transaction.unit.imageUrl ? (
-                                        <div className="h-16 w-16 shrink-0 rounded-md overflow-hidden border bg-white">
+                                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-teal-900/10 bg-white">
                                             <img
                                                 src={transaction.unit.imageUrl}
                                                 alt="Unit"
@@ -159,7 +161,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                                             />
                                         </div>
                                     ) : (
-                                        <div className="h-16 w-16 shrink-0 rounded-md bg-slate-200 flex items-center justify-center text-slate-500">
+                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
                                             <Car className="h-6 w-6" />
                                         </div>
                                     )}
@@ -266,7 +268,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                                 <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
                                     <ImageIcon className="h-3 w-3" /> Bukti Pembelian
                                 </p>
-                                <div className="aspect-video bg-slate-100 rounded-lg overflow-hidden border flex items-center justify-center relative group">
+                                <div className="group relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100">
                                     {transaction.buyProofImageUrl ? (
                                         <ImageHoverPreview
                                             src={transaction.buyProofImageUrl}
@@ -297,7 +299,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                             <Separator />
 
                             {/* Additional Info */}
-                            <div className="space-y-3 p-4 border rounded-lg">
+                            <div className="space-y-3 rounded-lg border border-teal-900/10 p-4">
                                 <h4 className="text-sm font-semibold flex items-center gap-2">
                                     <Hash className="h-4 w-4" /> Detail Lainnya
                                 </h4>

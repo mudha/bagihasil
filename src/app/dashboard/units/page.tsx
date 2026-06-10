@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
     Table,
     TableBody,
@@ -31,7 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench, Sparkles } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -939,10 +940,68 @@ function UnitsPageContent() {
         return "NEWEST"
     }
 
+    const unitSummary = {
+        total: filteredAndSortedUnits.length,
+        available: filteredAndSortedUnits.filter(unit => unit.status === "AVAILABLE").length,
+        sold: filteredAndSortedUnits.filter(unit => unit.status === "SOLD").length,
+        maintenance: filteredAndSortedUnits.filter(unit => unit.status === "MAINTENANCE").length,
+    }
+
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Manajemen Unit</h2>
+        <div className="space-y-5 lg:space-y-7">
+            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
+                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
+                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
+                <div className="relative flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-end xl:justify-between xl:p-8">
+                    <div className="max-w-2xl space-y-3">
+                        <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
+                            <Sparkles className="size-3" />
+                            Garage view
+                        </Badge>
+                        <div>
+                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-100/75">Manajemen Unit</p>
+                            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+                                Semua kendaraan, lebih gampang dipantau.
+                            </h1>
+                        </div>
+                        <p className="text-sm leading-6 text-teal-50/75 sm:text-base">
+                            Kelola stok aktif, unit terjual, pajak, foto kendaraan, dan data STNK dari satu tampilan yang lebih ringan.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
+                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
+                            <CardContent className="p-4">
+                                <Car className="mb-3 size-5 text-lime-200" />
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Total</p>
+                                <p className="mt-1 text-2xl font-black">{unitSummary.total}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
+                            <CardContent className="p-4">
+                                <CheckCircle2 className="mb-3 size-5 text-lime-200" />
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Aktif</p>
+                                <p className="mt-1 text-2xl font-black">{unitSummary.available}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
+                            <CardContent className="p-4">
+                                <Car className="mb-3 size-5 text-sky-200" />
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Terjual</p>
+                                <p className="mt-1 text-2xl font-black">{unitSummary.sold}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
+                            <CardContent className="p-4">
+                                <Wrench className="mb-3 size-5 text-amber-200" />
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Servis</p>
+                                <p className="mt-1 text-2xl font-black">{unitSummary.maintenance}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
+            <div className="flex flex-col gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
                     {/* ... (Alert Dialogs & Import Buttons) ... */}
                     {selectedIds.length > 0 && !isViewer && (
@@ -976,13 +1035,13 @@ function UnitsPageContent() {
                                 if (!open) setEditingUnit(null)
                             }}>
                                 <DialogTrigger asChild>
-                                    <Button>
+                                    <Button className="h-10 rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
+                                <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto rounded-lg border-teal-900/10">
                                     <DialogHeader>
-                                        <DialogTitle>{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                     </DialogHeader>
                                     <Form {...form}>
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -1026,7 +1085,7 @@ function UnitsPageContent() {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4 border rounded-md p-4 bg-slate-50 dark:bg-slate-900">
+                                            <div className="space-y-4 rounded-lg border border-teal-900/10 bg-teal-50/50 p-4 dark:bg-slate-900">
                                                 {/* ... existing vehicle details fields ... */}
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div className="space-y-2">
@@ -1165,7 +1224,7 @@ function UnitsPageContent() {
 
                                                 <div className="mt-4 pt-4 border-t">
                                                     <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>
-                                                    <div className="text-sm font-medium mt-1">
+                                                    <div className="mt-1 rounded-lg border border-teal-900/10 bg-white p-3 text-sm font-black text-teal-950">
                                                         {form.watch("name") || "(Lengkapi form di atas)"}
                                                     </div>
                                                     <input type="hidden" {...form.register("name")} />
@@ -1310,7 +1369,7 @@ function UnitsPageContent() {
                                                     )}
                                                 />
                                             )}
-                                            <Button type="submit" className="w-full">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
+                                            <Button type="submit" className="h-11 w-full rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
                                         </form>
                                     </Form>
                                 </DialogContent>
@@ -1320,14 +1379,14 @@ function UnitsPageContent() {
                 </div>
             </div>
 
-            <div className="flex flex-col justify-between gap-4 py-4 lg:flex-row lg:items-center">
+            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
                     <div className="relative w-full lg:max-w-sm">
                         <Input
                             placeholder="Cari unit..."
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
-                            className="w-full pr-10"
+                            className="h-11 w-full rounded-lg border-teal-900/10 bg-white pr-10"
                         />
                         {searchQuery && (
                             <Button
@@ -1363,7 +1422,7 @@ function UnitsPageContent() {
                         else params.delete('investorStatus')
                         window.history.replaceState(null, '', `?${params.toString()}`)
                     }}>
-                        <SelectTrigger className="w-full lg:w-[150px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
                             <SelectValue placeholder="Status Pemodal" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1374,7 +1433,7 @@ function UnitsPageContent() {
                     </Select>
                     <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full lg:w-[150px]">
+                            <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1388,7 +1447,7 @@ function UnitsPageContent() {
                         {/* Mobile Sort Dropdown */}
                         <div className="w-full lg:hidden">
                             <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
                                     <SelectValue placeholder="Urutkan" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1403,7 +1462,7 @@ function UnitsPageContent() {
                 </div>
 
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="w-full lg:w-[200px]">
+                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[220px]">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1420,12 +1479,14 @@ function UnitsPageContent() {
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedUnits.length === 0 ? (
-                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
+                    <div className="rounded-lg border border-dashed border-teal-900/20 bg-white/80 p-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
                     </div>
                 ) : (
                     paginatedUnits.map((unit) => (
-                        <div key={unit.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                        <div key={unit.id} className="overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm">
+                            <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
+                            <div className="space-y-3 p-4">
                             <div className="flex justify-between items-start">
                                 <div className="flex gap-3">
                                     {unit.imageUrl ? (
@@ -1433,7 +1494,7 @@ function UnitsPageContent() {
                                             src={unit.imageUrl}
                                             alt={unit.name}
                                             previewSize="lg"
-                                            className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 flex-shrink-0 relative group"
+                                            className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-teal-900/10"
                                         >
                                             <img
                                                 src={unit.imageUrl}
@@ -1444,7 +1505,7 @@ function UnitsPageContent() {
                                         </ImageHoverPreview>
                                     ) : (
                                         <div
-                                            className="h-16 w-16 rounded-md overflow-hidden border border-slate-200 cursor-pointer flex-shrink-0 relative group"
+                                            className="relative h-16 w-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-teal-900/10"
                                         >
                                             <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
                                                 <span className="text-[10px]">No Img</span>
@@ -1453,13 +1514,13 @@ function UnitsPageContent() {
                                     )}
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{unit.code}</span>
-                                            <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="text-[10px] py-0 h-5">
+                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700">{unit.code}</span>
+                                            <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="h-5 rounded-full py-0 text-[10px]">
                                                 {unit.status}
                                             </Badge>
                                         </div>
-                                        <div className="font-semibold text-base mt-1">{unit.name}</div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                         <div className="mt-2 text-base font-black leading-snug text-slate-950">{unit.name}</div>
+                                         <div className="flex items-center gap-2 text-sm text-slate-500">
                                             <span>{unit.plateNumber}</span>
                                             {(() => {
                                                 const duplicateInfo = getDuplicateInfo(units, unit)
@@ -1474,7 +1535,7 @@ function UnitsPageContent() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t text-sm">
+                             <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
                                     <span className="font-medium">{unit.investor.name}</span>
@@ -1507,7 +1568,7 @@ function UnitsPageContent() {
                             </div>
 
                             {!isViewer && (
-                                <div className="flex justify-end pt-2 border-t mt-3">
+                                 <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="outline" size="sm" className="h-9">
@@ -1536,16 +1597,17 @@ function UnitsPageContent() {
                                     </DropdownMenu>
                                 </div>
                             )}
+                            </div>
                         </div>
                     ))
                 )}
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden rounded-md border lg:block">
+            <div className="hidden overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
                 <Table>
-                    <TableHeader>
-                        <TableRow>
+                    <TableHeader className="bg-teal-50/70">
+                        <TableRow className="hover:bg-teal-50/70">
                             <TableHead className="w-[50px]">
                                 <input
                                     type="checkbox"
@@ -1669,7 +1731,7 @@ function UnitsPageContent() {
                         {paginatedUnits.map((unit) => (
                             <TableRow
                                 key={unit.id}
-                                className="cursor-pointer hover:bg-slate-50"
+                                className="cursor-pointer border-slate-100 hover:bg-teal-50/45"
                                 onClick={(e) => {
                                     // Prevent click if clicking checkbox or action buttons
                                     if (
@@ -1712,8 +1774,8 @@ function UnitsPageContent() {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell className="font-medium">{unit.code}</TableCell>
-                                <TableCell>{unit.name}</TableCell>
+                                <TableCell className="font-mono text-sm font-bold text-teal-700">{unit.code}</TableCell>
+                                <TableCell className="font-semibold text-slate-950">{unit.name}</TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         <span>{unit.plateNumber}</span>
@@ -1729,7 +1791,7 @@ function UnitsPageContent() {
                                 </TableCell>
                                 <TableCell>{unit.investor.name}</TableCell>
                                 <TableCell>
-                                    <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-sm">
+                                    <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-full">
                                         {unit.status}
                                     </Badge>
                                 </TableCell>

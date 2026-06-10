@@ -37,7 +37,7 @@ import { toast } from "sonner"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { formatHijriFull } from "@/lib/date-utils"
-import { ArrowLeft, Plus, DollarSign, Pencil, Trash2, Calendar } from "lucide-react"
+import { ArrowLeft, Plus, DollarSign, Pencil, Trash2, Calendar, ReceiptText, Wallet, TrendingUp, Users } from "lucide-react"
 import Link from "next/link"
 import { AddPaymentDialog } from "@/components/transactions/AddPaymentDialog"
 import { AddCostDialog } from "@/components/transactions/AddCostDialog"
@@ -153,23 +153,30 @@ export default function TransactionDetailPage() {
     const totalCapital = totalCapitalInvestor + totalCapitalManager
 
     return (
-        <div className="space-y-8 pb-20">
-            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-                <div className="flex items-start gap-3 sm:gap-4 lg:items-center">
+        <div className="space-y-6 pb-20 lg:space-y-8">
+            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
+                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
+                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
+                <div className="relative flex flex-col justify-between gap-5 p-5 sm:p-6 lg:flex-row lg:items-end xl:p-8">
+                    <div className="flex items-start gap-3 sm:gap-4">
                     <Link href="/dashboard/transactions">
-                        <Button variant="outline" size="icon" className="mt-1 md:mt-0">
+                            <Button variant="outline" size="icon" className="mt-1 shrink-0 rounded-lg border-white/20 bg-white/10 text-white hover:bg-white hover:text-teal-950 md:mt-0">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                     </Link>
                     <div className="min-w-0">
-                        <h2 className="flex flex-wrap items-center gap-2 break-all text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
+                            <Badge className="mb-3 border-white/15 bg-white/10 text-white hover:bg-white/15">
+                                <ReceiptText className="size-3" />
+                                Detail transaksi
+                            </Badge>
+                            <h1 className="flex flex-wrap items-center gap-2 break-all text-3xl font-black tracking-tight sm:text-4xl">
                             {transaction.transactionCode}
                             <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
-                        </h2>
-                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 mt-1">
+                            </h1>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-teal-50/80">
                             {transaction.unit.imageUrl && (
                                 <div
-                                    className="h-8 w-8 rounded overflow-hidden border border-slate-200 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                                        className="h-10 w-10 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-white/20 transition-opacity hover:opacity-80"
                                     onClick={() => setViewPaymentProof(transaction.unit.imageUrl)}
                                     title="Lihat Foto Unit"
                                 >
@@ -181,7 +188,7 @@ export default function TransactionDetailPage() {
                                 </div>
                             )}
                             <span className="break-words">
-                                <span className="font-mono text-xs font-semibold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded mr-2 align-middle">
+                                    <span className="mr-2 rounded-full bg-white/10 px-2 py-1 align-middle font-mono text-xs font-bold text-lime-100">
                                     {transaction.unit.code}
                                 </span>
                                 {transaction.unit.name} - {transaction.unit.plateNumber}
@@ -189,87 +196,87 @@ export default function TransactionDetailPage() {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-slate-200 flex-shrink-0"
+                                    className="h-8 w-8 flex-shrink-0 rounded-lg p-0 text-white hover:bg-white/10"
                                 onClick={() => setIsUnitImageOpen(true)}
                                 title="Update Foto Unit"
                             >
-                                <Camera className="h-4 w-4 text-slate-500" />
+                                    <Camera className="h-4 w-4" />
                             </Button>
-                            <span className="text-slate-300 mx-1">|</span>
-                            <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
-                                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                                <div className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1 text-sm font-semibold text-teal-50">
+                                    <Calendar className="h-3.5 w-3.5 text-lime-200" />
                                 <span>{formatHijriFull(new Date(transaction.buyDate))}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
+                    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
                     {transaction.status === 'COMPLETED' && (
                         <Button
                             variant="outline"
                             onClick={handleExportPDF}
                             disabled={isExporting}
-                            className="flex-1 lg:flex-none"
+                                className="flex-1 rounded-lg border-white/20 bg-white/10 text-white hover:bg-white hover:text-teal-950 lg:flex-none"
                         >
                             <FileText className="h-4 w-4 mr-2" />
                             {isExporting ? "Exporting..." : "Laporan PDF"}
                         </Button>
                     )}
-                    <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="flex h-10 flex-1 items-center justify-center px-4 py-1 text-base lg:flex-none lg:text-lg">
+                        <Badge variant={transaction.status === 'COMPLETED' ? 'default' : 'secondary'} className="flex h-10 flex-1 items-center justify-center rounded-lg px-4 py-1 text-base lg:flex-none lg:text-lg">
                         {transaction.status}
                     </Badge>
                 </div>
             </div>
+            </section>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs font-medium text-blue-800 sm:text-sm">Modal dari Pemodal</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><Wallet className="size-4 text-teal-600" /> Modal dari Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="break-words text-base font-bold text-blue-900 sm:text-2xl">
+                        <div className="break-words text-base font-black text-slate-950 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseInvestorCapital)}
                         </div>
-                        <p className="mt-1 text-[10px] text-blue-700 sm:text-xs">
+                        <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
                             {transaction.initialInvestorCapital ? "Modal awal custom" : "Harga Beli Unit"}
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-blue-100 border-blue-300">
+                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs font-medium text-blue-800 sm:text-sm">Total Modal Pemodal</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><TrendingUp className="size-4 text-sky-600" /> Total Modal Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="break-words text-base font-bold text-blue-900 sm:text-2xl">
+                        <div className="break-words text-base font-black text-slate-950 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalInvestor)}
                         </div>
-                        <p className="mt-1 text-[10px] text-blue-700 sm:text-xs">
+                        <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
                             Beli + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsInvestor)})
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-purple-50 border-purple-200">
+                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs font-medium text-purple-800 sm:text-sm">Total Modal Pengelola</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><Users className="size-4 text-amber-600" /> Total Modal Pengelola</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="break-words text-base font-bold text-purple-900 sm:text-2xl">
+                        <div className="break-words text-base font-black text-slate-950 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapitalManager)}
                         </div>
-                        <p className="mt-1 text-[10px] text-purple-700 sm:text-xs">
+                        <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
                             Modal ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(baseManagerCapital)}) + Biaya ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(costsManager)})
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="bg-green-50 border-green-200">
+                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
                     <CardHeader className="pb-2 p-4">
-                        <CardTitle className="text-xs font-medium text-green-800 sm:text-sm">Total Modal Keseluruhan</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><DollarSign className="size-4 text-lime-600" /> Total Modal Keseluruhan</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="break-words text-base font-bold text-green-900 sm:text-2xl">
+                        <div className="break-words text-base font-black text-slate-950 sm:text-2xl">
                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalCapital)}
                         </div>
-                        <p className="mt-1 text-[10px] text-green-700 sm:text-xs">
+                        <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
                             Pemodal + Pengelola
                         </p>
                     </CardContent>
