@@ -40,9 +40,11 @@ type EditFormValues = z.infer<typeof editSchema>
 interface EditTransactionDetailsDialogProps {
     transaction: any
     onSuccess: () => void
+    triggerClassName?: string
+    triggerLabel?: string
 }
 
-export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTransactionDetailsDialogProps) {
+export function EditTransactionDetailsDialog({ transaction, onSuccess, triggerClassName, triggerLabel = "Edit Detail" }: EditTransactionDetailsDialogProps) {
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [imageFile, setImageFile] = useState<File | null>(null)
@@ -208,9 +210,9 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess }: EditTra
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit Detail
+                <Button variant="outline" size="sm" className={triggerClassName}>
+                    <Pencil className={cn("h-4 w-4", triggerLabel && "mr-2")} />
+                    {triggerLabel}
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-xl">
