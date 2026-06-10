@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu, UserCircle } from "lucide-react"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Sidebar } from "./Sidebar"
@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { BrandMark } from "./BrandMark"
 
 interface NavbarProps {
     type?: "admin" | "investor"
@@ -38,32 +39,26 @@ export function Navbar({ type = "admin" }: NavbarProps) {
     }
 
     return (
-        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 lg:hidden bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm transition-all duration-300">
+        <div className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-gray-900/80 sm:p-4 lg:hidden">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="lg:hidden hover:bg-transparent -ml-2 shrink-0">
-                            <Menu className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                        <Button aria-label="Buka menu" variant="ghost" size="icon" className="-ml-2 shrink-0 rounded-lg hover:bg-teal-50 lg:hidden">
+                            <Menu className="h-6 w-6 text-teal-950 dark:text-gray-200" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[min(86vw,280px)] border-none bg-background shadow-xl">
+                    <SheetContent side="left" className="w-[min(84vw,280px)] border-none bg-[#062f2d] p-0 shadow-xl">
                         <SheetTitle className="sr-only">Navigasi Menu</SheetTitle>
                         <SheetDescription className="sr-only">Menu Navigasi Utama</SheetDescription>
                         {type === "admin" ? (
-                            <Sidebar onNavigate={() => setOpen(false)} />
+                            <Sidebar compact onNavigate={() => setOpen(false)} />
                         ) : (
                             <InvestorSidebar onNavigate={() => setOpen(false)} />
                         )}
                     </SheetContent>
                 </Sheet>
-                <div className="flex min-w-0 flex-col">
-                    <span className={`truncate font-bold text-base leading-none sm:text-lg ${type === "admin" ? "text-blue-600" : "text-emerald-600"}`}>
-                        {type === "admin" ? "Mudha Profit Share" : "Mudha Profit Share"}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                        {type === "admin" ? "Administrator" : "Dashboard"}
-                    </span>
-                </div>
+                <BrandMark compact className="sm:hidden" />
+                <BrandMark className="hidden sm:flex" />
             </div>
 
             <div className="flex items-center gap-2">
@@ -71,9 +66,9 @@ export function Navbar({ type = "admin" }: NavbarProps) {
                     <span className="text-sm font-medium leading-none">{session?.user?.name || "User"}</span>
                     <span className="text-xs text-muted-foreground capitalize">{(session?.user as any)?.role?.toLowerCase() || "Viewer"}</span>
                 </div>
-                <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
+                <Avatar className="h-9 w-9 border border-teal-100 shadow-sm">
                     <AvatarImage src={session?.user?.image || ""} />
-                    <AvatarFallback className={type === "admin" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}>
+                    <AvatarFallback className={type === "admin" ? "bg-teal-100 text-teal-700" : "bg-emerald-100 text-emerald-700"}>
                         {getInitials(session?.user?.name)}
                     </AvatarFallback>
                 </Avatar>

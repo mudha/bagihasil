@@ -4,8 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Wallet, LogOut, PieChart, User } from "lucide-react"
+import { LayoutDashboard, LogOut, User } from "lucide-react"
 import { signOut } from "next-auth/react"
+import { BrandMark } from "./BrandMark"
 
 interface InvestorSidebarProps {
     className?: string
@@ -16,9 +17,9 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
     const pathname = usePathname()
 
     return (
-        <div className={cn("h-full w-64 flex-col border-r bg-white p-4 dark:bg-gray-800 flex", className)}>
-            <div className="flex h-14 items-center border-b px-2 font-bold text-xl mb-4">
-                <span className="text-emerald-600 mr-2">Mudha</span> Profit Share
+        <div className={cn("flex h-full w-64 flex-col border-r border-teal-900/10 bg-white p-4 dark:bg-gray-800", className)}>
+            <div className="mb-4 flex h-16 items-center border-b px-2">
+                <BrandMark />
             </div>
             <div className="flex-1 space-y-1">
                 <Link href="/dashboard/investor" onClick={onNavigate}>
@@ -45,8 +46,8 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                     Keluar
                 </Button>
                 <div className="mt-4 text-xs text-gray-400 text-center">
-                    <p>Investor Portal v1.0</p>
-                    <p>&copy; 2025 Mudha</p>
+                    <p>Mudha Investor Studio</p>
+                    <p>&copy; 2026 Mudha</p>
                 </div>
             </div>
         </div>

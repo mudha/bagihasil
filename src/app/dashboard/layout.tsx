@@ -30,10 +30,10 @@ export default function DashboardLayout({
     return (
         <div className="h-full relative overflow-x-hidden font-sans">
             <Navbar type="admin" />
-            <div className="hidden h-full lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 z-[80] bg-gray-900 border-r border-gray-800">
+            <div className="hidden h-full lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 z-[80] border-r border-teal-900/20 bg-[#062f2d]">
                 <Sidebar />
             </div>
-            <main className="lg:pl-72 pb-10 min-h-screen bg-gray-50/50">
+            <main className="lg:pl-72 pb-10 min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)]">
                 <PullToRefresh>
                     <div className="w-full max-w-[100vw] p-3 sm:p-4 lg:p-8">
                         {children}

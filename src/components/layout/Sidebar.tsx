@@ -11,11 +11,11 @@ import {
     LogOut,
     Calculator,
     History,
-    CirclePercent,
     UserCog
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "next-auth/react"
+import { BrandMark } from "./BrandMark"
 
 const routes = [
     {
@@ -23,24 +23,28 @@ const routes = [
         icon: LayoutDashboard,
         href: "/dashboard",
         color: "text-sky-500",
+        featured: true,
     },
     {
         label: "Unit Kendaraan",
         icon: Car,
         href: "/dashboard/units",
         color: "text-violet-500",
+        featured: true,
     },
     {
         label: "Transaksi",
         icon: FileText,
         href: "/dashboard/transactions",
         color: "text-pink-700",
+        featured: true,
     },
     {
         label: "Pemodal",
         icon: Users,
         href: "/dashboard/investors",
         color: "text-orange-700",
+        featured: true,
     },
     {
         label: "Kalkulator",
@@ -65,59 +69,84 @@ const routes = [
 
 interface SidebarProps {
     onNavigate?: () => void
+    compact?: boolean
 }
 
-export function Sidebar({ onNavigate }: SidebarProps) {
+export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
     const pathname = usePathname()
     const { data: session } = useSession()
+    const visibleRoutes = routes.filter(route => {
+        if (route.adminOnly) {
+            return session?.user?.role === "ADMIN"
+        }
+        return true
+    })
+    const primaryRoutes = compact ? visibleRoutes.filter(route => route.featured) : visibleRoutes
+    const secondaryRoutes = compact ? visibleRoutes.filter(route => !route.featured) : []
 
     return (
-        <div className="space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white">
+        <div className="flex h-full flex-col bg-[#062f2d] text-white">
             <div className="px-3 py-2 flex-1">
-                <Link href="/dashboard" className="flex items-center pl-3 mb-14" onClick={onNavigate}>
-                    <div className="bg-blue-600 p-2 rounded-lg mr-3">
-                        <CirclePercent className="h-8 w-8 text-white" />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Mudha
-                    </h1>
+                <Link href="/dashboard" className="mb-8 mt-3 flex items-center rounded-lg px-2 py-3" onClick={onNavigate}>
+                    <BrandMark inverse />
                 </Link>
-                <div className="space-y-1">
-                    {routes.filter(route => {
-                        if (route.adminOnly) {
-                            return session?.user?.role === "ADMIN"
-                        }
-                        return true
-                    }).map((route) => (
+                <div className="space-y-1.5">
+                    {primaryRoutes.map((route) => (
                         <Link
                             key={route.href}
                             href={route.href}
                             onClick={onNavigate}
                             className={cn(
-                                "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition",
-                                pathname === route.href ? "text-white bg-white/10" : "text-zinc-400"
+                                "group flex w-full cursor-pointer justify-start rounded-lg p-3 text-sm font-semibold transition",
+                                pathname === route.href ? "bg-white text-teal-950 shadow-sm" : "text-teal-50/70 hover:bg-white/10 hover:text-white"
                             )}
                         >
                             <div className="flex items-center flex-1">
-                                <route.icon className={cn("h-5 w-5 mr-3", route.color)} />
+                                <route.icon className={cn("mr-3 h-5 w-5", pathname === route.href ? "text-teal-600" : route.color)} />
                                 {route.label}
                             </div>
                         </Link>
                     ))}
+                    {secondaryRoutes.length > 0 && (
+                        <details className="group pt-3">
+                            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-teal-100/60">
+                                Lainnya
+                                <span className="text-base transition group-open:rotate-45">+</span>
+                            </summary>
+                            <div className="mt-1 space-y-1.5">
+                                {secondaryRoutes.map((route) => (
+                                    <Link
+                                        key={route.href}
+                                        href={route.href}
+                                        onClick={onNavigate}
+                                        className={cn(
+                                            "group flex w-full cursor-pointer justify-start rounded-lg p-3 text-sm font-semibold transition",
+                                            pathname === route.href ? "bg-white text-teal-950 shadow-sm" : "text-teal-50/70 hover:bg-white/10 hover:text-white"
+                                        )}
+                                    >
+                                        <div className="flex items-center flex-1">
+                                            <route.icon className={cn("mr-3 h-5 w-5", pathname === route.href ? "text-teal-600" : route.color)} />
+                                            {route.label}
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </details>
+                    )}
                 </div>
             </div>
             <div className="px-3 py-2 mt-auto">
                 <Button
                     onClick={() => signOut()}
                     variant="ghost"
-                    className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10"
+                    className="w-full justify-start text-teal-50/70 hover:bg-white/10 hover:text-white"
                 >
                     <LogOut className="h-5 w-5 mr-3" />
                     Logout
                 </Button>
-                <div className="mt-4 px-3 text-xs text-zinc-600">
-                    <p>Mudha Profit Share v1.0</p>
-                    <p>&copy; 2025 Mudha</p>
+                <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-teal-50/55">
+                    <p className="font-semibold text-teal-50/75">Mudha Profit Studio</p>
+                    <p>&copy; 2026 Mudha</p>
                 </div>
             </div>
         </div>

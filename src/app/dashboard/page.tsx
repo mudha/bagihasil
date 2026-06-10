@@ -1,11 +1,31 @@
 "use client"
 
+import type { ReactNode } from "react"
+import type { LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Car, CheckCircle, DollarSign, TrendingUp, Download, FileText, FileSpreadsheet, Wallet, Calendar } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import {
+    ArrowUpRight,
+    Banknote,
+    BarChart3,
+    Calendar,
+    Car,
+    CheckCircle2,
+    Clock3,
+    Download,
+    FileSpreadsheet,
+    FileText,
+    Gauge,
+    Landmark,
+    PiggyBank,
+    ReceiptText,
+    Sparkles,
+    TrendingUp,
+    Wallet,
+} from "lucide-react"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
@@ -80,6 +100,103 @@ interface DashboardStats {
     taxReminders?: TaxReminder[]
 }
 
+const statusColors = ["#0d9488", "#14b8a6", "#84cc16", "#f59e0b", "#f97316", "#64748b"]
+
+function MetricCard({
+    title,
+    value,
+    helper,
+    icon: Icon,
+    href,
+    tone = "teal",
+    titleFull,
+}: {
+    title: string
+    value: string | number
+    helper: string
+    icon: LucideIcon
+    href?: string
+    tone?: "teal" | "lime" | "sky" | "amber"
+    titleFull?: string
+}) {
+    const toneClass = {
+        teal: "from-teal-500 to-cyan-500 shadow-teal-500/20",
+        lime: "from-lime-400 to-emerald-500 shadow-lime-500/20",
+        sky: "from-sky-400 to-teal-500 shadow-sky-500/20",
+        amber: "from-amber-400 to-orange-500 shadow-amber-500/20",
+    }[tone]
+
+    const content = (
+        <Card className="group h-full rounded-lg border-teal-900/10 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-950/5">
+            <CardContent className="flex h-full flex-col gap-4 p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                    <div className={`grid size-10 place-items-center rounded-lg bg-gradient-to-br ${toneClass} shadow-lg`}>
+                        <Icon className="size-5 text-white" />
+                    </div>
+                    {href && <ArrowUpRight className="size-4 text-teal-700 opacity-0 transition group-hover:opacity-100" />}
+                </div>
+                <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{title}</p>
+                    <p className="mt-2 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl" title={titleFull}>
+                        {value}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{helper}</p>
+                </div>
+            </CardContent>
+        </Card>
+    )
+
+    if (href) {
+        return <Link href={href}>{content}</Link>
+    }
+
+    return content
+}
+
+function MeasuredChartBox({ className, children }: { className: string; children: ReactNode }) {
+    const boxRef = useRef<HTMLDivElement>(null)
+    const [ready, setReady] = useState(false)
+
+    useEffect(() => {
+        const update = () => {
+            const width = boxRef.current?.clientWidth ?? 0
+            setReady(width > 20)
+        }
+
+        update()
+        const frame = window.requestAnimationFrame(update)
+        const observer = new ResizeObserver(update)
+        if (boxRef.current) observer.observe(boxRef.current)
+
+        return () => {
+            window.cancelAnimationFrame(frame)
+            observer.disconnect()
+        }
+    }, [])
+
+    return (
+        <div ref={boxRef} className={className}>
+            {ready ? children : <div className="h-full w-full rounded-lg bg-teal-50/60" />}
+        </div>
+    )
+}
+
+function ChartPanel({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+    return (
+        <Card className="min-w-0 rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base font-black tracking-tight text-slate-950">{title}</CardTitle>
+                <p className="text-xs text-slate-500">{subtitle}</p>
+            </CardHeader>
+            <CardContent className="px-2 pb-4 sm:px-4">
+                <MeasuredChartBox className="h-[240px] min-h-[240px] w-full min-w-0 sm:h-[320px] sm:min-h-[320px]">
+                    {children}
+                </MeasuredChartBox>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function DashboardPage() {
     const router = useRouter()
     const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -98,21 +215,20 @@ export default function DashboardPage() {
                 }
                 const res = await fetch(url)
                 if (res.status === 401) {
-                    router.push('/login')
+                    router.push("/login")
                     return
                 }
                 if (!res.ok) {
-                    throw new Error('Failed to fetch dashboard data')
+                    throw new Error("Failed to fetch dashboard data")
                 }
                 const data = await res.json()
 
-                // Ensure array properties exist
-                if (!data.investorStats) data.investorStats = [];
-                if (!data.recentTransactions) data.recentTransactions = [];
-                if (!data.unitStatusDistribution) data.unitStatusDistribution = [];
-                if (!data.monthlyStats) data.monthlyStats = [];
-                if (!data.monthlyStatsHijri) data.monthlyStatsHijri = [];
-                if (!data.taxReminders) data.taxReminders = [];
+                if (!data.investorStats) data.investorStats = []
+                if (!data.recentTransactions) data.recentTransactions = []
+                if (!data.unitStatusDistribution) data.unitStatusDistribution = []
+                if (!data.monthlyStats) data.monthlyStats = []
+                if (!data.monthlyStatsHijri) data.monthlyStatsHijri = []
+                if (!data.taxReminders) data.taxReminders = []
 
                 setStats(data)
                 setError(null)
@@ -124,19 +240,35 @@ export default function DashboardPage() {
         }
 
         fetchStats()
-    }, [selectedInvestorId, monthsRange])
+    }, [selectedInvestorId, monthsRange, router])
 
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>
-    if (!stats) return <div className="p-8">Loading dashboard data...</div>
+    if (!stats) {
+        return (
+            <div className="grid min-h-[60vh] place-items-center">
+                <div className="rounded-lg border border-teal-900/10 bg-white px-5 py-4 text-sm font-semibold text-teal-800 shadow-sm">
+                    Memuat dashboard...
+                </div>
+            </div>
+        )
+    }
 
     const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value)
+        return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value)
+    }
+
+    const formatCurrencyShort = (value: number) => {
+        return new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            notation: "compact",
+            maximumFractionDigits: 1,
+        }).format(value)
     }
 
     const formatXAxisDate = (val: string) => {
-        const parts = val.split(' ')
-        // Handle 2-word Hijri months (e.g., Jumadil Awal, Rabiul Akhir)
-        if (parts.length >= 2 && ['Awal', 'Akhir'].includes(parts[1])) {
+        const parts = val.split(" ")
+        if (parts.length >= 2 && ["Awal", "Akhir"].includes(parts[1])) {
             return `${parts[0]} ${parts[1]}`
         }
         return parts[0]
@@ -180,184 +312,204 @@ export default function DashboardPage() {
         setExportingReport(false)
     }
 
-    const currentMonthlyStats = calendarMode === 'hijri' ? (stats.monthlyStatsHijri || []) : (stats.monthlyStats || [])
+    const currentMonthlyStats = calendarMode === "hijri" ? (stats.monthlyStatsHijri || []) : (stats.monthlyStats || [])
+    const selectedInvestor = selectedInvestorId === "all" ? null : stats.investorStats.find(investor => investor.id === selectedInvestorId)
+    const heroLabel = selectedInvestor ? selectedInvestor.name : "Semua Investor"
+    const bestInvestor = [...stats.investorStats].sort((a, b) => b.totalProfit - a.totalProfit)[0]
+    const totalSharedProfit = stats.totalInvestorProfit + stats.totalManagerProfit
+
+    const quickActions = [
+        { label: "Unit", href: "/dashboard/units", icon: Car },
+        { label: "Transaksi", href: "/dashboard/transactions", icon: ReceiptText },
+        { label: "Pemodal", href: "/dashboard/investors", icon: Landmark },
+        { label: "Kalkulator", href: "/dashboard/calculator", icon: Gauge },
+    ]
 
     return (
-        <div className="space-y-6 lg:space-y-8">
-            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h2>
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
-                    <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="w-full sm:w-[200px]">
-                            <SelectValue placeholder="Pilih Investor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua Investor</SelectItem>
-                            {stats.investorStats?.map((investor) => (
-                                <SelectItem key={investor.id} value={investor.id}>
-                                    {investor.name}
-                                </SelectItem>
+        <div className="space-y-5 lg:space-y-7">
+            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
+                <div className="absolute -right-16 -top-20 size-64 rounded-full bg-teal-300/20 blur-3xl" />
+                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
+                <div className="relative grid gap-5 p-5 sm:p-6 xl:grid-cols-[1.35fr_0.65fr] xl:p-8">
+                    <div className="space-y-5">
+                        <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
+                            <Sparkles className="size-3" />
+                            Dashboard baru
+                        </Badge>
+                        <div className="space-y-3">
+                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-100/75">{heroLabel}</p>
+                            <h1 className="max-w-2xl text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+                                Profit sharing lebih jelas, cepat, dan rapi.
+                            </h1>
+                            <p className="max-w-xl text-sm leading-6 text-teal-50/75 sm:text-base">
+                                Pantau modal aktif, margin, unit terjual, dan performa pemodal dari satu layar yang lebih ringan dibaca.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            {quickActions.map((action) => (
+                                <Link
+                                    key={action.href}
+                                    href={action.href}
+                                    className="group flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white hover:text-teal-950"
+                                >
+                                    <action.icon className="size-4 text-lime-200 transition group-hover:text-teal-600" />
+                                    {action.label}
+                                </Link>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </div>
+                    </div>
 
-                    <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-full sm:w-[180px]">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="gregorian">Masehi</TabsTrigger>
-                            <TabsTrigger value="hijri">Hijri</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-
-                    {/* Month Range Selector */}
-                    <Select value={monthsRange} onValueChange={setMonthsRange}>
-                        <SelectTrigger className="w-full sm:w-[150px]">
-                            <SelectValue placeholder="Rentang Waktu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="6">6 Bulan Terakhir</SelectItem>
-                            <SelectItem value="12">1 Tahun Terakhir</SelectItem>
-                            <SelectItem value="24">2 Tahun Terakhir</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-
-                    {selectedInvestorId !== "all" && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={exportingReport}
-                                    className="w-full sm:w-auto"
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    {exportingReport ? "Exporting..." : "Ekspor"}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Format Laporan</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={handleExportXLSX}
-                                    disabled={exportingReport}
-                                >
-                                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                    <span>Ekspor Excel (XLSX)</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={handleExportPDF}
-                                    disabled={exportingReport}
-                                >
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    <span>Ekspor PDF</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                    <div className="grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/70">Total Margin</p>
+                                <p className="mt-2 text-3xl font-black tracking-tight">{formatCurrencyShort(stats.totalMargin)}</p>
+                            </div>
+                            <div className="grid size-12 place-items-center rounded-lg bg-white text-teal-700">
+                                <TrendingUp className="size-6" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
+                            <div>
+                                <p className="text-xs text-teal-100/65">Unit aktif</p>
+                                <p className="mt-1 text-xl font-black">{stats.activeUnits}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-teal-100/65">Terjual</p>
+                                <p className="mt-1 text-xl font-black">{stats.completedTransactions}</p>
+                            </div>
+                            <div className="col-span-2">
+                                <p className="text-xs text-teal-100/65">Top pemodal</p>
+                                <p className="mt-1 truncate text-sm font-bold">{bestInvestor?.name || "Belum ada data"}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            {/* General Stats */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-                <Link href="/dashboard/units?status=AVAILABLE">
-                    <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Unit Aktif</CardTitle>
-                            <Car className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold sm:text-xl truncate">{stats.activeUnits}</div>
-                            <p className="text-xs text-muted-foreground">Unit tersedia untuk dijual</p>
-                        </CardContent>
-                    </Card>
-                </Link>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Modal Diputar</CardTitle>
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalCapitalDeployed)}>
-                            {formatCurrency(stats.totalCapitalDeployed)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Modal di unit aktif</p>
-                    </CardContent>
-                </Card>
-                <Link href="/dashboard/transactions?status=COMPLETED">
-                    <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Unit Terjual</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg font-bold sm:text-xl truncate">{stats.completedTransactions}</div>
-                            <p className="text-xs text-muted-foreground">Unit sudah lunas / selesai</p>
-                        </CardContent>
-                    </Card>
-                </Link>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Margin</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalMargin)}>
-                            {formatCurrency(stats.totalMargin)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Total keuntungan bersih</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Bagi Hasil Pemodal</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalInvestorProfit)}>
-                            {formatCurrency(stats.totalInvestorProfit)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Total hak pemodal</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Bagi Hasil Pengelola</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold sm:text-xl truncate" title={formatCurrency(stats.totalManagerProfit)}>
-                            {formatCurrency(stats.totalManagerProfit)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Total hak pengelola</p>
-                    </CardContent>
-                </Card>
-            </div>
+            <section className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/80 p-3 shadow-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
+                <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
+                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                        <SelectValue placeholder="Pilih Investor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Semua Investor</SelectItem>
+                        {stats.investorStats?.map((investor) => (
+                            <SelectItem key={investor.id} value={investor.id}>
+                                {investor.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
 
-            {/* Tax Reminders */}
+                <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-full lg:w-[190px]">
+                    <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg bg-teal-50">
+                        <TabsTrigger value="gregorian" className="rounded-lg">Masehi</TabsTrigger>
+                        <TabsTrigger value="hijri" className="rounded-lg">Hijri</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
+                <Select value={monthsRange} onValueChange={setMonthsRange}>
+                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[170px]">
+                        <SelectValue placeholder="Rentang Waktu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="6">6 Bulan Terakhir</SelectItem>
+                        <SelectItem value="12">1 Tahun Terakhir</SelectItem>
+                        <SelectItem value="24">2 Tahun Terakhir</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {selectedInvestorId !== "all" && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                disabled={exportingReport}
+                                className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-auto"
+                            >
+                                <Download className="h-4 w-4" />
+                                {exportingReport ? "Exporting..." : "Ekspor"}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Format Laporan</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleExportXLSX} disabled={exportingReport}>
+                                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                <span>Ekspor Excel (XLSX)</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportPDF} disabled={exportingReport}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                <span>Ekspor PDF</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+            </section>
+
+            <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
+                <MetricCard title="Unit Aktif" value={stats.activeUnits} helper="Siap dijual" icon={Car} href="/dashboard/units?status=AVAILABLE" tone="teal" />
+                <MetricCard
+                    title="Modal Diputar"
+                    value={formatCurrencyShort(stats.totalCapitalDeployed)}
+                    titleFull={formatCurrency(stats.totalCapitalDeployed)}
+                    helper="Di unit aktif"
+                    icon={Wallet}
+                    tone="sky"
+                />
+                <MetricCard title="Unit Terjual" value={stats.completedTransactions} helper="Transaksi selesai" icon={CheckCircle2} href="/dashboard/transactions?status=COMPLETED" tone="lime" />
+                <MetricCard
+                    title="Total Margin"
+                    value={formatCurrencyShort(stats.totalMargin)}
+                    titleFull={formatCurrency(stats.totalMargin)}
+                    helper="Profit bersih"
+                    icon={BarChart3}
+                    tone="teal"
+                />
+                <MetricCard
+                    title="Hak Pemodal"
+                    value={formatCurrencyShort(stats.totalInvestorProfit)}
+                    titleFull={formatCurrency(stats.totalInvestorProfit)}
+                    helper="Bagi hasil"
+                    icon={PiggyBank}
+                    tone="amber"
+                />
+                <MetricCard
+                    title="Hak Pengelola"
+                    value={formatCurrencyShort(stats.totalManagerProfit)}
+                    titleFull={formatCurrency(stats.totalManagerProfit)}
+                    helper="Bagi hasil"
+                    icon={Banknote}
+                    tone="sky"
+                />
+            </section>
+
             {stats.taxReminders && stats.taxReminders.length > 0 && (
-                <Card className="border-amber-200 bg-amber-50/50">
+                <Card className="rounded-lg border-amber-200 bg-amber-50/80 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800">
-                            <TrendingUp className="h-4 w-4" />
+                        <CardTitle className="flex items-center gap-2 text-sm font-black text-amber-900">
+                            <Calendar className="h-4 w-4" />
                             Pengingat Pajak Kendaraan
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {stats.taxReminders.map((reminder) => (
-                                <div key={reminder.id} className="flex items-center justify-between p-2 rounded-lg border bg-white shadow-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-bold">{reminder.plateNumber}</p>
-                                        <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{reminder.name}</p>
-                                    </div>
-                                    <div className="text-right">
+                        <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
+                            {stats.taxReminders.slice(0, 4).map((reminder) => (
+                                <div key={reminder.id} className="min-w-[220px] rounded-lg border border-amber-200 bg-white p-3 shadow-sm lg:min-w-0">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-black text-slate-950">{reminder.plateNumber}</p>
+                                            <p className="mt-1 truncate text-xs text-slate-500">{reminder.name}</p>
+                                        </div>
                                         <Badge variant={reminder.daysLeft <= 7 ? "destructive" : "outline"} className="text-[10px]">
-                                            {reminder.daysLeft <= 0 ? "Lewat Tempo" : `${reminder.daysLeft} Hari Lagi`}
+                                            {reminder.daysLeft <= 0 ? "Lewat Tempo" : `${reminder.daysLeft} hari`}
                                         </Badge>
-                                        <p className="text-[10px] mt-1 text-muted-foreground">
-                                            {format(new Date(reminder.taxDueDate), 'dd/MM/yy')}
-                                        </p>
                                     </div>
+                                    <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-amber-800">
+                                        <Clock3 className="size-3" />
+                                        {format(new Date(reminder.taxDueDate), "dd/MM/yyyy")}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -365,214 +517,156 @@ export default function DashboardPage() {
                 </Card>
             )}
 
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Total Omset Bulanan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[280px] sm:h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={currentMonthlyStats}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="#888888"
-                                        fontSize={10}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={formatXAxisDate}
-                                        interval={0}
-                                        height={60}
-                                        tick={{ dy: 10 }}
-                                        angle={-45}
-                                        textAnchor="end"
-                                    />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        formatter={(value: number) => formatCurrency(value)}
-                                        labelStyle={{ color: 'black' }}
-                                    />
-                                    <Bar dataKey="totalRevenue" name="Omset" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+            <section className="grid gap-4 xl:grid-cols-4">
+                <ChartPanel title="Omset Bulanan" subtitle="Revenue per periode">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
+                        <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <YAxis hide />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#ccfbf1", opacity: 0.35 }} />
+                            <Bar dataKey="totalRevenue" name="Omset" fill="#0d9488" radius={[6, 6, 0, 0]} barSize={34} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartPanel>
 
-                {/* Total Monthly Profit Chart (NEW) */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Total Profit Bulanan</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[280px] sm:h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={currentMonthlyStats}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="#888888"
-                                        fontSize={10}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={formatXAxisDate}
-                                        interval={0}
-                                        height={60}
-                                        tick={{ dy: 10 }}
-                                        angle={-45}
-                                        textAnchor="end"
-                                    />
-                                    <YAxis hide />
-                                    <Tooltip
-                                        formatter={(value: number) => formatCurrency(value)}
-                                        labelStyle={{ color: 'black' }}
-                                    />
-                                    <Bar dataKey="totalMargin" name="Total Profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <ChartPanel title="Profit Bulanan" subtitle="Margin bersih">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
+                        <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <YAxis hide />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#dcfce7", opacity: 0.45 }} />
+                            <Bar dataKey="totalMargin" name="Total Profit" fill="#22c55e" radius={[6, 6, 0, 0]} barSize={34} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartPanel>
 
-                {/* Monthly Profit Breakdown Chart */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>
-                            Pembagian Profit
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[280px] sm:h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={currentMonthlyStats}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="#888888"
-                                        fontSize={10}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={formatXAxisDate}
-                                        interval={0}
-                                        height={60}
-                                        tick={{ dy: 10 }}
-                                        angle={-45}
-                                        textAnchor="end"
-                                    />
-                                    <YAxis
-                                        hide
-                                    />
-                                    <Tooltip
-                                        formatter={(value: number) => formatCurrency(value)}
-                                        labelStyle={{ color: 'black' }}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                    <Bar dataKey="investorShare" name="Pemodal" stackId="a" fill="#adfa1d" radius={[0, 0, 4, 4]} />
-                                    <Bar dataKey="managerShare" name="Pengelola" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <ChartPanel title="Pembagian Profit" subtitle={`Total dibagi ${formatCurrencyShort(totalSharedProfit)}`}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
+                        <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <YAxis hide />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#f7fee7", opacity: 0.5 }} />
+                            <Legend wrapperStyle={{ fontSize: "10px" }} />
+                            <Bar dataKey="investorShare" name="Pemodal" stackId="a" fill="#84cc16" radius={[0, 0, 6, 6]} />
+                            <Bar dataKey="managerShare" name="Pengelola" stackId="a" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartPanel>
 
-                {/* Monthly Units Sold Chart */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Unit Terjual</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                        <div className="h-[280px] sm:h-[350px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={currentMonthlyStats}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="#888888"
-                                        fontSize={10}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={formatXAxisDate}
-                                        interval={0}
-                                        height={60}
-                                        tick={{ dy: 10 }}
-                                        angle={-45}
-                                        textAnchor="end"
-                                    />
-                                    <YAxis
-                                        hide
-                                    />
-                                    <Tooltip
-                                        formatter={(value: number) => [`${value} Unit`, "Terjual"]}
-                                        labelStyle={{ color: 'black' }}
-                                    />
-                                    <Bar dataKey="unitsSold" name="Unit" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                <ChartPanel title="Unit Terjual" subtitle="Volume penjualan">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
+                        <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <YAxis hide />
+                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Terjual"]} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#fffbeb", opacity: 0.6 }} />
+                            <Bar dataKey="unitsSold" name="Unit" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={34} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartPanel>
+            </section>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                {/* Recent Transactions */}
-                <Card className="lg:col-span-4">
+            <section className="grid gap-4 lg:grid-cols-7">
+                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm lg:col-span-4">
                     <CardHeader>
-                        <CardTitle>Aktivitas Terbaru</CardTitle>
+                        <CardTitle className="text-base font-black text-slate-950">Aktivitas Terbaru</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-8">
+                        <div className="space-y-3">
                             {stats.recentTransactions?.map((tx) => (
-                                <div key={tx.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <div className="space-y-1 flex-1">
-                                        <p className="text-sm font-medium leading-none">{tx.code} - {tx.unitName}</p>
-                                        <p className="text-xs text-muted-foreground">
+                                <div key={tx.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+                                    <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700">
+                                        <ReceiptText className="size-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-black text-slate-950">{tx.code} - {tx.unitName}</p>
+                                        <p className="mt-1 truncate text-xs text-slate-500">
                                             {formatHijriFull(new Date(tx.date))} • {tx.type}
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-medium">{formatCurrency(tx.amount)}</div>
-                                        <Badge variant={tx.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                                        <div className="text-sm font-black text-slate-950">{formatCurrencyShort(tx.amount)}</div>
+                                        <Badge variant={tx.status === "COMPLETED" ? "default" : "secondary"} className="mt-1 text-[10px]">
                                             {tx.status}
                                         </Badge>
                                     </div>
                                 </div>
                             ))}
                             {stats.recentTransactions.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-4">Belum ada transaksi.</p>
+                                <p className="py-6 text-center text-sm text-muted-foreground">Belum ada transaksi.</p>
                             )}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Investor Stats */}
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Performa Pemodal</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-8">
-                            {stats.investorStats?.map((investor) => (
-                                <div key={investor.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <div className="space-y-1 flex-1">
-                                        <p className="text-sm font-medium leading-none">{investor.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {investor.activeUnits} Unit Aktif • {investor.completedTransactions} Transaksi Selesai
-                                        </p>
+                <div className="grid gap-4 lg:col-span-3">
+                    <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="text-base font-black text-slate-950">Performa Pemodal</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {stats.investorStats?.slice(0, 5).map((investor, index) => (
+                                    <div key={investor.id} className="flex items-center gap-3">
+                                        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-teal-50 text-xs font-black text-teal-700">
+                                            {index + 1}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-black text-slate-950">{investor.name}</p>
+                                            <p className="text-xs text-slate-500">
+                                                {investor.activeUnits} aktif • {investor.completedTransactions} selesai
+                                            </p>
+                                        </div>
+                                        <div className="text-right text-sm font-black text-slate-950">{formatCurrencyShort(investor.totalProfit)}</div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="font-medium">{formatCurrency(investor.totalProfit)}</div>
-                                        <p className="text-xs text-muted-foreground">Profit</p>
-                                    </div>
+                                ))}
+                                {stats.investorStats.length === 0 && (
+                                    <p className="py-6 text-center text-sm text-muted-foreground">Belum ada data pemodal.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="text-base font-black text-slate-950">Status Unit</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid min-w-0 grid-cols-[120px_1fr] items-center gap-3">
+                                <MeasuredChartBox className="h-[120px] min-h-[120px] w-full min-w-0">
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={120} initialDimension={{ width: 120, height: 120 }}>
+                                        <PieChart>
+                                            <Pie data={stats.unitStatusDistribution} dataKey="value" nameKey="name" innerRadius={36} outerRadius={56} paddingAngle={3}>
+                                                {stats.unitStatusDistribution.map((entry, index) => (
+                                                    <Cell key={`cell-${entry.name}`} fill={statusColors[index % statusColors.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Jumlah"]} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </MeasuredChartBox>
+                                <div className="space-y-2">
+                                    {stats.unitStatusDistribution.slice(0, 5).map((item, index) => (
+                                        <div key={item.name} className="flex items-center justify-between gap-3 text-xs">
+                                            <span className="flex min-w-0 items-center gap-2 text-slate-600">
+                                                <span className="size-2 rounded-full" style={{ backgroundColor: statusColors[index % statusColors.length] }} />
+                                                <span className="truncate">{item.name}</span>
+                                            </span>
+                                            <span className="font-black text-slate-950">{item.value}</span>
+                                        </div>
+                                    ))}
+                                    {stats.unitStatusDistribution.length === 0 && (
+                                        <p className="text-sm text-muted-foreground">Belum ada data unit.</p>
+                                    )}
                                 </div>
-                            ))}
-                            {stats.investorStats.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-4">Belum ada data pemodal.</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-        </div >
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
+        </div>
     )
 }

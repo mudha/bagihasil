@@ -60,14 +60,15 @@ export function LoginForm() {
     }
 
     return (
-        <Card className="w-full max-w-[350px]">
+        <Card className="relative w-full max-w-[380px] overflow-hidden rounded-lg border-white/80 bg-white/85 shadow-2xl shadow-teal-900/10 backdrop-blur">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
             <CardHeader>
-                <CardTitle>Login</CardTitle>
-                <CardDescription>Masukkan username dan password Anda.</CardDescription>
+                <CardTitle className="text-2xl">Selamat datang</CardTitle>
+                <CardDescription>Masuk untuk memantau modal, unit, dan bagi hasil.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <FormField
                             control={form.control}
                             name="identifier"
@@ -75,7 +76,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Username / Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="username atau email" {...field} />
+                                        <Input className="h-11 rounded-lg border-teal-900/10 bg-white" placeholder="username atau email" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -88,13 +89,13 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Password</FormLabel>
                                     <FormControl>
-                                        <Input type="password" placeholder="******" {...field} />
+                                        <Input className="h-11 rounded-lg border-teal-900/10 bg-white" type="password" placeholder="******" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+                        <Button type="submit" className="h-11 w-full rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700" disabled={isLoading}>
                             {isLoading ? "Memproses..." : "Login"}
                         </Button>
                     </form>

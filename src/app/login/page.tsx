@@ -1,20 +1,17 @@
 import { LoginForm } from "@/components/auth/LoginForm"
-import { CirclePercent } from "lucide-react"
+import { BrandMark } from "@/components/layout/BrandMark"
 
 export default function LoginPage() {
     return (
-        <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none">
-                    <CirclePercent className="h-8 w-8 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Mudha
-                </h1>
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,#ccfbf1_0%,#f8fafc_38%,#ffffff_100%)] px-4 dark:bg-gray-900">
+            <div className="absolute -right-24 top-16 size-64 rounded-full bg-teal-200/30 blur-3xl" />
+            <div className="absolute -left-20 bottom-10 size-56 rounded-full bg-lime-200/35 blur-3xl" />
+            <div className="relative mb-8 rounded-lg border border-white/70 bg-white/70 px-5 py-4 shadow-xl shadow-teal-900/5 backdrop-blur">
+                <BrandMark />
             </div>
             <LoginForm />
-            <p className="mt-8 text-sm text-muted-foreground">
-                &copy; 2025 Mudha Profit Share
+            <p className="relative mt-8 text-sm text-muted-foreground">
+                &copy; 2026 Mudha Profit Studio
             </p>
         </div>
     )
