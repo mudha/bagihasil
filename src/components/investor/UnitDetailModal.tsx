@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Calendar, DollarSign, TrendingUp, Package } from "lucide-react"
 import { formatHijriFull } from "@/lib/date-utils"
+import Image from "next/image"
 
 interface UnitDetailModalProps {
     open: boolean
@@ -16,13 +17,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState<any>(null)
 
-    useEffect(() => {
-        if (open && transactionId) {
-            fetchTransactionDetail()
-        }
-    }, [open, transactionId])
-
-    const fetchTransactionDetail = async () => {
+    const fetchTransactionDetail = useCallback(async () => {
         if (!transactionId) return
 
         setLoading(true)
@@ -37,7 +32,13 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
         } finally {
             setLoading(false)
         }
-    }
+    }, [transactionId])
+
+    useEffect(() => {
+        if (open && transactionId) {
+            fetchTransactionDetail()
+        }
+    }, [fetchTransactionDetail, open, transactionId])
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat("id-ID", {
@@ -50,9 +51,9 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "ON_PROCESS":
-                return <Badge variant="default" className="bg-blue-500">Sedang Berjalan</Badge>
+                return <Badge variant="default" className="bg-amber-100 text-amber-900 hover:bg-amber-100">Sedang Berjalan</Badge>
             case "COMPLETED":
-                return <Badge variant="default" className="bg-emerald-500">Selesai</Badge>
+                return <Badge variant="default" className="bg-lime-100 text-lime-900 hover:bg-lime-100">Selesai</Badge>
             default:
                 return <Badge variant="secondary">{status}</Badge>
         }
@@ -60,9 +61,9 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-teal-900/10 p-0">
                 <DialogHeader>
-                    <DialogTitle>Detail Investasi Unit</DialogTitle>
+                    <DialogTitle className="sr-only">Detail Investasi Unit</DialogTitle>
                 </DialogHeader>
 
                 {loading ? (
@@ -70,44 +71,49 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 ) : data ? (
-                    <div className="space-y-6">
+                    <div className="space-y-5 p-4 sm:p-6">
                         {/* Header Info */}
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                                <h3 className="text-xl font-bold">{data.unit?.name}</h3>
-                                <p className="text-muted-foreground">{data.unit?.plateNumber}</p>
-                                <p className="text-sm text-muted-foreground mt-1">
+                        <div className="rounded-lg bg-[#073f3b] p-4 text-white shadow-lg shadow-teal-950/10">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-lime-100">Detail Investasi Unit</p>
+                                    <h3 className="mt-2 text-2xl font-black leading-tight [overflow-wrap:anywhere]">{data.unit?.name}</h3>
+                                    <p className="mt-1 text-teal-50/75 [overflow-wrap:anywhere]">{data.unit?.plateNumber}</p>
+                                    <p className="mt-2 text-sm text-teal-50/75 [overflow-wrap:anywhere]">
                                     Kode: <span className="font-mono font-semibold">{data.transactionCode}</span>
-                                </p>
+                                    </p>
+                                </div>
+                                <div className="shrink-0">{getStatusBadge(data.status)}</div>
                             </div>
-                            {getStatusBadge(data.status)}
                         </div>
 
                         {/* Unit Image */}
                         {data.unit?.imageUrl && (
-                            <div className="rounded-lg overflow-hidden border bg-slate-100">
-                                <img
+                            <div className="relative h-[280px] overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100 sm:h-[420px]">
+                                <Image
                                     src={data.unit.imageUrl}
                                     alt={data.unit.name}
-                                    className="w-full h-auto max-h-[500px] object-contain mx-auto"
+                                    fill
+                                    sizes="(min-width: 768px) 720px, 100vw"
+                                    className="object-contain"
                                 />
                             </div>
                         )}
 
                         {/* Transaction Info */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
-                            <div className="flex items-start gap-3">
-                                <Calendar className="h-5 w-5 text-slate-600 mt-0.5" />
-                                <div>
+                        <div className="grid grid-cols-1 gap-3 rounded-lg border border-teal-900/10 bg-slate-50 p-4 sm:grid-cols-2">
+                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
+                                <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
+                                <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Tanggal Beli</p>
-                                    <p className="font-semibold">
+                                    <p className="font-semibold [overflow-wrap:anywhere]">
                                         {data.buyDate ? formatHijriFull(new Date(data.buyDate)) : "-"}
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <Package className="h-5 w-5 text-slate-600 mt-0.5" />
-                                <div>
+                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
+                                <Package className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
+                                <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Status Unit</p>
                                     <p className="font-semibold">
                                         <Badge variant={data.unit?.status === "SOLD" ? "secondary" : "default"}>
@@ -120,33 +126,33 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Financial Summary */}
                         <div className="space-y-3">
-                            <h4 className="font-semibold text-lg flex items-center gap-2">
-                                <DollarSign className="h-5 w-5" />
+                            <h4 className="flex items-center gap-2 text-lg font-black text-slate-950">
+                                <DollarSign className="h-5 w-5 text-teal-600" />
                                 Ringkasan Keuangan
                             </h4>
 
-                            <div className="space-y-2 border rounded-lg p-4">
-                                <div className="flex justify-between items-center">
+                            <div className="space-y-2 rounded-lg border border-teal-900/10 p-4">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Harga Beli</span>
-                                    <span className="font-semibold">{formatCurrency(data.buyPrice || 0)}</span>
+                                    <span className="font-semibold [overflow-wrap:anywhere]">{formatCurrency(data.buyPrice || 0)}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Modal dari Anda</span>
-                                    <span className="font-semibold text-blue-600">
+                                    <span className="font-semibold text-teal-700 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.initialInvestorCapital || data.buyPrice || 0)}
                                     </span>
                                 </div>
                                 {data.sellPrice > 0 && (
-                                    <div className="flex justify-between items-center pt-2 border-t">
+                                    <div className="flex flex-col gap-1 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-muted-foreground">Harga Jual</span>
-                                        <span className="font-semibold text-emerald-600">
+                                        <span className="font-semibold text-emerald-600 [overflow-wrap:anywhere]">
                                             {formatCurrency(data.sellPrice)}
                                         </span>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-center">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Total Biaya Operasional</span>
-                                    <span className="font-medium text-orange-600">
+                                    <span className="font-medium text-orange-600 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.costs?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0)}
                                     </span>
                                 </div>
@@ -155,30 +161,30 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Profit Summary (if sold) */}
                         {data.sellPrice > 0 && (
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
-                                <h5 className="font-semibold flex items-center gap-2 text-emerald-700">
+                            <div className="space-y-3 rounded-lg border border-lime-200 bg-lime-50 p-4">
+                                <h5 className="flex items-center gap-2 font-black text-lime-800">
                                     <TrendingUp className="h-4 w-4" />
                                     Bagi Hasil
                                 </h5>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-emerald-700">Profit Bersih</span>
-                                    <span className="font-bold text-emerald-700">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="text-sm text-lime-800">Profit Bersih</span>
+                                    <span className="font-bold text-lime-900 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.profitSharing?.netMargin || 0)}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-emerald-700">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="text-sm text-lime-800">
                                         Bagian Anda ({data.profitSharing?.investorSharePercentage ?? 50}%)
                                     </span>
-                                    <span className="font-bold text-emerald-600">
+                                    <span className="font-bold text-lime-700 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.profitSharing?.investorProfitAmount || 0)}
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs text-emerald-600">
+                                <div className="flex flex-col gap-1 text-xs text-lime-700 sm:flex-row sm:items-center sm:justify-between">
                                     <span>Status Pembayaran</span>
                                     <span className="font-semibold">
-                                        {data.payment?.paymentStatus === "PAID" ? "✅ Lunas" :
-                                            data.payment?.paymentStatus === "PARTIAL" ? "⏳ Sebagian" : "⏳ Belum Lunas"}
+                                        {data.payment?.paymentStatus === "PAID" ? "Lunas" :
+                                            data.payment?.paymentStatus === "PARTIAL" ? "Sebagian" : "Belum Lunas"}
                                     </span>
                                 </div>
                             </div>

@@ -98,7 +98,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari unit atau status..."
-                        className="pl-8 pr-10"
+                        className="h-11 rounded-lg border-slate-200 bg-white pl-8 pr-10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -131,7 +131,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                     <select
-                        className="h-10 w-full lg:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 lg:w-[170px]"
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
@@ -141,7 +141,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                     </select>
 
                     <select
-                        className="h-10 w-full lg:w-[150px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 lg:w-[170px]"
                         value={sortOption}
                         onChange={(e) => setSortOption(e.target.value)}
                     >
@@ -156,14 +156,14 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
             {/* Mobile Card View */}
             <div className="space-y-3 lg:hidden">
                 {sortedData.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada investasi"}
                     </div>
                 ) : (
                     sortedData.map((unit, index) => (
                         <div
                             key={unit.id}
-                            className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
+                            className={`cursor-pointer rounded-lg border border-teal-900/10 p-4 transition hover:border-teal-200 hover:shadow-md ${index % 2 === 0 ? "bg-white" : "bg-slate-50/80"}`}
                             onClick={() => handleUnitClick(unit.transactionId)}
                         >
                             <div className="flex flex-col gap-4 sm:flex-row">
@@ -181,8 +181,8 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                 <div className="flex-1 space-y-3 min-w-0">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0">
-                                            <h3 className="font-semibold text-base truncate">{unit.name}</h3>
-                                            <p className="text-sm text-muted-foreground truncate">{unit.plateNumber}</p>
+                                            <h3 className="text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{unit.name}</h3>
+                                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">{unit.plateNumber}</p>
                                         </div>
                                         <Badge variant={unit.status === "SOLD" ? "secondary" : "default"} className="flex-shrink-0">
                                             {unit.status}
@@ -192,12 +192,12 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                         <div>
                                             <p className="text-muted-foreground text-xs">Modal Awal</p>
-                                            <p className="font-medium truncate">{unit.capital > 0 ? formatCurrency(unit.capital) : "-"}</p>
+                                            <p className="font-black [overflow-wrap:anywhere]">{unit.capital > 0 ? formatCurrency(unit.capital) : "-"}</p>
                                         </div>
                                         {unit.sellPrice > 0 && (
                                             <div>
                                                 <p className="text-muted-foreground text-xs">Harga Jual</p>
-                                                <p className="font-medium text-emerald-600 truncate">{formatCurrency(unit.sellPrice)}</p>
+                                                <p className="font-black text-emerald-600 [overflow-wrap:anywhere]">{formatCurrency(unit.sellPrice)}</p>
                                             </div>
                                         )}
                                     </div>
@@ -206,7 +206,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
 
                             <div className="pt-2 border-t mt-3">
                                 <p className="text-xs text-muted-foreground">Kondisi</p>
-                                <p className="text-sm font-medium">{unit.transactionStatus}</p>
+                                <p className="text-sm font-medium [overflow-wrap:anywhere]">{unit.transactionStatus}</p>
                             </div>
                         </div>
                     ))
@@ -214,7 +214,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden rounded-md border lg:block">
+            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -262,7 +262,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                             sortedData.map((unit, index) => (
                                 <TableRow
                                     key={unit.id}
-                                    className={`cursor-pointer ${index % 2 === 0 ? "bg-white hover:bg-slate-100" : "bg-slate-50 hover:bg-slate-100"}`}
+                                    className={`cursor-pointer ${index % 2 === 0 ? "bg-white hover:bg-teal-50/60" : "bg-slate-50 hover:bg-teal-50/60"}`}
                                     onClick={() => handleUnitClick(unit.transactionId)}
                                 >
                                     <TableCell>
@@ -280,7 +280,7 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                             </div>
                                         )}
                                     </TableCell>
-                                    <TableCell className="font-medium">
+                                    <TableCell className="max-w-[280px] whitespace-normal font-medium [overflow-wrap:anywhere]">
                                         {unit.name} <br />
                                         <span className="text-xs text-muted-foreground">{unit.plateNumber}</span>
                                     </TableCell>
@@ -289,13 +289,13 @@ export function InvestmentsTable({ data, defaultFilter = "" }: InvestmentsTableP
                                             {unit.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="[overflow-wrap:anywhere]">
                                         {unit.capital > 0 ? formatCurrency(unit.capital) : "-"}
                                     </TableCell>
-                                    <TableCell className="text-emerald-600 font-medium">
+                                    <TableCell className="font-medium text-emerald-600 [overflow-wrap:anywhere]">
                                         {unit.sellPrice > 0 ? formatCurrency(unit.sellPrice) : "-"}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-[220px] whitespace-normal [overflow-wrap:anywhere]">
                                         {unit.transactionStatus}
                                     </TableCell>
                                 </TableRow>

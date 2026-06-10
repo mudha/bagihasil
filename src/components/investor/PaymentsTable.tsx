@@ -5,8 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUpDown, Search, Calendar, DollarSign, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { format } from "date-fns"
-import { id } from "date-fns/locale"
 import { formatHijriFull } from "@/lib/date-utils"
 import { ViewImageDialog } from "@/components/ui/view-image-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -80,7 +78,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari unit atau catatan..."
-                        className="pl-8 pr-10"
+                        className="h-11 rounded-lg border-slate-200 bg-white pl-8 pr-10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -116,21 +114,21 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
             {/* Mobile Card View */}
             <div className="space-y-3 lg:hidden">
                 {sortedData.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada riwayat pembayaran"}
                     </div>
                 ) : (
                     sortedData.map(pay => (
-                        <div key={pay.id} className="border rounded-lg p-4 space-y-3 bg-card">
+                        <div key={pay.id} className="space-y-3 rounded-lg border border-teal-900/10 bg-white p-4 shadow-sm">
                             <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
+                                <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm font-medium">
+                                        <span className="text-sm font-medium [overflow-wrap:anywhere]">
                                             {formatHijriFull(new Date(pay.paymentDate))}
                                         </span>
                                     </div>
-                                    <h3 className="font-semibold text-base">{pay.transaction?.unit.name || "-"}</h3>
+                                    <h3 className="text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{pay.transaction?.unit.name || "-"}</h3>
                                 </div>
                                 <Badge variant="outline" className="shrink-0">
                                     <CreditCard className="h-3 w-3 mr-1" />
@@ -138,9 +136,9 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                                 </Badge>
                             </div>
 
-                            <div className="flex items-center gap-2 py-2 border-y">
+                            <div className="flex items-center gap-2 border-y py-2">
                                 <DollarSign className="h-5 w-5 text-emerald-600" />
-                                <span className="text-xl font-bold text-emerald-600">
+                                <span className="text-xl font-black text-emerald-600 [overflow-wrap:anywhere]">
                                     {formatCurrency(pay.amount)}
                                 </span>
                             </div>
@@ -149,7 +147,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                                 {pay.notes && (
                                     <div className="flex-1">
                                         <p className="text-xs text-muted-foreground">Catatan</p>
-                                        <p className="text-sm line-clamp-2">{pay.notes}</p>
+                                        <p className="text-sm leading-relaxed [overflow-wrap:anywhere]">{pay.notes}</p>
                                     </div>
                                 )}
                                 {pay.proofImageUrl && (
@@ -162,7 +160,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden rounded-md border lg:block">
+            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -204,20 +202,20 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                         ) : (
                             sortedData.map(pay => (
                                 <TableRow key={pay.id}>
-                                    <TableCell>
+                                    <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
                                         {formatHijriFull(new Date(pay.paymentDate))}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="max-w-[260px] whitespace-normal [overflow-wrap:anywhere]">
                                         {pay.transaction?.unit.name || "-"}
                                     </TableCell>
-                                    <TableCell className="font-bold text-emerald-600">
+                                    <TableCell className="font-bold text-emerald-600 [overflow-wrap:anywhere]">
                                         {formatCurrency(pay.amount)}
                                     </TableCell>
-                                    <TableCell>{pay.method}</TableCell>
+                                    <TableCell className="whitespace-normal [overflow-wrap:anywhere]">{pay.method}</TableCell>
                                     <TableCell>
                                         <ViewImageDialog imageUrl={pay.proofImageUrl || ""} />
                                     </TableCell>
-                                    <TableCell className="max-w-[200px] truncate" title={pay.notes || ""}>
+                                    <TableCell className="max-w-[260px] whitespace-normal [overflow-wrap:anywhere]" title={pay.notes || ""}>
                                         {pay.notes || "-"}
                                     </TableCell>
                                 </TableRow>

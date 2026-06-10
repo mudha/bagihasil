@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InvestmentsTable } from "@/components/investor/InvestmentsTable"
 import { PaymentsTable } from "@/components/investor/PaymentsTable"
-import { DollarSign, TrendingUp, Package, Wallet, CheckCircle } from "lucide-react"
+import { CheckCircle, DollarSign, Package, Sparkles, TrendingUp, Wallet } from "lucide-react"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 import { InvestorRevenueChart } from "./InvestorRevenueChart"
@@ -33,6 +33,64 @@ interface InvestorTabsProps {
     onMonthsRangeChange: (months: string) => void
 }
 
+function formatCurrency(value: number) {
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value || 0)
+}
+
+function formatCompactCurrency(value: number) {
+    if (value >= 1_000_000_000) return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`
+    if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`
+    return formatCurrency(value)
+}
+
+function StatCard({
+    title,
+    value,
+    helper,
+    icon: Icon,
+    tone = "teal",
+    onClick,
+}: {
+    title: string
+    value: string
+    helper: string
+    icon: typeof DollarSign
+    tone?: "teal" | "lime" | "sky" | "amber"
+    onClick?: () => void
+}) {
+    const toneClass = {
+        teal: "bg-teal-100 text-teal-700",
+        lime: "bg-lime-100 text-lime-700",
+        sky: "bg-sky-100 text-sky-700",
+        amber: "bg-amber-100 text-amber-700",
+    }[tone]
+
+    return (
+        <Card
+            onClick={onClick}
+            className={`rounded-lg border-teal-900/10 bg-white shadow-sm transition ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg" : ""}`}
+        >
+            <CardHeader className="flex flex-row items-start justify-between gap-3 p-4 pb-2">
+                <CardTitle className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 [overflow-wrap:anywhere]">
+                    {title}
+                </CardTitle>
+                <div className={`grid size-10 shrink-0 place-items-center rounded-lg ${toneClass}`}>
+                    <Icon className="size-5" />
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+                <div className="text-2xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere]">{value}</div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500 [overflow-wrap:anywhere]">{helper}</p>
+            </CardContent>
+        </Card>
+    )
+}
+
 export function InvestorTabs({
     investorName,
     stats,
@@ -51,27 +109,6 @@ export function InvestorTabs({
     const [investmentFilter, setInvestmentFilter] = useState("")
     const [calendarMode, setCalendarMode] = useState<'masehi' | 'hijri'>('masehi')
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(value)
-    }
-
-    const formatCompactCurrency = (value: number) => {
-        if (value >= 1_000_000_000) {
-            return new Intl.NumberFormat("id-ID", {
-                style: "currency",
-                currency: "IDR",
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 1, // 1 decimal place, e.g. 2,5 M
-            }).format(value / 1_000_000_000).replace("Rp", "Rp") + " M"
-        }
-        return formatCurrency(value)
-    }
-
     const handleActiveUnitsClick = () => {
         setActiveTab("investments")
         setInvestmentFilter("AVAILABLE")
@@ -87,91 +124,61 @@ export function InvestorTabs({
     const currentMonthlyRevenueData = calendarMode === 'hijri' ? monthlyRevenueDataHijri : monthlyRevenueData
 
     return (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="mb-6">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                    <TabsTrigger value="investments">Investasi</TabsTrigger>
-                    <TabsTrigger value="payments">Pembayaran</TabsTrigger>
-                </TabsList>
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
+            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
+                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-cyan-300/20 blur-3xl" />
+                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
+                <div className="relative grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end xl:p-8">
+                    <div className="min-w-0">
+                        <div className="mb-4 inline-flex min-h-9 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-black uppercase tracking-[0.14em] text-lime-100">
+                            <Sparkles className="size-4" />
+                            Investor portal
+                        </div>
+                        <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere] sm:text-5xl">
+                            Assalamu&apos;alaikum, {investorName}
+                        </h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-teal-50/80 sm:text-base">
+                            Pantau modal aktif, profit, unit didanai, dan riwayat pembayaran dari satu dashboard yang lebih ringan dibaca.
+                        </p>
+                    </div>
 
-            <TabsContent value="dashboard" className="space-y-6">
-                <div>
-                    <h2 className="break-words text-2xl font-bold tracking-tight sm:text-3xl">Assalamu&apos;alaikum, {investorName}</h2>
-                    <p className="text-muted-foreground">Ringkasan performa investasi Anda.</p>
+                    <div className="rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-50/70">Total profit bersih</p>
+                        <p className="mt-2 text-3xl font-black leading-tight text-white [overflow-wrap:anywhere] sm:text-4xl">
+                            {formatCurrency(stats.totalProfit)}
+                        </p>
+                        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-sm">
+                            <div>
+                                <p className="text-teal-50/60">Unit aktif</p>
+                                <p className="font-black text-white">{stats.activeUnitsCount}</p>
+                            </div>
+                            <div>
+                                <p className="text-teal-50/60">Terjual</p>
+                                <p className="font-black text-white">{stats.soldUnitsCount}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <TabsList className="grid min-h-12 w-full grid-cols-3 rounded-lg border border-teal-900/10 bg-white p-1 shadow-sm lg:w-[460px]">
+                <TabsTrigger value="dashboard" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Dashboard</TabsTrigger>
+                <TabsTrigger value="investments" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Investasi</TabsTrigger>
+                <TabsTrigger value="payments" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Pembayaran</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard" className="space-y-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <StatCard title="Total Akumulasi" value={formatCompactCurrency(stats.totalInvested)} helper="Total riwayat modal" icon={DollarSign} />
+                    <StatCard title="Modal Diputar" value={formatCurrency(stats.activeCapital)} helper="Modal sedang aktif" icon={Wallet} tone="teal" />
+                    <StatCard title="Total Profit" value={formatCurrency(stats.totalProfit)} helper="Keuntungan bagi hasil" icon={TrendingUp} tone="lime" />
+                    <StatCard title="Unit Aktif" value={`${stats.activeUnitsCount} Unit`} helper={`Dari ${stats.totalUnitsCount} unit didanai`} icon={Package} tone="sky" onClick={handleActiveUnitsClick} />
+                    <StatCard title="Unit Terjual" value={`${stats.soldUnitsCount} Unit`} helper="Transaksi sudah selesai" icon={CheckCircle} tone="amber" onClick={handleSoldUnitsClick} />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Akumulasi</CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg sm:text-xl md:text-2xl font-bold break-all">
-                                {formatCompactCurrency(stats.totalInvested)}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">Total riwayat modal</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Modal Diputar</CardTitle>
-                            <Wallet className="h-4 w-4 text-emerald-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-700 break-all">
-                                {formatCurrency(stats.activeCapital)}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">Modal sedang aktif</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Profit Bersih</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-600 break-all">
-                                {formatCurrency(stats.totalProfit)}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">Keuntungan bagi hasil</p>
-                        </CardContent>
-                    </Card>
-                    <Card
-                        className="cursor-pointer hover:bg-slate-50 transition-colors border-blue-200"
-                        onClick={handleActiveUnitsClick}
-                    >
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-blue-700">Unit Aktif</CardTitle>
-                            <Package className="h-4 w-4 text-blue-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-blue-700">{stats.activeUnitsCount} Unit</div>
-                            <p className="text-xs text-blue-600/80">Dari total {stats.totalUnitsCount} unit didanai</p>
-                            <p className="text-blue-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
-                        </CardContent>
-                    </Card>
-                    <Card
-                        className="cursor-pointer hover:bg-slate-50 transition-colors border-amber-200"
-                        onClick={handleSoldUnitsClick}
-                    >
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-amber-700">Unit Terjual</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-amber-500" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-amber-700">{stats.soldUnitsCount} Unit</div>
-                            <p className="text-xs text-amber-600/80">Sudah selesai transaksi</p>
-                            <p className="text-amber-400 text-[10px] mt-1 italic">Klik untuk lihat detail</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-lg border border-teal-900/10 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <Select value={monthsRange} onValueChange={onMonthsRangeChange}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-slate-200 sm:w-[200px]">
                             <SelectValue placeholder="Rentang Waktu" />
                         </SelectTrigger>
                         <SelectContent>
@@ -181,21 +188,23 @@ export function InvestorTabs({
                         </SelectContent>
                     </Select>
 
-                    <div className="grid grid-cols-2 items-center gap-1 rounded-full border border-slate-200 bg-slate-100 p-1 sm:flex sm:space-x-2">
+                    <div className="grid grid-cols-2 items-center gap-1 rounded-lg bg-teal-50 p-1">
                         <button
+                            type="button"
                             onClick={() => setCalendarMode('masehi')}
-                            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'masehi'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                : 'text-slate-500 hover:text-slate-700'
+                            className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'masehi'
+                                ? 'bg-white text-teal-700 shadow-sm'
+                                : 'text-slate-500 hover:text-teal-700'
                                 }`}
                         >
                             Masehi
                         </button>
                         <button
+                            type="button"
                             onClick={() => setCalendarMode('hijri')}
-                            className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${calendarMode === 'hijri'
-                                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                                : 'text-slate-500 hover:text-slate-700'
+                            className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'hijri'
+                                ? 'bg-white text-teal-700 shadow-sm'
+                                : 'text-slate-500 hover:text-teal-700'
                                 }`}
                         >
                             Hijriyah
@@ -211,26 +220,26 @@ export function InvestorTabs({
             </TabsContent>
 
             <TabsContent value="investments" className="space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Daftar Unit Didanai</CardTitle>
+                <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg font-black text-slate-950">Daftar Unit Didanai</CardTitle>
                     </CardHeader>
-                    <CardContent className="px-3 sm:px-6">
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <InvestmentsTable data={investmentsData} defaultFilter={investmentFilter} />
                     </CardContent>
                 </Card>
             </TabsContent>
 
             <TabsContent value="payments" className="space-y-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Riwayat Pembayaran</CardTitle>
+                <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                    <CardHeader className="p-4 sm:p-6">
+                        <CardTitle className="text-lg font-black text-slate-950">Riwayat Pembayaran</CardTitle>
                     </CardHeader>
-                    <CardContent className="px-3 sm:px-6">
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <PaymentsTable data={paymentsData} />
                     </CardContent>
                 </Card>
             </TabsContent>
-        </Tabs >
+        </Tabs>
     )
 }

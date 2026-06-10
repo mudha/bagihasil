@@ -24,17 +24,18 @@ export function InvestorRevenueChart({ data, className }: InvestorRevenueChartPr
     const formatTooltipCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
 
     return (
-        <Card className={className}>
-            <CardHeader>
-                <CardTitle>Omset Bulanan (6 Bulan Terakhir)</CardTitle>
+        <Card className={`rounded-lg border-teal-900/10 bg-white shadow-sm ${className || ""}`}>
+            <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base font-black text-slate-950">Omset Bulanan</CardTitle>
+                <p className="text-sm text-slate-500">Volume penjualan per periode</p>
             </CardHeader>
-            <CardContent className="pl-2">
-                <div className="h-[280px] w-full sm:h-[350px]">
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <div className="h-[260px] w-full sm:h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data}>
+                        <BarChart data={data} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
                             <XAxis
                                 dataKey="month"
-                                stroke="#888888"
+                                stroke="#64748b"
                                 fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
@@ -52,7 +53,7 @@ export function InvestorRevenueChart({ data, className }: InvestorRevenueChartPr
                                 }}
                             />
                             <YAxis
-                                stroke="#888888"
+                                stroke="#64748b"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
@@ -65,8 +66,8 @@ export function InvestorRevenueChart({ data, className }: InvestorRevenueChartPr
                             />
                             <Bar
                                 dataKey="revenue"
-                                fill="#8b5cf6" // purple-500, matching admin
-                                radius={[4, 4, 0, 0]}
+                                fill="#0f9b8e"
+                                radius={[6, 6, 0, 0]}
                             />
                         </BarChart>
                     </ResponsiveContainer>

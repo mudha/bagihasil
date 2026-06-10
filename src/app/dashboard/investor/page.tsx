@@ -35,14 +35,23 @@ export default function InvestorDashboardPage() {
     }, [monthsRange, router])
 
     if (loading) {
-        return <div className="p-8">Memuat data...</div>
+        return (
+            <div className="space-y-5 pb-20">
+                <div className="h-64 animate-pulse rounded-lg bg-teal-900/10" />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    {[1, 2, 3, 4, 5].map((item) => (
+                        <div key={item} className="h-32 animate-pulse rounded-lg bg-slate-100" />
+                    ))}
+                </div>
+            </div>
+        )
     }
 
     if (!data) {
         return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold text-red-500">Akun Investor Tidak Ditemukan</h1>
-                <p>Akun Anda terdaftar sebagai User, namun belum dihubungkan ke data Investor oleh Admin.</p>
+            <div className="rounded-lg border border-red-100 bg-white p-6 shadow-sm">
+                <h1 className="text-2xl font-black text-red-600">Akun Investor Tidak Ditemukan</h1>
+                <p className="mt-2 leading-relaxed text-slate-600">Akun Anda terdaftar sebagai User, namun belum dihubungkan ke data Investor oleh Admin.</p>
             </div>
         )
     }

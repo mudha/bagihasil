@@ -15,18 +15,19 @@ interface InvestorSalesTrendChartProps {
 
 export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendChartProps) {
     return (
-        <Card className={className}>
-            <CardHeader>
-                <CardTitle>Tren Penjualan Unit (6 Bulan Terakhir)</CardTitle>
+        <Card className={`rounded-lg border-teal-900/10 bg-white shadow-sm ${className || ""}`}>
+            <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base font-black text-slate-950">Tren Penjualan Unit</CardTitle>
+                <p className="text-sm text-slate-500">Unit selesai per periode</p>
             </CardHeader>
-            <CardContent className="pl-2">
-                <div className="h-[280px] w-full sm:h-[350px]">
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <div className="h-[260px] w-full sm:h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <BarChart data={data} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                             <XAxis
                                 dataKey="month"
-                                stroke="#888888"
+                                stroke="#64748b"
                                 fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
@@ -44,7 +45,7 @@ export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendC
                                 }}
                             />
                             <YAxis
-                                stroke="#888888"
+                                stroke="#64748b"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
@@ -57,9 +58,9 @@ export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendC
                             />
                             <Bar
                                 dataKey="count"
-                                fill="#3b82f6" // blue-500
-                                radius={[4, 4, 0, 0]}
-                                barSize={40}
+                                fill="#0ea5e9"
+                                radius={[6, 6, 0, 0]}
+                                barSize={36}
                             />
                         </BarChart>
                     </ResponsiveContainer>
