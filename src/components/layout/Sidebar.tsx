@@ -74,10 +74,10 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
     const pathname = usePathname()
-    const { data: session } = useSession()
+    const { data: session, status } = useSession()
     const visibleRoutes = routes.filter(route => {
         if (route.adminOnly) {
-            return session?.user?.role === "ADMIN"
+            return status === "loading" || session?.user?.role === "ADMIN"
         }
         return true
     })
