@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef } from "react"
 import type { ReactNode, WheelEvent } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
@@ -13,12 +14,13 @@ export default function DashboardLayout({
     children: ReactNode
 }) {
     const pathname = usePathname()
+    const mainScrollRef = useRef<HTMLElement>(null)
     // Explicitly check for /dashboard/investor (singular) endpoint and its sub-routes
     // This ensures /dashboard/investors (plural) which is the admin page, is NOT treated as an investor page
     const isInvestorPage = pathname === "/dashboard/investor" || pathname?.startsWith("/dashboard/investor/")
     const handleDesktopSidebarWheel = (event: WheelEvent<HTMLDivElement>) => {
         if (typeof window === "undefined" || window.innerWidth < 1024) return
-        window.scrollBy({ top: event.deltaY, left: 0, behavior: "auto" })
+        mainScrollRef.current?.scrollBy({ top: event.deltaY, left: 0, behavior: "auto" })
     }
 
     if (isInvestorPage) {
@@ -33,7 +35,7 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden font-sans">
+        <div className="relative min-h-screen overflow-x-hidden font-sans lg:h-screen lg:overflow-hidden">
             <Navbar type="admin" />
             <div
                 onWheel={handleDesktopSidebarWheel}
@@ -41,7 +43,10 @@ export default function DashboardLayout({
             >
                 <Sidebar />
             </div>
-            <main className="lg:pl-72 pb-10 min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)]">
+            <main
+                ref={mainScrollRef}
+                className="min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] pb-10 lg:h-screen lg:overflow-y-auto lg:pl-72"
+            >
                 <PullToRefresh>
                     <div className="w-full max-w-[100vw] p-3 sm:p-4 lg:p-8">
                         {children}
