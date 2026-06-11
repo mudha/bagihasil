@@ -37,7 +37,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, MoreVertical, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, AlertCircle, ReceiptText, Wallet, TrendingUp, Sparkles } from "lucide-react"
+import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, AlertCircle, ReceiptText, Wallet, TrendingUp, Sparkles } from "lucide-react"
 import { MultipleImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -761,7 +761,7 @@ function TransactionsPageContent() {
                             <CardContent className="p-4">
                                 <Wallet className="mb-3 size-5 text-amber-200" />
                                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Nilai beli</p>
-                                <p className="mt-1 truncate text-2xl font-black">{formatCurrencyShort(transactionSummary.buyValue)}</p>
+                                <p className="mt-1 text-2xl font-black leading-tight [overflow-wrap:anywhere]">{formatCurrencyShort(transactionSummary.buyValue)}</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -830,7 +830,7 @@ function TransactionsPageContent() {
                         }
                     }}>
                         <DialogTrigger asChild>
-                            <Button className="h-10 rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">
+                            <Button className="h-11 rounded-lg bg-teal-600 px-4 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">
                                 <Plus className="mr-2 h-4 w-4" /> Transaksi Baru
                             </Button>
                         </DialogTrigger>
@@ -1036,7 +1036,7 @@ function TransactionsPageContent() {
             </div>
 
 
-            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
                     <div className="relative w-full lg:max-w-sm">
                         <Input
@@ -1147,8 +1147,8 @@ function TransactionsPageContent() {
                         <div key={trx.id} className="overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm">
                             <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
                             <div className="space-y-4 p-4">
-                            <div className="flex justify-between items-start">
-                                <div className="flex gap-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex min-w-0 gap-3">
                                     {trx.unit.imageUrl ? (
                                         <ImageHoverPreview
                                             src={trx.unit.imageUrl}
@@ -1170,9 +1170,9 @@ function TransactionsPageContent() {
                                             </div>
                                         </div>
                                     )}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700">{trx.transactionCode}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700 [overflow-wrap:anywhere]">{trx.transactionCode}</span>
                                             <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'} className="h-5 rounded-full py-0 text-[10px]">
                                                 {trx.status}
                                             </Badge>
@@ -1180,8 +1180,8 @@ function TransactionsPageContent() {
                                                 {getPaymentStatusBadge(trx)}
                                             </div>
                                         </div>
-                                        <div className="line-clamp-1 text-sm font-black text-slate-950">{trx.unit.name}</div>
-                                        <div className="text-xs text-slate-500">{trx.unit.plateNumber}</div>
+                                        <div className="text-sm font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{trx.unit.name}</div>
+                                        <div className="text-xs text-slate-500 [overflow-wrap:anywhere]">{trx.unit.plateNumber}</div>
                                     </div>
                                 </div>
                             </div>
@@ -1189,19 +1189,19 @@ function TransactionsPageContent() {
                             <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Investor</span>
-                                    <span className="font-medium text-xs">{trx.unit.investor.name}</span>
+                                    <span className="text-xs font-medium [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Durasi</span>
-                                    <span className="font-medium text-xs">{calculateDuration(trx.buyDate, trx.sellDate)}</span>
+                                    <span className="text-xs font-medium [overflow-wrap:anywhere]">{calculateDuration(trx.buyDate, trx.sellDate)}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Tanggal Beli</span>
-                                    <span className="font-medium text-xs">{formatHijriFull(new Date(trx.buyDate))}</span>
+                                    <span className="text-xs font-medium [overflow-wrap:anywhere]">{formatHijriFull(new Date(trx.buyDate))}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Harga Beli</span>
-                                    <span className="font-medium text-xs text-emerald-600">
+                                    <span className="text-xs font-medium text-emerald-600 [overflow-wrap:anywhere]">
                                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.buyPrice)}
                                     </span>
                                 </div>
@@ -1209,11 +1209,11 @@ function TransactionsPageContent() {
                                     <>
                                         <div>
                                             <span className="block text-xs text-muted-foreground mb-1">Tanggal Jual</span>
-                                            <span className="font-medium text-xs">{formatHijriFull(new Date(trx.sellDate))}</span>
+                                            <span className="text-xs font-medium [overflow-wrap:anywhere]">{formatHijriFull(new Date(trx.sellDate))}</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-muted-foreground mb-1">Harga Jual</span>
-                                            <span className="font-medium text-xs text-blue-600">
+                                            <span className="text-xs font-medium text-blue-600 [overflow-wrap:anywhere]">
                                                 {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.sellPrice) : "-"}
                                             </span>
                                         </div>
@@ -1285,8 +1285,8 @@ function TransactionsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
-                <Table>
+            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
+                <Table className="min-w-[1540px]">
                     <TableHeader className="bg-teal-50/70">
                         <TableRow className="hover:bg-teal-50/70">
                             <TableHead className="w-[50px]">
@@ -1489,7 +1489,7 @@ function TransactionsPageContent() {
                                     )}
                                 </Button>
                             </TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
+                            <TableHead className="w-[112px] text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1521,8 +1521,8 @@ function TransactionsPageContent() {
                                         disabled={isViewer}
                                     />
                                 </TableCell>
-                                <TableCell className="font-mono text-sm font-bold text-teal-700">{trx.transactionCode}</TableCell>
-                                <TableCell className="font-semibold text-slate-950">{trx.unit.investor.name}</TableCell>
+                                <TableCell className="font-mono text-sm font-bold text-teal-700 [overflow-wrap:anywhere]">{trx.transactionCode}</TableCell>
+                                <TableCell className="max-w-[220px] whitespace-normal font-semibold text-slate-950 [overflow-wrap:anywhere]">{trx.unit.investor.name}</TableCell>
                                 <TableCell>
                                     {trx.unit.imageUrl ? (
                                         <ImageHoverPreview
@@ -1544,21 +1544,21 @@ function TransactionsPageContent() {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell>
-                                    <div className="font-semibold text-slate-950">{trx.unit.name}</div>
-                                    <div className="text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
+                                <TableCell className="max-w-[320px] whitespace-normal">
+                                    <div className="font-semibold text-slate-950 [overflow-wrap:anywhere]">{trx.unit.name}</div>
+                                    <div className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{trx.unit.plateNumber}</div>
                                 </TableCell>
-                                <TableCell>{formatHijriFull(new Date(trx.buyDate))}</TableCell>
-                                <TableCell>
+                                <TableCell className="max-w-[180px] whitespace-normal [overflow-wrap:anywhere]">{formatHijriFull(new Date(trx.buyDate))}</TableCell>
+                                <TableCell className="[overflow-wrap:anywhere]">
                                     {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.buyPrice)}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="max-w-[180px] whitespace-normal [overflow-wrap:anywhere]">
                                     {trx.sellDate ? formatHijriFull(new Date(trx.sellDate)) : "-"}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="[overflow-wrap:anywhere]">
                                     {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.sellPrice) : "-"}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
                                     {calculateDuration(trx.buyDate, trx.sellDate)}
                                 </TableCell>
                                 <TableCell>
@@ -1580,21 +1580,11 @@ function TransactionsPageContent() {
 
                                         {!isViewer && (
                                             <>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                                    onClick={() => handleEdit(trx)}
-                                                    title="Edit Data"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                    <span className="sr-only">Edit</span>
-                                                </Button>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Aksi</span>
+                                                        <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                            <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                                                            Aksi
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
@@ -1631,7 +1621,7 @@ function TransactionsPageContent() {
                         ))}
                         {paginatedTransactions.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={9} className="text-center py-4">
+                                <TableCell colSpan={12} className="text-center py-4">
                                     {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
                                 </TableCell>
                             </TableRow>

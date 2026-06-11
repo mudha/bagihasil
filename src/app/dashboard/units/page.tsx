@@ -1035,7 +1035,7 @@ function UnitsPageContent() {
                                 if (!open) setEditingUnit(null)
                             }}>
                                 <DialogTrigger asChild>
-                                    <Button className="h-10 rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">
+                                    <Button className="h-11 rounded-lg bg-teal-600 px-4 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
@@ -1379,7 +1379,7 @@ function UnitsPageContent() {
                 </div>
             </div>
 
-            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
                     <div className="relative w-full lg:max-w-sm">
                         <Input
@@ -1487,8 +1487,8 @@ function UnitsPageContent() {
                         <div key={unit.id} className="overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm">
                             <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
                             <div className="space-y-3 p-4">
-                            <div className="flex justify-between items-start">
-                                <div className="flex gap-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex min-w-0 gap-3">
                                     {unit.imageUrl ? (
                                         <ImageHoverPreview
                                             src={unit.imageUrl}
@@ -1512,16 +1512,16 @@ function UnitsPageContent() {
                                             </div>
                                         </div>
                                     )}
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700">{unit.code}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700 [overflow-wrap:anywhere]">{unit.code}</span>
                                             <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="h-5 rounded-full py-0 text-[10px]">
                                                 {unit.status}
                                             </Badge>
                                         </div>
-                                         <div className="mt-2 text-base font-black leading-snug text-slate-950">{unit.name}</div>
-                                         <div className="flex items-center gap-2 text-sm text-slate-500">
-                                            <span>{unit.plateNumber}</span>
+                                         <div className="mt-2 text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{unit.name}</div>
+                                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                                            <span className="[overflow-wrap:anywhere]">{unit.plateNumber}</span>
                                             {(() => {
                                                 const duplicateInfo = getDuplicateInfo(units, unit)
                                                 return duplicateInfo.isBuyback ? (
@@ -1538,7 +1538,7 @@ function UnitsPageContent() {
                              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
-                                    <span className="font-medium">{unit.investor.name}</span>
+                                     <span className="font-medium [overflow-wrap:anywhere]">{unit.investor.name}</span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Jatuh Tempo Pajak</span>
@@ -1604,8 +1604,8 @@ function UnitsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
-                <Table>
+            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
+                <Table className="min-w-[1180px]">
                     <TableHeader className="bg-teal-50/70">
                         <TableRow className="hover:bg-teal-50/70">
                             <TableHead className="w-[50px]">
@@ -1724,7 +1724,7 @@ function UnitsPageContent() {
                                 </Button>
                             </TableHead>
                             <TableHead>Pajak</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
+                            <TableHead className="w-[96px] text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1774,11 +1774,11 @@ function UnitsPageContent() {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell className="font-mono text-sm font-bold text-teal-700">{unit.code}</TableCell>
-                                <TableCell className="font-semibold text-slate-950">{unit.name}</TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <span>{unit.plateNumber}</span>
+                                <TableCell className="font-mono text-sm font-bold text-teal-700 [overflow-wrap:anywhere]">{unit.code}</TableCell>
+                                <TableCell className="max-w-[360px] whitespace-normal font-semibold leading-relaxed text-slate-950 [overflow-wrap:anywhere]">{unit.name}</TableCell>
+                                <TableCell className="max-w-[220px] whitespace-normal">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="[overflow-wrap:anywhere]">{unit.plateNumber}</span>
                                         {(() => {
                                             const duplicateInfo = getDuplicateInfo(units, unit)
                                             return duplicateInfo.isBuyback ? (
@@ -1789,8 +1789,8 @@ function UnitsPageContent() {
                                         })()}
                                     </div>
                                 </TableCell>
-                                <TableCell>{unit.investor.name}</TableCell>
-                                <TableCell>
+                                <TableCell className="max-w-[220px] whitespace-normal [overflow-wrap:anywhere]">{unit.investor.name}</TableCell>
+                                <TableCell className="whitespace-normal">
                                     <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="rounded-full">
                                         {unit.status}
                                     </Badge>
@@ -1821,25 +1821,12 @@ function UnitsPageContent() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     {!isViewer && (
-                                        <div className="flex justify-end items-center gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                                                onClick={() => {
-                                                    setEditingUnit(unit)
-                                                    setIsOpen(true)
-                                                }}
-                                                title="Edit Unit"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-
+                                        <div className="flex justify-end">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Open menu</span>
+                                                    <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                        <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                                                        Aksi
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
