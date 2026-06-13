@@ -565,11 +565,6 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             if (status === 'PARTIAL') return 'Sebagian'
             return 'Belum Dibayar'
         }
-        const paymentColor = (status: string) => {
-            if (status === 'PAID') return C.emerald
-            if (status === 'PARTIAL') return C.amber
-            return C.rose
-        }
         const addText = (
             text: string,
             x: number,
@@ -587,42 +582,11 @@ export async function exportTransactionReportPDF(transactionId: string, transact
 
         let yPos = margin
 
-        const ensureSpace = (height: number) => {
-            if (yPos + height > pageHeight - bottomSafe) {
-                doc.addPage()
-                yPos = margin + 6
-                drawPageChrome()
-                return true
-            }
-            return false
-        }
-
         const drawPageChrome = () => {
             doc.setFillColor(...C.teal900)
             doc.rect(0, 0, 4, pageHeight, 'F')
             doc.setFillColor(...C.teal100)
             doc.rect(4, 0, 1, pageHeight, 'F')
-        }
-
-        const drawSectionTitle = (title: string, subtitle?: string) => {
-            ensureSpace(subtitle ? 20 : 14)
-            doc.setFillColor(...C.teal100)
-            doc.roundedRect(margin, yPos + 1.4, 7, 7, 2, 2, 'F')
-            doc.setFillColor(...C.teal700)
-            doc.roundedRect(margin + 2.1, yPos + 3.5, 2.8, 2.8, 1, 1, 'F')
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(12)
-            doc.setTextColor(...C.ink)
-            doc.text(title, margin + 10, yPos + 7)
-            if (subtitle) {
-                doc.setFont('helvetica', 'normal')
-                doc.setFontSize(8)
-                doc.setTextColor(...C.muted)
-                doc.text(subtitle, margin + 10, yPos + 12.5)
-                yPos += 20
-            } else {
-                yPos += 15
-            }
         }
 
         const drawPill = (text: string, x: number, y: number, color: [number, number, number], bg: [number, number, number], align: 'left' | 'right' = 'left') => {
@@ -637,309 +601,134 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             doc.text(text, drawX + padX, y)
         }
 
-        const drawMetricCard = (x: number, y: number, w: number, title: string, value: string, accent: [number, number, number], note?: string) => {
-            doc.setFillColor(...C.white)
-            doc.setDrawColor(...C.line)
-            doc.setLineWidth(0.25)
-            doc.roundedRect(x, y, w, 29, 4, 4, 'FD')
-            doc.setFillColor(...accent)
-            doc.roundedRect(x + 4, y + 5, 5, 18, 2.5, 2.5, 'F')
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(7.5)
-            doc.setTextColor(...C.muted)
-            doc.text(title.toUpperCase(), x + 12, y + 9)
-            addText(value, x + 12, y + 18, w - 16, { size: 12, style: 'bold', color: C.ink, lineHeight: 5 })
-            if (note) addText(note, x + 12, y + 24, w - 16, { size: 7, color: C.muted, lineHeight: 3.5 })
-        }
-
-        const drawKeyValueCard = (title: string, rows: Array<[string, string]>, x: number, y: number, w: number) => {
-            const rowHeights = rows.map(([, value]) => Math.max(7, (doc.splitTextToSize(sanitize(value), w - 52) as string[]).length * 4.4 + 2))
-            const h = 14 + rowHeights.reduce((sum, hRow) => sum + hRow, 0)
-            doc.setFillColor(...C.white)
-            doc.setDrawColor(...C.line)
-            doc.roundedRect(x, y, w, h, 4, 4, 'FD')
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(9)
-            doc.setTextColor(...C.teal800)
-            doc.text(title.toUpperCase(), x + 5, y + 8)
-            let localY = y + 16
-            rows.forEach(([label, value], index) => {
-                doc.setFont('helvetica', 'normal')
-                doc.setFontSize(8)
-                doc.setTextColor(...C.muted)
-                doc.text(label, x + 5, localY)
-                localY = addText(value, x + 48, localY, w - 53, { size: 8.4, style: 'bold', color: C.ink, lineHeight: 4.3 })
-                if (index < rows.length - 1) {
-                    doc.setDrawColor(...C.line)
-                    doc.line(x + 5, localY + 1.2, x + w - 5, localY + 1.2)
-                    localY += 4.5
-                }
-            })
-            return h
-        }
-
         const imageUrlForPdf = (url: string) => url.startsWith('http') ? url : `${window.location.origin}${url}`
-        const drawImageCover = async (url: string | null | undefined, x: number, y: number, w: number, h: number) => {
-            if (!url) {
-                doc.setFillColor(19, 78, 74)
-                doc.roundedRect(x, y, w, h, 4, 4, 'F')
-                doc.setTextColor(...C.teal100)
-                doc.setFont('helvetica', 'bold')
-                doc.setFontSize(9)
-                doc.text('Foto unit belum tersedia', x + w / 2, y + h / 2, { align: 'center' })
-                return
-            }
 
-            try {
-                const base64 = await convertImageToBase64(imageUrlForPdf(url))
-                const props: any = doc.getImageProperties(base64)
-                const ratio = props.width / props.height
-                let drawW = w
-                let drawH = drawW / ratio
-                if (drawH > h) {
-                    drawH = h
-                    drawW = drawH * ratio
-                }
-                const imgX = x + (w - drawW) / 2
-                const imgY = y + (h - drawH) / 2
-                doc.setFillColor(...C.white)
-                doc.roundedRect(x - 1.2, y - 1.2, w + 2.4, h + 2.4, 5, 5, 'F')
-                doc.addImage(base64, String(props.fileType || 'JPEG').toUpperCase(), imgX, imgY, drawW, drawH)
-                doc.setDrawColor(255, 255, 255)
-                doc.setLineWidth(1.5)
-                doc.roundedRect(x - 1.2, y - 1.2, w + 2.4, h + 2.4, 5, 5, 'S')
-            } catch (error) {
-                console.error('Failed to render report image', error)
-                doc.setFillColor(19, 78, 74)
-                doc.roundedRect(x, y, w, h, 4, 4, 'F')
-                doc.setTextColor(...C.teal100)
-                doc.setFont('helvetica', 'bold')
-                doc.setFontSize(9)
-                doc.text('Foto tidak dapat dimuat', x + w / 2, y + h / 2, { align: 'center' })
-            }
-        }
-
-        const drawHero = async () => {
-            drawPageChrome()
-            doc.setFillColor(...C.teal900)
-            doc.roundedRect(margin, 12, contentWidth, 72, 6, 6, 'F')
-            doc.setFillColor(6, 78, 74)
-            doc.roundedRect(margin + 102, 12, contentWidth - 102, 72, 6, 6, 'F')
-            doc.setFillColor(20, 184, 166)
-            doc.roundedRect(margin + 8, 65, 46, 5, 2.5, 2.5, 'F')
-            doc.setFillColor(132, 204, 22)
-            doc.roundedRect(margin + 42, 65, 18, 5, 2.5, 2.5, 'F')
-
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(8)
-            doc.setTextColor(...C.teal100)
-            doc.text('MUDHA PROFIT STUDIO', margin + 9, 24)
-
-            doc.setFontSize(26)
-            doc.setTextColor(...C.white)
-            doc.text('Laporan', margin + 9, 40)
-            doc.text('Bagi Hasil', margin + 9, 52)
-
-            drawPill(statusLabel(data.transaction.status), margin + contentWidth - 9, 24, C.teal900, C.teal100, 'right')
-
-            doc.setFont('helvetica', 'normal')
-            doc.setFontSize(8)
-            doc.setTextColor(180, 225, 222)
-            doc.text('Kode transaksi', margin + 9, 76)
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(10.5)
-            doc.setTextColor(...C.white)
-            doc.text(data.transaction.transactionCode, margin + 34, 76)
-
-            const imgX = margin + contentWidth - 72
-            await drawImageCover(data.unit.imageUrl, imgX, 31, 56, 40)
-
-            yPos = 94
-        }
-
-        await drawHero()
-
-        const unitTitleLines = doc.splitTextToSize(sanitize(data.unit.name), contentWidth - 40) as string[]
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(16)
-        doc.setTextColor(...C.ink)
-        doc.text(unitTitleLines, margin, yPos)
-        yPos += unitTitleLines.length * 7
-        drawPill(sanitize(data.unit.code), margin, yPos + 3.5, C.teal800, [224, 242, 254], 'left')
-        drawPill(sanitize(data.unit.plateNumber), margin + 36, yPos + 3.5, C.ink, C.soft, 'left')
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8.5)
-        doc.setTextColor(...C.muted)
-        doc.text(`Digenerate ${prettyDate(data.generatedAt || new Date(), true)}`, pageWidth - margin, yPos + 3.5, { align: 'right' })
-        yPos += 15
-
-        const metricGap = 6
-        const metricW = (contentWidth - metricGap) / 2
-        drawMetricCard(margin, yPos, metricW, 'Harga Beli', money(data.transaction.buyPrice), C.cyan)
-        drawMetricCard(margin + metricW + metricGap, yPos, metricW, 'Harga Jual', money(data.transaction.sellPrice), C.teal700)
-        yPos += 34
-        drawMetricCard(margin, yPos, metricW, 'Nett Margin', money(data.profitSharing?.netMargin), C.emerald)
-        drawMetricCard(margin + metricW + metricGap, yPos, metricW, 'Hak Pemodal', money(data.payment.investorShouldReceive), C.amber)
-        yPos += 43
-
-        const detailGap = 6
-        const detailW = (contentWidth - detailGap) / 2
-        const leftRows: Array<[string, string]> = [
-            ['Pemodal', data.investor.name],
-            ['Kontak', data.investor.contactInfo],
-            ['Rekening', data.investor.bankAccountDetails],
-            ['Status Bayar', paymentLabel(data.payment.paymentStatus)]
-        ]
-        const rightRows: Array<[string, string]> = [
-            ['Tanggal Beli', prettyDate(data.transaction.buyDate)],
-            ['Tanggal Jual', prettyDate(data.transaction.sellDate)],
-            ['Durasi', `${data.transaction.duration || 0} hari`],
-            ['Modal Total', money(data.capital.totalCapital)]
-        ]
-        const detailHeight = Math.max(
-            drawKeyValueCard('Profil Pemodal', leftRows, margin, yPos, detailW),
-            drawKeyValueCard('Detail Transaksi', rightRows, margin + detailW + detailGap, yPos, detailW)
-        )
-        yPos += detailHeight + 14
-
-        drawSectionTitle('Ringkasan Keuangan', 'Alur modal, biaya, margin, dan pembagian hasil transaksi ini.')
-        const tableBody = [
-            ['Modal Pemodal', money(data.capital.investorCapital), 'Modal awal dari pemodal'],
-            ['Modal Pengelola', money(data.capital.managerCapital), 'Modal tambahan dari pengelola'],
-            ['Harga Beli', money(data.transaction.buyPrice), 'Nilai pembelian unit'],
-            ['Harga Jual', money(data.transaction.sellPrice), 'Nilai penjualan unit'],
-            ['Total Biaya', money(data.costs.totalCosts), 'Biaya operasional tercatat'],
-            ['Nett Margin', money(data.profitSharing?.netMargin), 'Margin bersih setelah biaya'],
-            [`Hak Pemodal (${data.profitSharing?.investorSharePercentage || 0}%)`, money(data.profitSharing?.investorProfitAmount), 'Bagian laba pemodal'],
-            [`Hak Pengelola (${data.profitSharing?.managerSharePercentage || 0}%)`, money(data.profitSharing?.managerProfitAmount), 'Bagian laba pengelola']
-        ]
-
-        autoTable(doc, {
-            startY: yPos,
-            head: [['KOMPONEN', 'NOMINAL', 'KETERANGAN']],
-            body: tableBody,
-            theme: 'plain',
-            margin: { left: margin, right: margin },
-            styles: {
-                font: 'helvetica',
-                fontSize: 8.5,
-                cellPadding: { top: 3.2, right: 3, bottom: 3.2, left: 3 },
-                textColor: C.ink,
-                lineColor: C.line,
-                lineWidth: 0.15,
-                overflow: 'linebreak'
-            },
-            headStyles: {
-                fillColor: C.teal900,
-                textColor: C.white,
-                fontStyle: 'bold',
-                fontSize: 8,
-                halign: 'left'
-            },
-            alternateRowStyles: { fillColor: [248, 250, 252] },
-            columnStyles: {
-                0: { cellWidth: 49, fontStyle: 'bold' },
-                1: { cellWidth: 47, halign: 'right', fontStyle: 'bold', textColor: C.teal800 },
-                2: { cellWidth: contentWidth - 96 }
-            }
-        })
-        yPos = (doc as any).lastAutoTable.finalY + 14
-
-        ensureSpace(43)
-        const status = data.payment.paymentStatus
-        const totalDue = Number(data.payment.investorShouldReceive || 0)
-        const totalPaid = Number(data.payment.totalPaid || 0)
-        const progress = totalDue > 0 ? Math.min(Math.max(totalPaid / totalDue, 0), 1) : 0
-        const statusAccent = paymentColor(status)
-
-        doc.setFillColor(...C.teal900)
-        doc.roundedRect(margin, yPos, contentWidth, 38, 5, 5, 'F')
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(12)
-        doc.setTextColor(...C.white)
-        doc.text('Status Pembayaran Bagi Hasil', margin + 7, yPos + 10)
-        drawPill(paymentLabel(status), pageWidth - margin - 7, yPos + 10, C.teal900, status === 'PAID' ? [220, 252, 231] : status === 'PARTIAL' ? [254, 249, 195] : [255, 228, 230], 'right')
-        doc.setFillColor(15, 118, 110)
-        doc.roundedRect(margin + 7, yPos + 18, contentWidth - 14, 4.5, 2.2, 2.2, 'F')
-        doc.setFillColor(...statusAccent)
-        doc.roundedRect(margin + 7, yPos + 18, (contentWidth - 14) * progress, 4.5, 2.2, 2.2, 'F')
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8)
-        doc.setTextColor(190, 226, 223)
-        doc.text(`Dibayar: ${money(totalPaid)}`, margin + 7, yPos + 31)
-        doc.text(`Sisa: ${money(data.payment.remaining)}`, pageWidth - margin - 7, yPos + 31, { align: 'right' })
-        yPos += 50
-
-        if (data.costs.items && data.costs.items.length > 0) {
-            drawSectionTitle('Rincian Biaya Operasional', 'Setiap biaya tetap terlihat utuh dengan pembayar dan nominalnya.')
+        const compactTable = (options: any) => {
             autoTable(doc, {
-                startY: yPos,
-                head: [['TANGGAL', 'JENIS', 'KETERANGAN', 'DIBAYAR', 'NOMINAL']],
-                body: data.costs.items.map((cost: any) => [
-                    prettyDate(cost.date),
-                    sanitize(cost.costType),
-                    sanitize(cost.description),
-                    cost.payer === 'INVESTOR' ? 'Pemodal' : 'Pengelola',
-                    money(cost.amount)
-                ]),
-                theme: 'plain',
+                theme: 'grid',
                 margin: { left: margin, right: margin },
                 styles: {
                     font: 'helvetica',
-                    fontSize: 8,
-                    cellPadding: 2.7,
-                    textColor: C.ink,
+                    fontSize: 7.6,
+                    cellPadding: { top: 1.8, right: 2, bottom: 1.8, left: 2 },
+                    overflow: 'linebreak',
                     lineColor: C.line,
-                    lineWidth: 0.15,
-                    overflow: 'linebreak'
+                    lineWidth: 0.12,
+                    textColor: C.ink,
+                    valign: 'middle'
                 },
                 headStyles: {
-                    fillColor: C.soft,
-                    textColor: C.teal800,
+                    fillColor: C.teal900,
+                    textColor: C.white,
                     fontStyle: 'bold',
-                    fontSize: 7.5
+                    fontSize: 7.5,
+                    cellPadding: { top: 2, right: 2, bottom: 2, left: 2 }
                 },
                 alternateRowStyles: { fillColor: [248, 250, 252] },
+                ...options
+            })
+            yPos = (doc as any).lastAutoTable.finalY + 4
+        }
+
+        drawPageChrome()
+        doc.setFillColor(...C.teal900)
+        doc.roundedRect(margin, 11, contentWidth, 25, 3, 3, 'F')
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(13)
+        doc.setTextColor(...C.white)
+        doc.text('Laporan Bagi Hasil Transaksi', margin + 6, 21)
+        doc.setFontSize(8)
+        doc.text(data.transaction.transactionCode, margin + 6, 29)
+        drawPill(statusLabel(data.transaction.status), pageWidth - margin - 6, 21, C.teal900, C.teal100, 'right')
+        drawPill(paymentLabel(data.payment.paymentStatus), pageWidth - margin - 6, 30, C.teal900, data.payment.paymentStatus === 'PAID' ? [220, 252, 231] : data.payment.paymentStatus === 'PARTIAL' ? [254, 249, 195] : [255, 228, 230], 'right')
+        yPos = 42
+
+        compactTable({
+            startY: yPos,
+            head: [['INFORMASI UTAMA', '', '', '']],
+            body: [
+                ['Unit', sanitize(data.unit.name), 'Kode Unit', sanitize(data.unit.code)],
+                ['No. Polisi', sanitize(data.unit.plateNumber), 'Pemodal', sanitize(data.investor.name)],
+                ['Kontak', sanitize(data.investor.contactInfo), 'Rekening', sanitize(data.investor.bankAccountDetails)],
+                ['Tanggal Beli', prettyDate(data.transaction.buyDate), 'Tanggal Jual', prettyDate(data.transaction.sellDate)],
+                ['Durasi', `${data.transaction.duration || 0} hari`, 'Dibuat', prettyDate(data.generatedAt || new Date(), true)]
+            ],
+            columnStyles: {
+                0: { cellWidth: 28, fontStyle: 'bold', textColor: C.muted },
+                1: { cellWidth: 61 },
+                2: { cellWidth: 28, fontStyle: 'bold', textColor: C.muted },
+                3: { cellWidth: contentWidth - 117 }
+            }
+        })
+
+        compactTable({
+            startY: yPos,
+            head: [['RINGKASAN KEUANGAN', 'NOMINAL', 'PEMBAGIAN / PEMBAYARAN', 'NOMINAL']],
+            body: [
+                ['Modal Pemodal', money(data.capital.investorCapital), 'Hak Pemodal', money(data.profitSharing?.investorProfitAmount)],
+                ['Modal Pengelola', money(data.capital.managerCapital), 'Hak Pengelola', money(data.profitSharing?.managerProfitAmount)],
+                ['Harga Beli', money(data.transaction.buyPrice), `Porsi Pemodal (${data.profitSharing?.investorSharePercentage || 0}%)`, money(data.payment.investorShouldReceive)],
+                ['Harga Jual', money(data.transaction.sellPrice), `Porsi Pengelola (${data.profitSharing?.managerSharePercentage || 0}%)`, money(data.profitSharing?.managerProfitAmount)],
+                ['Total Biaya', money(data.costs.totalCosts), 'Telah Dibayar', money(data.payment.totalPaid)],
+                ['Nett Margin', money(data.profitSharing?.netMargin), 'Sisa Pembayaran', money(data.payment.remaining)]
+            ],
+            columnStyles: {
+                0: { cellWidth: 42, fontStyle: 'bold' },
+                1: { cellWidth: 48, halign: 'right', fontStyle: 'bold', textColor: C.teal800 },
+                2: { cellWidth: 48, fontStyle: 'bold' },
+                3: { cellWidth: contentWidth - 138, halign: 'right', fontStyle: 'bold', textColor: C.teal800 }
+            }
+        })
+
+        if (data.costs.items && data.costs.items.length > 0) {
+            compactTable({
+                startY: yPos,
+                head: [['RINCIAN BIAYA', 'TANGGAL', 'DIBAYAR', 'NOMINAL', 'KETERANGAN']],
+                body: data.costs.items.map((cost: any) => [
+                    sanitize(cost.costType),
+                    prettyDate(cost.date),
+                    cost.payer === 'INVESTOR' ? 'Pemodal' : 'Pengelola',
+                    money(cost.amount),
+                    sanitize(cost.description)
+                ]),
                 columnStyles: {
-                    0: { cellWidth: 25 },
-                    1: { cellWidth: 34, fontStyle: 'bold' },
-                    2: { cellWidth: contentWidth - 126 },
-                    3: { cellWidth: 26, halign: 'center' },
-                    4: { cellWidth: 41, halign: 'right', fontStyle: 'bold', textColor: C.teal800 }
+                    0: { cellWidth: 35, fontStyle: 'bold' },
+                    1: { cellWidth: 25 },
+                    2: { cellWidth: 24, halign: 'center' },
+                    3: { cellWidth: 38, halign: 'right', fontStyle: 'bold', textColor: C.teal800 },
+                    4: { cellWidth: contentWidth - 122 }
                 }
             })
-            yPos = (doc as any).lastAutoTable.finalY + 14
         }
 
         if (data.payment.histories && data.payment.histories.length > 0) {
-            drawSectionTitle('Timeline Pembayaran', 'Riwayat transfer bagi hasil dari awal sampai status terakhir.')
-            for (const payment of data.payment.histories) {
-                ensureSpace(20)
-                doc.setFillColor(...C.white)
-                doc.setDrawColor(...C.line)
-                doc.roundedRect(margin, yPos, contentWidth, 17, 4, 4, 'FD')
-                doc.setFillColor(...C.emerald)
-                doc.circle(margin + 8, yPos + 8.5, 2.2, 'F')
-                addText(prettyDate(payment.paymentDate, true), margin + 15, yPos + 6.5, 55, { size: 8, style: 'bold', color: C.ink })
-                addText(`${sanitize(payment.method)}${payment.notes && payment.notes !== '-' ? ` - ${payment.notes}` : ''}`, margin + 15, yPos + 12, contentWidth - 72, { size: 7.5, color: C.muted })
-                doc.setFont('helvetica', 'bold')
-                doc.setFontSize(9)
-                doc.setTextColor(...C.teal800)
-                doc.text(money(payment.amount), pageWidth - margin - 5, yPos + 10.5, { align: 'right' })
-                yPos += 21
-            }
-            yPos += 4
+            compactTable({
+                startY: yPos,
+                head: [['RIWAYAT BAYAR BAGI HASIL', 'METODE', 'NOMINAL', 'CATATAN']],
+                body: data.payment.histories.map((payment: any) => [
+                    prettyDate(payment.paymentDate, true),
+                    sanitize(payment.method),
+                    money(payment.amount),
+                    sanitize(payment.notes)
+                ]),
+                columnStyles: {
+                    0: { cellWidth: 43, fontStyle: 'bold' },
+                    1: { cellWidth: 30 },
+                    2: { cellWidth: 43, halign: 'right', fontStyle: 'bold', textColor: C.teal800 },
+                    3: { cellWidth: contentWidth - 116 }
+                }
+            })
         }
 
         if (data.transaction.notes) {
-            drawSectionTitle('Catatan Transaksi')
-            const lines = doc.splitTextToSize(sanitize(data.transaction.notes), contentWidth - 12) as string[]
-            ensureSpace(16 + lines.length * 4.5)
-            doc.setFillColor(...C.soft)
-            doc.setDrawColor(...C.line)
-            doc.roundedRect(margin, yPos, contentWidth, 13 + lines.length * 4.5, 4, 4, 'FD')
-            addText(data.transaction.notes, margin + 6, yPos + 9, contentWidth - 12, { size: 8.5, color: C.slate, lineHeight: 4.5 })
-            yPos += 20 + lines.length * 4.5
+            compactTable({
+                startY: yPos,
+                head: [['CATATAN TRANSAKSI']],
+                body: [[sanitize(data.transaction.notes)]],
+                columnStyles: {
+                    0: { cellWidth: contentWidth }
+                }
+            })
         }
 
         const attachments: { title: string, description?: string, imageUrl: string }[] = []
