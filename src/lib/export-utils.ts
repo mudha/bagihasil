@@ -696,7 +696,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
                 const ratio = props.width / props.height
                 let drawW = w
                 let drawH = drawW / ratio
-                if (drawH < h) {
+                if (drawH > h) {
                     drawH = h
                     drawW = drawH * ratio
                 }
@@ -773,13 +773,14 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         doc.text(`Digenerate ${prettyDate(data.generatedAt || new Date(), true)}`, pageWidth - margin, yPos + 3.5, { align: 'right' })
         yPos += 15
 
-        const metricGap = 5
-        const metricW = (contentWidth - metricGap * 3) / 4
+        const metricGap = 6
+        const metricW = (contentWidth - metricGap) / 2
         drawMetricCard(margin, yPos, metricW, 'Harga Beli', money(data.transaction.buyPrice), C.cyan)
         drawMetricCard(margin + metricW + metricGap, yPos, metricW, 'Harga Jual', money(data.transaction.sellPrice), C.teal700)
-        drawMetricCard(margin + (metricW + metricGap) * 2, yPos, metricW, 'Nett Margin', money(data.profitSharing?.netMargin), C.emerald)
-        drawMetricCard(margin + (metricW + metricGap) * 3, yPos, metricW, 'Hak Pemodal', money(data.payment.investorShouldReceive), C.amber)
-        yPos += 39
+        yPos += 34
+        drawMetricCard(margin, yPos, metricW, 'Nett Margin', money(data.profitSharing?.netMargin), C.emerald)
+        drawMetricCard(margin + metricW + metricGap, yPos, metricW, 'Hak Pemodal', money(data.payment.investorShouldReceive), C.amber)
+        yPos += 43
 
         const detailGap = 6
         const detailW = (contentWidth - detailGap) / 2
@@ -986,58 +987,95 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         })
 
         if (attachments.length > 0) {
-            doc.addPage()
-            drawPageChrome()
-            yPos = margin + 4
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(21)
-            doc.setTextColor(...C.ink)
-            doc.text('Lampiran Bukti', margin, yPos + 8)
-            doc.setFont('helvetica', 'normal')
-            doc.setFontSize(9)
-            doc.setTextColor(...C.muted)
-            doc.text(`${attachments.length} lampiran transaksi dan pembayaran`, margin, yPos + 15)
-            yPos += 28
+            const drawAttachmentHeader = (pageIndex: number) => {
+                drawPageChrome()
+                doc.setFont('helvetica', 'bold')
+                doc.setFontSize(19)
+                doc.setTextColor(...C.ink)
+                doc.text('Lampiran Bukti', margin, margin + 8)
+                doc.setFont('helvetica', 'normal')
+                doc.setFontSize(8.5)
+                doc.setTextColor(...C.muted)
+                doc.text(`${attachments.length} lampiran transaksi dan pembayaran | Halaman lampiran ${pageIndex}`, margin, margin + 15)
+            }
 
-            for (const [index, item] of attachments.entries()) {
-                ensureSpace(82)
-                const cardY = yPos
+            const renderAttachmentSlot = async (
+                item: { title: string, description?: string, imageUrl: string },
+                index: number,
+                x: number,
+                y: number,
+                w: number,
+                h: number
+            ) => {
                 doc.setFillColor(...C.white)
                 doc.setDrawColor(...C.line)
-                doc.roundedRect(margin, cardY, contentWidth, 74, 5, 5, 'FD')
+                doc.roundedRect(x, y, w, h, 4, 4, 'FD')
+
                 doc.setFillColor(...C.teal100)
-                doc.roundedRect(margin + 5, cardY + 6, 9, 9, 3, 3, 'F')
+                doc.roundedRect(x + 5, y + 5, 9, 9, 3, 3, 'F')
                 doc.setFont('helvetica', 'bold')
-                doc.setFontSize(8.5)
+                doc.setFontSize(8)
                 doc.setTextColor(...C.teal800)
-                doc.text(String(index + 1).padStart(2, '0'), margin + 9.5, cardY + 12, { align: 'center' })
-                addText(item.title, margin + 18, cardY + 9, contentWidth - 24, { size: 10, style: 'bold', color: C.ink, lineHeight: 4.6 })
+                doc.text(String(index + 1).padStart(2, '0'), x + 9.5, y + 11, { align: 'center' })
+
+                doc.setFont('helvetica', 'bold')
+                doc.setFontSize(8.8)
+                doc.setTextColor(...C.ink)
+                const titleLines = (doc.splitTextToSize(sanitize(item.title), w - 24) as string[]).slice(0, 2)
+                doc.text(titleLines, x + 17, y + 9)
+
                 if (item.description) {
-                    addText(item.description, margin + 18, cardY + 16.5, contentWidth - 24, { size: 7.7, color: C.muted, lineHeight: 3.6 })
+                    doc.setFont('helvetica', 'normal')
+                    doc.setFontSize(7)
+                    doc.setTextColor(...C.muted)
+                    const descLines = (doc.splitTextToSize(sanitize(item.description), w - 12) as string[]).slice(0, 2)
+                    doc.text(descLines, x + 6, y + 22)
                 }
+
+                const imgBoxX = x + 6
+                const imgBoxY = y + 31
+                const imgBoxW = w - 12
+                const imgBoxH = h - 38
+
+                doc.setFillColor(248, 250, 252)
+                doc.roundedRect(imgBoxX, imgBoxY, imgBoxW, imgBoxH, 3, 3, 'F')
 
                 try {
                     const base64 = await convertImageToBase64(imageUrlForPdf(item.imageUrl))
                     const props: any = doc.getImageProperties(base64)
-                    const maxW = contentWidth - 20
-                    const maxH = 43
                     const ratio = props.width / props.height
-                    let imgW = maxW
+                    let imgW = imgBoxW
                     let imgH = imgW / ratio
-                    if (imgH > maxH) {
-                        imgH = maxH
+                    if (imgH > imgBoxH) {
+                        imgH = imgBoxH
                         imgW = imgH * ratio
                     }
-                    const imgX = margin + (contentWidth - imgW) / 2
-                    doc.addImage(base64, String(props.fileType || 'JPEG').toUpperCase(), imgX, cardY + 25, imgW, imgH)
+                    const imgX = imgBoxX + (imgBoxW - imgW) / 2
+                    const imgY = imgBoxY + (imgBoxH - imgH) / 2
+                    doc.addImage(base64, String(props.fileType || 'JPEG').toUpperCase(), imgX, imgY, imgW, imgH)
                 } catch (error) {
                     console.error('Error processing attachment image', error)
-                    doc.setFillColor(...C.soft)
-                    doc.roundedRect(margin + 10, cardY + 26, contentWidth - 20, 35, 4, 4, 'F')
-                    addText('Gambar lampiran tidak dapat dimuat.', pageWidth / 2, cardY + 44, contentWidth - 20, { size: 8.5, color: C.muted, align: 'center' })
+                    addText('Gambar lampiran tidak dapat dimuat.', imgBoxX + imgBoxW / 2, imgBoxY + imgBoxH / 2, imgBoxW - 8, { size: 8, color: C.muted, align: 'center' })
+                }
+            }
+
+            const headerHeight = 31
+            const slotGap = 7
+            const slotW = (contentWidth - slotGap) / 2
+            const slotH = (pageHeight - headerHeight - margin - bottomSafe - slotGap) / 2
+
+            for (let i = 0; i < attachments.length; i++) {
+                const slotIndex = i % 4
+                if (slotIndex === 0) {
+                    doc.addPage()
+                    drawAttachmentHeader(Math.floor(i / 4) + 1)
                 }
 
-                yPos += 80
+                const col = slotIndex % 2
+                const row = Math.floor(slotIndex / 2)
+                const x = margin + col * (slotW + slotGap)
+                const y = headerHeight + row * (slotH + slotGap)
+                await renderAttachmentSlot(attachments[i], i, x, y, slotW, slotH)
             }
         }
 
