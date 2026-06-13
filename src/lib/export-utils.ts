@@ -603,6 +603,44 @@ export async function exportTransactionReportPDF(transactionId: string, transact
 
         const imageUrlForPdf = (url: string) => url.startsWith('http') ? url : `${window.location.origin}${url}`
 
+        const drawContainedImage = async (
+            url: string | null | undefined,
+            x: number,
+            y: number,
+            w: number,
+            h: number,
+            emptyText: string
+        ) => {
+            doc.setFillColor(248, 250, 252)
+            doc.setDrawColor(...C.line)
+            doc.roundedRect(x, y, w, h, 2, 2, 'FD')
+
+            if (!url) {
+                addText(emptyText, x + w / 2, y + h / 2, w - 8, { size: 7.5, color: C.muted, align: 'center' })
+                return
+            }
+
+            try {
+                const base64 = await convertImageToBase64(imageUrlForPdf(url))
+                const props: any = doc.getImageProperties(base64)
+                const ratio = props.width / props.height
+                const maxW = w - 4
+                const maxH = h - 4
+                let imgW = maxW
+                let imgH = imgW / ratio
+                if (imgH > maxH) {
+                    imgH = maxH
+                    imgW = imgH * ratio
+                }
+                const imgX = x + (w - imgW) / 2
+                const imgY = y + (h - imgH) / 2
+                doc.addImage(base64, String(props.fileType || 'JPEG').toUpperCase(), imgX, imgY, imgW, imgH)
+            } catch (error) {
+                console.error('Error processing unit image', error)
+                addText('Foto kendaraan tidak dapat dimuat.', x + w / 2, y + h / 2, w - 8, { size: 7.5, color: C.muted, align: 'center' })
+            }
+        }
+
         const compactTable = (options: any) => {
             autoTable(doc, {
                 theme: 'grid',
@@ -643,6 +681,12 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         drawPill(paymentLabel(data.payment.paymentStatus), pageWidth - margin - 6, 30, C.teal900, data.payment.paymentStatus === 'PAID' ? [220, 252, 231] : data.payment.paymentStatus === 'PARTIAL' ? [254, 249, 195] : [255, 228, 230], 'right')
         yPos = 42
 
+        const unitImageW = 44
+        const unitInfoGap = 5
+        const unitTableX = margin + unitImageW + unitInfoGap
+        const unitTableW = contentWidth - unitImageW - unitInfoGap
+        await drawContainedImage(data.unit.imageUrl, margin, yPos, unitImageW, 36, 'Foto kendaraan belum tersedia')
+
         compactTable({
             startY: yPos,
             head: [['INFORMASI UTAMA', '', '', '']],
@@ -653,13 +697,16 @@ export async function exportTransactionReportPDF(transactionId: string, transact
                 ['Tanggal Beli', prettyDate(data.transaction.buyDate), 'Tanggal Jual', prettyDate(data.transaction.sellDate)],
                 ['Durasi', `${data.transaction.duration || 0} hari`, 'Dibuat', prettyDate(data.generatedAt || new Date(), true)]
             ],
+            margin: { left: unitTableX, right: margin },
+            tableWidth: unitTableW,
             columnStyles: {
-                0: { cellWidth: 28, fontStyle: 'bold', textColor: C.muted },
-                1: { cellWidth: 61 },
-                2: { cellWidth: 28, fontStyle: 'bold', textColor: C.muted },
-                3: { cellWidth: contentWidth - 117 }
+                0: { cellWidth: 22, fontStyle: 'bold', textColor: C.muted },
+                1: { cellWidth: 40 },
+                2: { cellWidth: 22, fontStyle: 'bold', textColor: C.muted },
+                3: { cellWidth: unitTableW - 84 }
             }
         })
+        yPos = Math.max(yPos, 82)
 
         compactTable({
             startY: yPos,
