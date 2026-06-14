@@ -834,12 +834,15 @@ function TransactionsPageContent() {
                                 <Plus className="mr-2 h-4 w-4" /> Transaksi Baru
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto rounded-lg border-teal-900/10">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">{editingTransaction ? "Edit Transaksi" : "Mulai Transaksi Baru"}</DialogTitle>
+                        <DialogContent className="max-h-[92vh] max-w-2xl overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20">
+                            <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-5 py-5 text-white sm:px-6">
+                                <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
+                                    {editingTransaction ? "Mode edit" : "Transaksi baru"}
+                                </div>
+                                <DialogTitle className="mt-3 text-2xl font-black tracking-tight text-white">{editingTransaction ? "Edit Transaksi" : "Mulai Transaksi Baru"}</DialogTitle>
                             </DialogHeader>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="max-h-[calc(92vh-112px)] space-y-5 overflow-y-auto p-5 sm:p-6">
                                     <FormField
                                         control={form.control}
                                         name="unitId"
@@ -1238,29 +1241,62 @@ function TransactionsPageContent() {
                                                 Aksi
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Data
+                                        <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
+                                            <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Transaksi</DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                                onSelect={() => {
+                                                    setViewingTransaction(null)
+                                                    handleEdit(trx)
+                                                }}
+                                            >
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                                    <Pencil className="h-4 w-4" />
+                                                </span>
+                                                Edit Data
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setEditingStatusTransaction({
-                                                id: trx.id,
-                                                transactionCode: trx.transactionCode,
-                                                status: trx.status
-                                            })}>
-                                                <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                            <DropdownMenuItem
+                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                onSelect={() => {
+                                                    setViewingTransaction(null)
+                                                    setEditingStatusTransaction({
+                                                        id: trx.id,
+                                                        transactionCode: trx.transactionCode,
+                                                        status: trx.status
+                                                    })
+                                                }}
+                                            >
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                </span>
+                                                Update Status
                                             </DropdownMenuItem>
                                             {trx.status === 'COMPLETED' && (
-                                                <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
-                                                    <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                <DropdownMenuItem
+                                                    className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    onSelect={() => {
+                                                        setViewingTransaction(null)
+                                                        handleExportPDF(trx.id, trx.transactionCode)
+                                                    }}
+                                                >
+                                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                                        <FileText className="h-4 w-4" />
+                                                    </span>
+                                                    Download Laporan
                                                 </DropdownMenuItem>
                                             )}
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuSeparator className="my-2" />
                                             <DropdownMenuItem
-                                                onClick={() => setDeleteTransactionId(trx.id)}
-                                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                onSelect={() => {
+                                                    setViewingTransaction(null)
+                                                    setDeleteTransactionId(trx.id)
+                                                }}
+                                                className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
                                             >
-                                                <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                    <Trash className="h-4 w-4" />
+                                                </span>
+                                                Hapus
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -1587,29 +1623,62 @@ function TransactionsPageContent() {
                                                             Aksi
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleEdit(trx)}>
-                                                            <Pencil className="mr-2 h-4 w-4" /> Edit Data
+                                                    <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
+                                                        <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Transaksi</DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                                            onSelect={() => {
+                                                                setViewingTransaction(null)
+                                                                handleEdit(trx)
+                                                            }}
+                                                        >
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                                                <Pencil className="h-4 w-4" />
+                                                            </span>
+                                                            Edit Data
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => setEditingStatusTransaction({
-                                                            id: trx.id,
-                                                            transactionCode: trx.transactionCode,
-                                                            status: trx.status
-                                                        })}>
-                                                            <CheckCircle className="mr-2 h-4 w-4" /> Update Status
+                                                        <DropdownMenuItem
+                                                            className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                            onSelect={() => {
+                                                                setViewingTransaction(null)
+                                                                setEditingStatusTransaction({
+                                                                    id: trx.id,
+                                                                    transactionCode: trx.transactionCode,
+                                                                    status: trx.status
+                                                                })
+                                                            }}
+                                                        >
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </span>
+                                                            Update Status
                                                         </DropdownMenuItem>
                                                         {trx.status === 'COMPLETED' && (
-                                                            <DropdownMenuItem onClick={() => handleExportPDF(trx.id, trx.transactionCode)}>
-                                                                <FileText className="mr-2 h-4 w-4" /> Download Laporan
+                                                            <DropdownMenuItem
+                                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                                onSelect={() => {
+                                                                    setViewingTransaction(null)
+                                                                    handleExportPDF(trx.id, trx.transactionCode)
+                                                                }}
+                                                            >
+                                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                                                    <FileText className="h-4 w-4" />
+                                                                </span>
+                                                                Download Laporan
                                                             </DropdownMenuItem>
                                                         )}
-                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuSeparator className="my-2" />
                                                         <DropdownMenuItem
-                                                            onClick={() => setDeleteTransactionId(trx.id)}
-                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                            onSelect={() => {
+                                                                setViewingTransaction(null)
+                                                                setDeleteTransactionId(trx.id)
+                                                            }}
+                                                            className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
                                                         >
-                                                            <Trash className="mr-2 h-4 w-4" /> Hapus
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                                <Trash className="h-4 w-4" />
+                                                            </span>
+                                                            Hapus
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
