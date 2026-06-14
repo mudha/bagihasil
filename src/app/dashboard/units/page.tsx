@@ -1911,7 +1911,7 @@ function UnitsPageContent() {
                 </AlertDialogContent>
             </AlertDialog>
             <AdminUnitDetailDialog
-                open={!!viewingUnit}
+                open={!!viewingUnit && !isOpen}
                 onOpenChange={(open) => !open && setViewingUnit(null)}
                 unit={viewingUnit}
             />

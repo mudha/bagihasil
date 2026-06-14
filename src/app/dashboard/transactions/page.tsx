@@ -1740,7 +1740,7 @@ function TransactionsPageContent() {
             />
 
             <AdminTransactionDetailDialog
-                open={!!viewingTransaction}
+                open={!!viewingTransaction && !isOpen}
                 onOpenChange={(open) => !open && setViewingTransaction(null)}
                 // @ts-ignore
                 transaction={viewingTransaction}
