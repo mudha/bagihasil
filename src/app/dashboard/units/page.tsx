@@ -182,8 +182,18 @@ const INVESTOR_TONES = [
     },
 ] as const
 
+const INVESTOR_TONE_OVERRIDES: Record<string, (typeof INVESTOR_TONES)[number]> = {
+    "wahyu prasetyo adi": INVESTOR_TONES[0],
+    "achmad firmansyah": INVESTOR_TONES[2],
+    "wiwin yuli widiastuti": INVESTOR_TONES[4],
+}
+
 const getInvestorTone = (investorKey?: string | null) => {
-    const value = investorKey?.trim() || "unknown-investor"
+    const value = investorKey?.trim().toLowerCase().replace(/\s+/g, " ") || "unknown-investor"
+    const override = INVESTOR_TONE_OVERRIDES[value]
+
+    if (override) return override
+
     let hash = 0
 
     for (let index = 0; index < value.length; index += 1) {
@@ -1568,7 +1578,7 @@ function UnitsPageContent() {
                     </div>
                 ) : (
                     paginatedUnits.map((unit) => {
-                        const investorTone = getInvestorTone(unit.investorId || unit.investor.name)
+                        const investorTone = getInvestorTone(unit.investor.name || unit.investorId)
 
                         return (
                         <div
@@ -1847,7 +1857,7 @@ function UnitsPageContent() {
                     </TableHeader>
                     <TableBody>
                         {paginatedUnits.map((unit) => {
-                            const investorTone = getInvestorTone(unit.investorId || unit.investor.name)
+                            const investorTone = getInvestorTone(unit.investor.name || unit.investorId)
 
                             return (
                             <TableRow
