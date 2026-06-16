@@ -69,6 +69,7 @@ import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminTransactionDetailDialog } from "@/components/transactions/AdminTransactionDetailDialog"
+import { cn } from "@/lib/utils"
 
 
 
@@ -135,6 +136,76 @@ interface Unit {
 interface Investor {
     id: string
     name: string
+}
+
+const INVESTOR_TONES = [
+    {
+        card: "border-sky-200 ring-1 ring-sky-100",
+        row: "border-l-sky-400 bg-sky-50/35 hover:bg-sky-50/75",
+        chip: "border-sky-200 bg-sky-50 text-sky-700",
+        dot: "bg-sky-500",
+        stripe: "from-sky-400 via-cyan-400 to-teal-300",
+    },
+    {
+        card: "border-emerald-200 ring-1 ring-emerald-100",
+        row: "border-l-emerald-400 bg-emerald-50/35 hover:bg-emerald-50/75",
+        chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
+        dot: "bg-emerald-500",
+        stripe: "from-emerald-400 via-lime-400 to-teal-300",
+    },
+    {
+        card: "border-amber-200 ring-1 ring-amber-100",
+        row: "border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/80",
+        chip: "border-amber-200 bg-amber-50 text-amber-700",
+        dot: "bg-amber-500",
+        stripe: "from-amber-400 via-yellow-400 to-orange-300",
+    },
+    {
+        card: "border-rose-200 ring-1 ring-rose-100",
+        row: "border-l-rose-400 bg-rose-50/35 hover:bg-rose-50/75",
+        chip: "border-rose-200 bg-rose-50 text-rose-700",
+        dot: "bg-rose-500",
+        stripe: "from-rose-400 via-pink-400 to-red-300",
+    },
+    {
+        card: "border-cyan-200 ring-1 ring-cyan-100",
+        row: "border-l-cyan-400 bg-cyan-50/35 hover:bg-cyan-50/75",
+        chip: "border-cyan-200 bg-cyan-50 text-cyan-700",
+        dot: "bg-cyan-500",
+        stripe: "from-cyan-400 via-sky-400 to-blue-300",
+    },
+    {
+        card: "border-lime-200 ring-1 ring-lime-100",
+        row: "border-l-lime-400 bg-lime-50/40 hover:bg-lime-50/80",
+        chip: "border-lime-200 bg-lime-50 text-lime-700",
+        dot: "bg-lime-500",
+        stripe: "from-lime-400 via-green-400 to-emerald-300",
+    },
+    {
+        card: "border-orange-200 ring-1 ring-orange-100",
+        row: "border-l-orange-400 bg-orange-50/35 hover:bg-orange-50/75",
+        chip: "border-orange-200 bg-orange-50 text-orange-700",
+        dot: "bg-orange-500",
+        stripe: "from-orange-400 via-amber-400 to-yellow-300",
+    },
+    {
+        card: "border-blue-200 ring-1 ring-blue-100",
+        row: "border-l-blue-400 bg-blue-50/35 hover:bg-blue-50/75",
+        chip: "border-blue-200 bg-blue-50 text-blue-700",
+        dot: "bg-blue-500",
+        stripe: "from-blue-400 via-sky-400 to-cyan-300",
+    },
+] as const
+
+const getInvestorTone = (investorKey?: string | null) => {
+    const value = investorKey?.trim() || "unknown-investor"
+    let hash = 0
+
+    for (let index = 0; index < value.length; index += 1) {
+        hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+    }
+
+    return INVESTOR_TONES[hash % INVESTOR_TONES.length]
 }
 
 const calculateDuration = (buyDate: string, sellDate?: string | null) => {
@@ -1146,9 +1217,12 @@ function TransactionsPageContent() {
                         {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
                     </div>
                 ) : (
-                    paginatedTransactions.map((trx) => (
-                        <div key={trx.id} className="overflow-hidden rounded-lg border border-teal-900/10 bg-white shadow-sm">
-                            <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
+                    paginatedTransactions.map((trx) => {
+                        const investorTone = getInvestorTone(trx.unit.investorId || trx.unit.investor.name)
+
+                        return (
+                        <div key={trx.id} className={cn("overflow-hidden rounded-lg border bg-white shadow-sm", investorTone.card)}>
+                            <div className={cn("h-1 bg-gradient-to-r", investorTone.stripe)} />
                             <div className="space-y-4 p-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex min-w-0 gap-3">
@@ -1192,7 +1266,10 @@ function TransactionsPageContent() {
                             <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Investor</span>
-                                    <span className="text-xs font-medium [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
+                                    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black", investorTone.chip)}>
+                                        <span className={cn("h-2 w-2 shrink-0 rounded-full", investorTone.dot)} />
+                                        <span className="truncate [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
+                                    </span>
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Durasi</span>
@@ -1316,7 +1393,8 @@ function TransactionsPageContent() {
                             </div>
                             </div>
                         </div>
-                    ))
+                        )
+                    })
                 )}
             </div>
 
@@ -1529,10 +1607,13 @@ function TransactionsPageContent() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {paginatedTransactions.map((trx) => (
+                        {paginatedTransactions.map((trx) => {
+                            const investorTone = getInvestorTone(trx.unit.investorId || trx.unit.investor.name)
+
+                            return (
                             <TableRow
                                 key={trx.id}
-                                className="cursor-pointer border-slate-100 hover:bg-teal-50/45"
+                                className={cn("cursor-pointer border-l-4 border-y-slate-100 border-r-slate-100 transition-colors", investorTone.row)}
                                 onClick={(e) => {
                                     if (
                                         (e.target as HTMLElement).closest("a") ||
@@ -1558,7 +1639,12 @@ function TransactionsPageContent() {
                                     />
                                 </TableCell>
                                 <TableCell className="font-mono text-sm font-bold text-teal-700 [overflow-wrap:anywhere]">{trx.transactionCode}</TableCell>
-                                <TableCell className="max-w-[220px] whitespace-normal font-semibold text-slate-950 [overflow-wrap:anywhere]">{trx.unit.investor.name}</TableCell>
+                                <TableCell className="max-w-[240px] whitespace-normal">
+                                    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black", investorTone.chip)}>
+                                        <span className={cn("h-2 w-2 shrink-0 rounded-full", investorTone.dot)} />
+                                        <span className="truncate [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
+                                    </span>
+                                </TableCell>
                                 <TableCell>
                                     {trx.unit.imageUrl ? (
                                         <ImageHoverPreview
@@ -1687,7 +1773,8 @@ function TransactionsPageContent() {
                                     </div>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            )
+                        })}
                         {paginatedTransactions.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={12} className="text-center py-4">
