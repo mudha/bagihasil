@@ -199,7 +199,7 @@ const INVESTOR_TONES = [
 const INVESTOR_TONE_OVERRIDES: Record<string, (typeof INVESTOR_TONES)[number]> = {
     "wahyu prasetyo adi": INVESTOR_TONES[0],
     "achmad firmansyah": INVESTOR_TONES[2],
-    "wiwin yuli widiastuti": INVESTOR_TONES[4],
+    "wiwin yuli widiastuti": INVESTOR_TONES[5],
 }
 
 const getInvestorTone = (investorKey?: string | null) => {
