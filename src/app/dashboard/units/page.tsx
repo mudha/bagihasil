@@ -125,60 +125,60 @@ interface Investor {
 
 const INVESTOR_TONES = [
     {
-        card: "border-sky-200 ring-1 ring-sky-100",
-        row: "border-l-sky-400 bg-sky-50/35 hover:bg-sky-50/75",
-        chip: "border-sky-200 bg-sky-50 text-sky-700",
-        dot: "bg-sky-500",
-        stripe: "from-sky-400 via-cyan-400 to-teal-300",
+        accent: "#2563eb",
+        rowBg: "#eff6ff",
+        chipBg: "#dbeafe",
+        chipText: "#1e3a8a",
+        stripe: "linear-gradient(90deg, #2563eb 0%, #38bdf8 100%)",
     },
     {
-        card: "border-emerald-200 ring-1 ring-emerald-100",
-        row: "border-l-emerald-400 bg-emerald-50/35 hover:bg-emerald-50/75",
-        chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
-        dot: "bg-emerald-500",
-        stripe: "from-emerald-400 via-lime-400 to-teal-300",
+        accent: "#16a34a",
+        rowBg: "#f0fdf4",
+        chipBg: "#dcfce7",
+        chipText: "#14532d",
+        stripe: "linear-gradient(90deg, #16a34a 0%, #84cc16 100%)",
     },
     {
-        card: "border-amber-200 ring-1 ring-amber-100",
-        row: "border-l-amber-400 bg-amber-50/40 hover:bg-amber-50/80",
-        chip: "border-amber-200 bg-amber-50 text-amber-700",
-        dot: "bg-amber-500",
-        stripe: "from-amber-400 via-yellow-400 to-orange-300",
+        accent: "#f59e0b",
+        rowBg: "#fffbeb",
+        chipBg: "#fef3c7",
+        chipText: "#78350f",
+        stripe: "linear-gradient(90deg, #f59e0b 0%, #f97316 100%)",
     },
     {
-        card: "border-rose-200 ring-1 ring-rose-100",
-        row: "border-l-rose-400 bg-rose-50/35 hover:bg-rose-50/75",
-        chip: "border-rose-200 bg-rose-50 text-rose-700",
-        dot: "bg-rose-500",
-        stripe: "from-rose-400 via-pink-400 to-red-300",
+        accent: "#dc2626",
+        rowBg: "#fef2f2",
+        chipBg: "#fee2e2",
+        chipText: "#7f1d1d",
+        stripe: "linear-gradient(90deg, #dc2626 0%, #fb7185 100%)",
     },
     {
-        card: "border-cyan-200 ring-1 ring-cyan-100",
-        row: "border-l-cyan-400 bg-cyan-50/35 hover:bg-cyan-50/75",
-        chip: "border-cyan-200 bg-cyan-50 text-cyan-700",
-        dot: "bg-cyan-500",
-        stripe: "from-cyan-400 via-sky-400 to-blue-300",
+        accent: "#4f46e5",
+        rowBg: "#eef2ff",
+        chipBg: "#e0e7ff",
+        chipText: "#312e81",
+        stripe: "linear-gradient(90deg, #4f46e5 0%, #818cf8 100%)",
     },
     {
-        card: "border-lime-200 ring-1 ring-lime-100",
-        row: "border-l-lime-400 bg-lime-50/40 hover:bg-lime-50/80",
-        chip: "border-lime-200 bg-lime-50 text-lime-700",
-        dot: "bg-lime-500",
-        stripe: "from-lime-400 via-green-400 to-emerald-300",
+        accent: "#db2777",
+        rowBg: "#fdf2f8",
+        chipBg: "#fce7f3",
+        chipText: "#831843",
+        stripe: "linear-gradient(90deg, #db2777 0%, #f472b6 100%)",
     },
     {
-        card: "border-orange-200 ring-1 ring-orange-100",
-        row: "border-l-orange-400 bg-orange-50/35 hover:bg-orange-50/75",
-        chip: "border-orange-200 bg-orange-50 text-orange-700",
-        dot: "bg-orange-500",
-        stripe: "from-orange-400 via-amber-400 to-yellow-300",
+        accent: "#0f766e",
+        rowBg: "#f0fdfa",
+        chipBg: "#ccfbf1",
+        chipText: "#134e4a",
+        stripe: "linear-gradient(90deg, #0f766e 0%, #2dd4bf 100%)",
     },
     {
-        card: "border-blue-200 ring-1 ring-blue-100",
-        row: "border-l-blue-400 bg-blue-50/35 hover:bg-blue-50/75",
-        chip: "border-blue-200 bg-blue-50 text-blue-700",
-        dot: "bg-blue-500",
-        stripe: "from-blue-400 via-sky-400 to-cyan-300",
+        accent: "#475569",
+        rowBg: "#f8fafc",
+        chipBg: "#e2e8f0",
+        chipText: "#0f172a",
+        stripe: "linear-gradient(90deg, #475569 0%, #94a3b8 100%)",
     },
 ] as const
 
@@ -191,6 +191,17 @@ const getInvestorTone = (investorKey?: string | null) => {
     }
 
     return INVESTOR_TONES[hash % INVESTOR_TONES.length]
+}
+
+const getInvestorInitials = (name?: string | null) => {
+    const initials = name
+        ?.trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join("")
+
+    return initials || "?"
 }
 
 const VEHICLE_TYPES = ["Mobil", "Motor"] as const;
@@ -1560,8 +1571,12 @@ function UnitsPageContent() {
                         const investorTone = getInvestorTone(unit.investorId || unit.investor.name)
 
                         return (
-                        <div key={unit.id} className={cn("overflow-hidden rounded-lg border bg-white shadow-sm", investorTone.card)}>
-                            <div className={cn("h-1 bg-gradient-to-r", investorTone.stripe)} />
+                        <div
+                            key={unit.id}
+                            className="overflow-hidden rounded-lg border bg-white shadow-sm"
+                            style={{ borderColor: investorTone.accent }}
+                        >
+                            <div className="h-1.5" style={{ background: investorTone.stripe }} />
                             <div className="space-y-3 p-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex min-w-0 gap-3">
@@ -1614,8 +1629,20 @@ function UnitsPageContent() {
                              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
-                                     <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black", investorTone.chip)}>
-                                        <span className={cn("h-2 w-2 shrink-0 rounded-full", investorTone.dot)} />
+                                     <span
+                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black"
+                                        style={{
+                                            backgroundColor: investorTone.chipBg,
+                                            borderColor: investorTone.accent,
+                                            color: investorTone.chipText,
+                                        }}
+                                    >
+                                        <span
+                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white shadow-sm"
+                                            style={{ backgroundColor: investorTone.accent }}
+                                        >
+                                            {getInvestorInitials(unit.investor.name)}
+                                        </span>
                                         <span className="truncate [overflow-wrap:anywhere]">{unit.investor.name}</span>
                                     </span>
                                 </div>
@@ -1825,7 +1852,11 @@ function UnitsPageContent() {
                             return (
                             <TableRow
                                 key={unit.id}
-                                className={cn("cursor-pointer border-l-4 border-y-slate-100 border-r-slate-100 transition-colors", investorTone.row)}
+                                className="cursor-pointer border-l-[6px] border-y-slate-100 border-r-slate-100 transition hover:brightness-[0.98]"
+                                style={{
+                                    backgroundColor: investorTone.rowBg,
+                                    borderLeftColor: investorTone.accent,
+                                }}
                                 onClick={(e) => {
                                     // Prevent click if clicking checkbox or action buttons
                                     if (
@@ -1884,8 +1915,20 @@ function UnitsPageContent() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="max-w-[240px] whitespace-normal">
-                                    <span className={cn("inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black", investorTone.chip)}>
-                                        <span className={cn("h-2 w-2 shrink-0 rounded-full", investorTone.dot)} />
+                                    <span
+                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black"
+                                        style={{
+                                            backgroundColor: investorTone.chipBg,
+                                            borderColor: investorTone.accent,
+                                            color: investorTone.chipText,
+                                        }}
+                                    >
+                                        <span
+                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white shadow-sm"
+                                            style={{ backgroundColor: investorTone.accent }}
+                                        >
+                                            {getInvestorInitials(unit.investor.name)}
+                                        </span>
                                         <span className="truncate [overflow-wrap:anywhere]">{unit.investor.name}</span>
                                     </span>
                                 </TableCell>
