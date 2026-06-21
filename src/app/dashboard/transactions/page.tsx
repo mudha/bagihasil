@@ -925,15 +925,16 @@ function TransactionsPageContent() {
                                 <Plus className="mr-2 h-4 w-4" /> Transaksi Baru
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-h-[92vh] max-w-2xl overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20">
-                            <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-5 py-5 text-white sm:px-6">
+                        <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-2xl sm:border">
+                            <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-7 sm:py-5 sm:pr-20">
                                 <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
                                     {editingTransaction ? "Mode edit" : "Transaksi baru"}
                                 </div>
-                                <DialogTitle className="mt-3 text-2xl font-black tracking-tight text-white">{editingTransaction ? "Edit Transaksi" : "Mulai Transaksi Baru"}</DialogTitle>
+                                <DialogTitle className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">{editingTransaction ? "Edit Transaksi" : "Mulai Transaksi Baru"}</DialogTitle>
                             </DialogHeader>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="max-h-[calc(92vh-112px)] space-y-5 overflow-y-auto p-5 sm:p-6">
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-col overflow-hidden">
+                                    <div className="touch-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 pb-6 [&_[data-slot=input]]:h-11 [&_[data-slot=select-trigger]]:h-11 [&_[data-slot=select-trigger]]:w-full sm:p-6 sm:pb-8">
                                     <FormField
                                         control={form.control}
                                         name="unitId"
@@ -1016,7 +1017,7 @@ function TransactionsPageContent() {
                                         />
                                     </div>
                                     <div className="space-y-4 rounded-lg border border-teal-900/10 bg-teal-50/50 p-4 dark:bg-slate-900/50">
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
                                             <FormLabel>Bukti Transfer Pembelian</FormLabel>
                                             <Button
                                                 type="button"
@@ -1121,7 +1122,10 @@ function TransactionsPageContent() {
                                             </FormItem>
                                         )}
                                     />
-                                    <Button type="submit" className="h-11 w-full rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingTransaction ? "Update" : "Simpan"}</Button>
+                                    </div>
+                                    <div className="safe-pb shrink-0 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 sm:pb-4">
+                                        <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingTransaction ? "Simpan Perubahan" : "Simpan Transaksi"}</Button>
+                                    </div>
                                 </form>
                             </Form>
                         </DialogContent>

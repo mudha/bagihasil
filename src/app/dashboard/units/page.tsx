@@ -1130,20 +1130,24 @@ function UnitsPageContent() {
                                         <Plus className="mr-2 h-4 w-4" /> Tambah Unit
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-h-[92vh] max-w-2xl overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20">
-                                    <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-5 py-5 text-white sm:px-6">
+                                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
+                                    <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-7 sm:py-5 sm:pr-20">
                                         <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
                                             {editingUnit ? "Mode edit" : "Unit baru"}
                                         </div>
-                                        <DialogTitle className="mt-3 text-2xl font-black tracking-tight text-white">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                        <DialogTitle className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                     </DialogHeader>
                                     <Form {...form}>
-                                        <form onSubmit={form.handleSubmit(onSubmit)} className="max-h-[calc(92vh-112px)] space-y-5 overflow-y-auto p-5 sm:p-6">
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-col overflow-hidden">
+                                            <div className="touch-scroll min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 pb-6 [&_[data-slot=input]]:h-11 [&_[data-slot=select-trigger]]:h-11 [&_[data-slot=select-trigger]]:w-full sm:p-6 sm:pb-8">
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                            <section className="space-y-4">
                                                 <div>
-                                                    <Label>Foto Unit (Opsional)</Label>
-                                                    <div className="mt-2">
+                                                    <h3 className="text-sm font-black text-teal-950">Foto kendaraan</h3>
+                                                    <p className="mt-1 text-xs text-muted-foreground">Opsional. Foto dapat dipilih langsung dari galeri HP.</p>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                                                         <MultipleImageUpload
                                                             initialImages={unitImages}
                                                             onImagesChange={setUnitImages}
@@ -1151,36 +1155,38 @@ function UnitsPageContent() {
                                                             uploadLabel="Upload Foto Unit"
                                                         />
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <Label>Foto STNK (Opsional)</Label>
+                                                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                                            <span className="text-xs font-medium text-muted-foreground">Baca data STNK otomatis</span>
                                                         <Button
                                                             variant="secondary"
                                                             size="sm"
                                                             type="button"
                                                             onClick={handleScanStnk}
                                                             disabled={stnkImages.length === 0 || isScanningStnk}
+                                                            className="h-9 shrink-0"
                                                         >
                                                             {isScanningStnk ? "Scanning..." : "✨ Scan AI"}
                                                         </Button>
                                                     </div>
-                                                    <div>
                                                         <MultipleImageUpload
                                                             initialImages={stnkImages}
                                                             onImagesChange={setStnkImages}
                                                             maxImages={1}
                                                             uploadLabel="Upload Foto STNK"
                                                         />
+                                                        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                                                            Upload STNK, lalu tekan “Scan AI” untuk mengisi data kendaraan otomatis.
+                                                        </p>
                                                     </div>
-                                                    <p className="text-[10px] text-muted-foreground mt-1">
-                                                        *Upload STNK lalu klik "Scan AI" untuk isi otomatis data kendaraan.
-                                                    </p>
                                                 </div>
-                                            </div>
+                                            </section>
 
-                                            <div className="space-y-4 rounded-lg border border-teal-900/10 bg-teal-50/50 p-4 dark:bg-slate-900">
-                                                {/* ... existing vehicle details fields ... */}
+                                            <section className="space-y-4 rounded-xl border border-teal-900/10 bg-teal-50/50 p-4 sm:p-5 dark:bg-slate-900">
+                                                <div>
+                                                    <h3 className="text-sm font-black text-teal-950 dark:text-teal-100">Data kendaraan</h3>
+                                                    <p className="mt-1 text-xs text-muted-foreground">Lengkapi informasi utama untuk membentuk nama unit.</p>
+                                                </div>
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div className="space-y-2">
                                                         <Label>Jenis Kendaraan</Label>
@@ -1212,6 +1218,7 @@ function UnitsPageContent() {
                                                     </div>
                                                 </div>
 
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <div className="space-y-2">
                                                     <Label>Merek</Label>
                                                     <Select value={brand} onValueChange={(v) => {
@@ -1254,7 +1261,9 @@ function UnitsPageContent() {
                                                         )}
                                                     </div>
                                                 )}
+                                                </div>
 
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
                                                     name="type"
@@ -1295,6 +1304,7 @@ function UnitsPageContent() {
                                                         />
                                                     )}
                                                 </div>
+                                                </div>
 
                                                 <FormField
                                                     control={form.control}
@@ -1328,8 +1338,13 @@ function UnitsPageContent() {
                                                     <input type="hidden" {...form.register("year")} />
                                                     <input type="hidden" {...form.register("color")} />
                                                 </div>
-                                            </div>
+                                            </section>
 
+                                            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+                                                <div>
+                                                    <h3 className="text-sm font-black text-teal-950">Identitas & kepemilikan</h3>
+                                                    <p className="mt-1 text-xs text-muted-foreground">Nomor dokumen, pemodal, dan informasi pajak unit.</p>
+                                                </div>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <FormField
                                                     control={form.control}
@@ -1387,6 +1402,7 @@ function UnitsPageContent() {
                                                     )}
                                                 />
                                             </div>
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <FormField
                                                 control={form.control}
                                                 name="investorId"
@@ -1439,6 +1455,7 @@ function UnitsPageContent() {
                                                     </FormItem>
                                                 )}
                                             />
+                                            </div>
                                             {editingUnit && (
                                                 <FormField
                                                     control={form.control}
@@ -1463,7 +1480,11 @@ function UnitsPageContent() {
                                                     )}
                                                 />
                                             )}
-                                            <Button type="submit" className="h-11 w-full rounded-lg bg-teal-600 shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingUnit ? "Simpan Perubahan" : "Simpan"}</Button>
+                                            </section>
+                                            </div>
+                                            <div className="safe-pb shrink-0 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 sm:pb-4">
+                                                <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingUnit ? "Simpan Perubahan" : "Simpan Unit"}</Button>
+                                            </div>
                                         </form>
                                     </Form>
                                 </DialogContent>

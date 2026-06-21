@@ -1,14 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Upload, Plus, Image as ImageIcon } from "lucide-react"
+import { X, Upload, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { validateImageFile } from "@/lib/image-utils"
 import { ImageHoverPreview } from "./image-hover-preview"
-import { cn } from "@/lib/utils"
 
 export interface UploadedImage {
     id: string
@@ -119,13 +116,27 @@ export function MultipleImageUpload({
 
     return (
         <div className="space-y-4" onPaste={handlePaste}>
-            <div className="flex justify-between items-center">
-                <Label>{uploadLabel}</Label>
-                {description && <span className="text-xs text-muted-foreground">{description}</span>}
-                <span className="text-xs text-muted-foreground">{images.length}/{maxImages}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                    <Label>{uploadLabel}</Label>
+                    {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
+                </div>
+                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                    {images.length}/{maxImages}
+                </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/jpeg,image/png"
+                className="hidden"
+                onChange={handleFileChange}
+            />
+
+            {images.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                 {images.map((img) => (
                     <div key={img.id} className="relative group border rounded-lg overflow-hidden bg-slate-50 aspect-video">
                         <ImageHoverPreview
@@ -138,47 +149,43 @@ export function MultipleImageUpload({
                         <button
                             type="button"
                             onClick={() => handleRemove(img.id)}
-                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                            aria-label="Hapus foto"
+                            className="absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition hover:bg-red-700 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                         >
-                            <X className="h-3 w-3" />
+                            <X className="h-4 w-4" />
                         </button>
                     </div>
                 ))}
 
                 {images.length < maxImages && (
-                    <div
+                    <button
+                        type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors aspect-video"
+                        className="flex aspect-video min-h-28 flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-white transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
                     >
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            multiple
-                            accept="image/jpeg,image/png"
-                            className="hidden"
-                            onChange={handleFileChange}
-                        />
                         <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mb-1">
                             <Plus className="h-4 w-4 text-blue-600" />
                         </div>
                         <span className="text-xs font-medium text-slate-600">Tambah Foto</span>
-                    </div>
+                    </button>
                 )}
             </div>
+            )}
 
             {images.length === 0 && (
-                <div
+                <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 sm:min-h-40"
                 >
                     <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
                         <Upload className="h-5 w-5 text-blue-600" />
                     </div>
                     <p className="text-sm font-medium text-slate-700">Klik untuk Upload</p>
                     <p className="text-xs text-slate-500 mt-1">
-                        atau Paste (Ctrl+V)
+                        Pilih dari galeri atau paste (Ctrl+V)
                     </p>
-                </div>
+                </button>
             )}
         </div>
     )
