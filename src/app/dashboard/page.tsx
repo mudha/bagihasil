@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import {
     ArrowUpRight,
@@ -207,15 +208,27 @@ export default function DashboardPage() {
     const [calendarMode, setCalendarMode] = useState<"gregorian" | "hijri">("gregorian")
 
     useEffect(() => {
+        const controller = new AbortController()
+        let didTimeout = false
+        const timeoutId = window.setTimeout(() => {
+            didTimeout = true
+            controller.abort()
+        }, 15_000)
+
         const fetchStats = async () => {
             try {
                 let url = `/api/dashboard?months=${monthsRange}`
                 if (selectedInvestorId && selectedInvestorId !== "all") {
                     url += `&investorId=${selectedInvestorId}`
                 }
-                const res = await fetch(url)
+                const res = await fetch(url, {
+                    cache: "no-store",
+                    credentials: "same-origin",
+                    signal: controller.signal,
+                })
                 if (res.status === 401) {
-                    router.push("/login")
+                    await signOut({ redirect: false })
+                    router.replace("/login")
                     return
                 }
                 if (!res.ok) {
@@ -233,13 +246,26 @@ export default function DashboardPage() {
                 setStats(data)
                 setError(null)
             } catch (err) {
+                if (controller.signal.aborted) {
+                    if (!didTimeout) return
+                    setError("Dashboard terlalu lama merespons. Silakan muat ulang halaman.")
+                    toast.error("Dashboard terlalu lama merespons")
+                    return
+                }
                 console.error("Error fetching dashboard stats:", err)
                 setError("Gagal memuat data dashboard. Silakan coba lagi.")
                 toast.error("Gagal memuat data dashboard")
+            } finally {
+                window.clearTimeout(timeoutId)
             }
         }
 
         fetchStats()
+
+        return () => {
+            window.clearTimeout(timeoutId)
+            controller.abort()
+        }
     }, [selectedInvestorId, monthsRange, router])
 
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>

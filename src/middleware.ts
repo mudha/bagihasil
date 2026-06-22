@@ -5,7 +5,9 @@ import { NextResponse } from "next/server"
 const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
-    const isLoggedIn = !!req.auth
+    // A stale/partial JWT can still produce an auth object without a valid user.
+    // Treat it as logged out so API 401 redirects cannot loop back to dashboard.
+    const isLoggedIn = Boolean(req.auth?.user?.id)
     const { nextUrl } = req
 
     const role = req.auth?.user?.role
