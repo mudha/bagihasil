@@ -4,6 +4,22 @@ import { NextResponse } from "next/server"
 import { getHijriMonthYear } from "@/lib/date-utils"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 
+const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
+
+function getJakartaPeriodStart(monthsRange: number) {
+    const now = new Date()
+    const dateParts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Jakarta",
+        year: "numeric",
+        month: "numeric",
+    }).formatToParts(now)
+    const year = Number(dateParts.find(part => part.type === "year")?.value)
+    const monthIndex = Number(dateParts.find(part => part.type === "month")?.value) - 1
+
+    // Jakarta is UTC+7 and does not observe daylight saving time.
+    return new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
+}
+
 export async function GET(req: Request) {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -12,7 +28,9 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url)
         let investorId = searchParams.get('investorId')
         const monthsParam = searchParams.get('months')
-        const monthsRange = monthsParam ? parseInt(monthsParam) : 6 // Default 6 months as requested
+        const requestedMonths = monthsParam ? Number.parseInt(monthsParam, 10) : 6
+        const monthsRange = ALLOWED_MONTH_RANGES.has(requestedMonths) ? requestedMonths : 6
+        const startDate = getJakartaPeriodStart(monthsRange)
 
         if (session.user.role === "INVESTOR") {
             const investor = await getInvestorForSession(session)
@@ -23,14 +41,30 @@ export async function GET(req: Request) {
         }
 
         // 1. General Stats
-        const unitWhere: any = { status: "AVAILABLE" }
-        const transactionWhere: any = { status: "COMPLETED" }
-        const profitWhere: any = {}
+        const unitWhere: any = {
+            status: "AVAILABLE",
+            transactions: {
+                some: {
+                    status: "ON_PROCESS",
+                    buyDate: { gte: startDate }
+                }
+            }
+        }
+        const transactionWhere: any = {
+            status: "COMPLETED",
+            sellDate: { gte: startDate }
+        }
+        const profitWhere: any = {
+            transaction: {
+                status: "COMPLETED",
+                sellDate: { gte: startDate }
+            }
+        }
 
         if (investorId) {
             unitWhere.investorId = investorId
             transactionWhere.unit = { investorId }
-            profitWhere.transaction = { unit: { investorId } }
+            profitWhere.transaction.unit = { investorId }
         }
 
         const activeUnits = await prisma.unit.count({ where: unitWhere })
@@ -52,7 +86,12 @@ export async function GET(req: Request) {
                     select: {
                         status: true,
                         transactions: {
-                            where: { status: 'COMPLETED' },
+                            where: {
+                                OR: [
+                                    { status: 'ON_PROCESS', buyDate: { gte: startDate } },
+                                    { status: 'COMPLETED', sellDate: { gte: startDate } }
+                                ]
+                            },
                             include: {
                                 profitSharing: true
                             }
@@ -69,11 +108,12 @@ export async function GET(req: Request) {
             let totalCapitalDeployed = 0 // Capital in completed transactions
 
             investor.units.forEach(unit => {
-                if (unit.status === 'AVAILABLE') {
+                if (unit.status === 'AVAILABLE' && unit.transactions.some(tx => tx.status === 'ON_PROCESS')) {
                     activeUnitsCount++
                 }
 
                 unit.transactions.forEach(tx => {
+                    if (tx.status !== 'COMPLETED') return
                     completedTransactionsCount++
                     if (tx.profitSharing) {
                         totalInvestorProfit += tx.profitSharing.investorProfitAmount
@@ -93,23 +133,17 @@ export async function GET(req: Request) {
         })
 
         // 3. Monthly Stats (Gregorian & Hijri)
-        const startDate = new Date()
-        startDate.setMonth(startDate.getMonth() - (monthsRange - 1)) // -1 because current month is included
-        startDate.setDate(1)
-        startDate.setHours(0, 0, 0, 0)
-
         const monthlyWhere: any = {
-            calculatedAt: {
-                gte: startDate
+            transaction: {
+                status: 'COMPLETED',
+                sellDate: {
+                    gte: startDate
+                }
             }
         }
 
         if (investorId) {
-            monthlyWhere.transaction = {
-                unit: {
-                    investorId: investorId
-                }
-            }
+            monthlyWhere.transaction.unit = { investorId }
         }
 
         const monthlyProfits = await prisma.profitSharing.findMany({
@@ -240,6 +274,7 @@ export async function GET(req: Request) {
         const activeTransactions = await prisma.transaction.findMany({
             where: {
                 status: 'ON_PROCESS',
+                buyDate: { gte: startDate },
                 ...(investorId ? { unit: { investorId } } : {})
             },
             select: {
