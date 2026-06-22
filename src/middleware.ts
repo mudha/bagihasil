@@ -21,12 +21,9 @@ export default auth((req) => {
     }
 
     if (isPublicRoute) {
-        if (isLoggedIn) {
-            if (role === "INVESTOR") {
-                return NextResponse.redirect(new URL("/dashboard/investor", nextUrl))
-            }
-            return NextResponse.redirect(new URL("/dashboard", nextUrl))
-        }
+        // Always allow the login page. A stale auth cookie may look valid here
+        // while server-side API authorization rejects it; redirecting it back
+        // to dashboard would create an endless dashboard/login loop.
         return undefined
     }
 

@@ -4,7 +4,6 @@ import type { ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 import {
@@ -199,7 +198,6 @@ function ChartPanel({ title, subtitle, children }: { title: string; subtitle: st
 }
 
 export default function DashboardPage() {
-    const router = useRouter()
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
@@ -228,7 +226,7 @@ export default function DashboardPage() {
                 })
                 if (res.status === 401) {
                     await signOut({ redirect: false })
-                    router.replace("/login")
+                    window.location.replace("/login")
                     return
                 }
                 if (!res.ok) {
@@ -266,7 +264,7 @@ export default function DashboardPage() {
             window.clearTimeout(timeoutId)
             controller.abort()
         }
-    }, [selectedInvestorId, monthsRange, router])
+    }, [selectedInvestorId, monthsRange])
 
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>
     if (!stats) {
