@@ -383,6 +383,9 @@ function TransactionsPageContent() {
                 // Set Modal Pemodal (Default equal to buy price)
                 form.setValue('initialInvestorCapital', total)
 
+                // Pemodal covers the full scanned purchase price by default.
+                setAutoManagerCapital(total, total)
+
                 // Set Date if available
                 if (date) {
                     form.setValue('buyDate', date)
@@ -573,6 +576,16 @@ function TransactionsPageContent() {
         },
     })
 
+    function setAutoManagerCapital(buyPrice: unknown, investorCapital: unknown) {
+        if (editingTransaction) return
+
+        form.setValue(
+            'initialManagerCapital',
+            calculateManagerCapital(buyPrice, investorCapital),
+            { shouldDirty: true, shouldValidate: true }
+        )
+    }
+
     const fetchTransactions = async () => {
         const res = await fetch('/api/transactions')
         const data = await res.json()
@@ -629,24 +642,6 @@ function TransactionsPageContent() {
                     .catch(err => console.error("Failed to fetch next code for unit", err))
             }
         })
-        return () => subscription.unsubscribe()
-    }, [form, editingTransaction])
-
-    // Keep the capital split in sync for new transactions. A blank investor
-    // capital means the investor covers the full purchase price, so manager
-    // capital defaults to zero.
-    useEffect(() => {
-        const subscription = form.watch((value, { name }) => {
-            const shouldRecalculate = name === 'buyPrice' || name === 'initialInvestorCapital'
-            if (editingTransaction || !shouldRecalculate) return
-
-            form.setValue(
-                'initialManagerCapital',
-                calculateManagerCapital(value.buyPrice, value.initialInvestorCapital),
-                { shouldDirty: true, shouldValidate: true }
-            )
-        })
-
         return () => subscription.unsubscribe()
     }, [form, editingTransaction])
 
@@ -1037,7 +1032,11 @@ function TransactionsPageContent() {
                                                             placeholder="0"
                                                             {...field}
                                                             value={field.value === 0 ? '' : field.value}
-                                                            onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                                            onChange={e => {
+                                                                const buyPrice = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                                                                field.onChange(buyPrice)
+                                                                setAutoManagerCapital(buyPrice, form.getValues('initialInvestorCapital'))
+                                                            }}
                                                         />
                                                     </FormControl>
                                                     <FormMessage />
@@ -1111,7 +1110,11 @@ function TransactionsPageContent() {
                                                         placeholder="Kosongkan jika sama dengan harga beli"
                                                         {...field}
                                                         value={field.value ?? ''}
-                                                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                                                        onChange={(e) => {
+                                                            const investorCapital = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                                                            field.onChange(investorCapital)
+                                                            setAutoManagerCapital(form.getValues('buyPrice'), investorCapital)
+                                                        }}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
