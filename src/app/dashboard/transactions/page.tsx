@@ -88,6 +88,17 @@ const transactionSchema = z.object({
     notes: z.string().optional(),
 })
 
+function calculateManagerCapital(buyPrice: unknown, investorCapital: unknown) {
+    const parsedBuyPrice = Number(buyPrice)
+    const normalizedBuyPrice = Number.isFinite(parsedBuyPrice) ? Math.max(parsedBuyPrice, 0) : 0
+    const parsedInvestorCapital = investorCapital === undefined || investorCapital === null || investorCapital === ""
+        ? normalizedBuyPrice
+        : Number(investorCapital)
+    const normalizedInvestorCapital = Number.isFinite(parsedInvestorCapital) ? Math.max(parsedInvestorCapital, 0) : 0
+
+    return Math.max(normalizedBuyPrice - normalizedInvestorCapital, 0)
+}
+
 interface Transaction {
     id: string
     transactionCode: string
@@ -621,6 +632,24 @@ function TransactionsPageContent() {
         return () => subscription.unsubscribe()
     }, [form, editingTransaction])
 
+    // Keep the capital split in sync for new transactions. A blank investor
+    // capital means the investor covers the full purchase price, so manager
+    // capital defaults to zero.
+    useEffect(() => {
+        const subscription = form.watch((value, { name }) => {
+            const shouldRecalculate = name === 'buyPrice' || name === 'initialInvestorCapital'
+            if (editingTransaction || !shouldRecalculate) return
+
+            form.setValue(
+                'initialManagerCapital',
+                calculateManagerCapital(value.buyPrice, value.initialInvestorCapital),
+                { shouldDirty: true, shouldValidate: true }
+            )
+        })
+
+        return () => subscription.unsubscribe()
+    }, [form, editingTransaction])
+
 
     async function onSubmit(values: z.infer<typeof transactionSchema>) {
         try {
@@ -1078,6 +1107,7 @@ function TransactionsPageContent() {
                                                 <FormControl>
                                                     <Input
                                                         type="number"
+                                                        min="0"
                                                         placeholder="Kosongkan jika sama dengan harga beli"
                                                         {...field}
                                                         value={field.value ?? ''}
@@ -1098,6 +1128,7 @@ function TransactionsPageContent() {
                                                 <FormControl>
                                                     <Input
                                                         type="number"
+                                                        min="0"
                                                         placeholder="0"
                                                         {...field}
                                                         value={field.value ?? ''}
@@ -1105,7 +1136,7 @@ function TransactionsPageContent() {
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
-                                                <p className="text-xs text-muted-foreground">Opsional: Modal tambahan dari pengelola</p>
+                                                <p className="text-xs text-muted-foreground">Otomatis: harga beli dikurangi modal pemodal, dan tetap bisa disesuaikan manual</p>
                                             </FormItem>
                                         )}
                                     />
