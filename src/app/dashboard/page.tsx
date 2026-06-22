@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useEffect, useRef, useState } from "react"
-import { signOut } from "next-auth/react"
+import { signOutToLogin } from "@/lib/sign-out"
 import Link from "next/link"
 import {
     ArrowUpRight,
@@ -225,8 +225,7 @@ export default function DashboardPage() {
                     signal: controller.signal,
                 })
                 if (res.status === 401) {
-                    await signOut({ redirect: false })
-                    window.location.replace("/login")
+                    await signOutToLogin()
                     return
                 }
                 if (!res.ok) {

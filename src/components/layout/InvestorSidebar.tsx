@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, LogOut, User } from "lucide-react"
-import { signOut } from "next-auth/react"
 import { BrandMark } from "./BrandMark"
+import { signOutToLogin } from "@/lib/sign-out"
 
 interface InvestorSidebarProps {
     className?: string
@@ -52,7 +52,7 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                 <Button
                     variant="ghost"
                     className="w-full justify-start gap-2 rounded-lg text-teal-100 hover:bg-white/10 hover:text-white"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={signOutToLogin}
                 >
                     <LogOut className="h-4 w-4" />
                     Keluar

@@ -14,8 +14,9 @@ import {
     UserCog
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { BrandMark } from "./BrandMark"
+import { signOutToLogin } from "@/lib/sign-out"
 
 const routes = [
     {
@@ -137,7 +138,7 @@ export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
             </div>
             <div className="px-3 py-2 mt-auto">
                 <Button
-                    onClick={() => signOut()}
+                    onClick={signOutToLogin}
                     variant="ghost"
                     className="w-full justify-start text-teal-50/70 hover:bg-white/10 hover:text-white"
                 >
