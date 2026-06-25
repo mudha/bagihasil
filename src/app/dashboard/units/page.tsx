@@ -848,6 +848,7 @@ function UnitsPageContent() {
 
                 setIsOpen(false)
                 setEditingUnit(null)
+                setViewingUnit(null)
                 fetchUnits()
             } else {
                 const data = await res.json()
@@ -1123,7 +1124,10 @@ function UnitsPageContent() {
                             <ImportUnitsDialog onImportSuccess={fetchUnits} />
                             <Dialog open={isOpen} onOpenChange={(open) => {
                                 setIsOpen(open)
-                                if (!open) setEditingUnit(null)
+                                if (!open) {
+                                    setEditingUnit(null)
+                                    setViewingUnit(null)
+                                }
                             }}>
                                 <DialogTrigger asChild>
                                     <Button className="h-11 rounded-lg bg-teal-600 px-4 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">

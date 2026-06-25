@@ -700,6 +700,7 @@ function TransactionsPageContent() {
                 toast.success(editingTransaction ? "Transaksi berhasil diperbarui" : "Transaksi berhasil dibuat")
                 setIsOpen(false)
                 setEditingTransaction(null)
+                setViewingTransaction(null)
                 setUploadedFiles([])
                 setResetKey(prev => prev + 1)
                 form.reset()
@@ -941,6 +942,7 @@ function TransactionsPageContent() {
                         setIsOpen(open)
                         if (!open) {
                             setEditingTransaction(null)
+                            setViewingTransaction(null)
                             form.reset()
                         }
                     }}>
