@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useLayoutEffect } from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
 interface ImageHoverPreviewProps {
@@ -13,10 +14,19 @@ interface ImageHoverPreviewProps {
 }
 
 const PREVIEW_SIZES = {
-    sm: "w-48 h-48",
-    md: "w-64 h-64",
-    lg: "w-80 h-80",
-    xl: "w-96 h-96",
+    sm: { width: 240, height: 180 },
+    md: { width: 320, height: 240 },
+    lg: { width: 380, height: 285 },
+    xl: { width: 480, height: 360 },
+}
+
+const VIEWPORT_MARGIN = 16
+const TRIGGER_GAP = 14
+const CAPTION_HEIGHT = 40
+
+function clamp(value: number, min: number, max: number) {
+    const safeMax = Math.max(min, max)
+    return Math.min(Math.max(value, min), safeMax)
 }
 
 export function ImageHoverPreview({
@@ -28,26 +38,47 @@ export function ImageHoverPreview({
     disabled = false,
 }: ImageHoverPreviewProps) {
     const [isHovered, setIsHovered] = useState(false)
-    const [position, setPosition] = useState({ x: 0, y: 0 })
+    const [position, setPosition] = useState({ x: 0, y: 0, width: 0, height: 0 })
     const [imageLoaded, setImageLoaded] = useState(false)
+    const [isMounted, setIsMounted] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
-        // Preload the image
+        setIsMounted(true)
+    }, [])
+
+    useEffect(() => {
         const img = new Image()
+        setImageLoaded(false)
         img.src = src
         img.onload = () => setImageLoaded(true)
     }, [src])
 
-    const handleMouseEnter = (e: React.MouseEvent) => {
-        if (disabled || !imageLoaded) return
+    useLayoutEffect(() => {
+        if (!isHovered) return
 
-        // Delay showing the preview slightly
+        updatePosition()
+
+        const handleViewportChange = () => updatePosition()
+
+        window.addEventListener("resize", handleViewportChange)
+        window.addEventListener("scroll", handleViewportChange, true)
+
+        return () => {
+            window.removeEventListener("resize", handleViewportChange)
+            window.removeEventListener("scroll", handleViewportChange, true)
+        }
+    }, [isHovered, previewSize])
+
+    const handleMouseEnter = () => {
+        if (disabled || !imageLoaded) return
+        if (window.matchMedia("(hover: none), (pointer: coarse)").matches) return
+
         timeoutRef.current = setTimeout(() => {
+            updatePosition()
             setIsHovered(true)
-            updatePosition(e)
-        }, 200)
+        }, 120)
     }
 
     const handleMouseLeave = () => {
@@ -57,43 +88,43 @@ export function ImageHoverPreview({
         setIsHovered(false)
     }
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isHovered) return
-        updatePosition(e)
-    }
-
-    const updatePosition = (e: React.MouseEvent) => {
+    const updatePosition = () => {
         const container = containerRef.current
         if (!container) return
 
         const rect = container.getBoundingClientRect()
-        const mouseX = e.clientX
-        const mouseY = e.clientY
+        const size = PREVIEW_SIZES[previewSize]
+        const maxWidth = Math.max(window.innerWidth - VIEWPORT_MARGIN * 2, 0)
+        const maxHeight = Math.max(window.innerHeight - VIEWPORT_MARGIN * 2 - CAPTION_HEIGHT, 0)
+        const width = Math.min(size.width, maxWidth)
+        const height = Math.min(size.height, maxHeight)
+        const totalHeight = height + CAPTION_HEIGHT
 
-        // Calculate position relative to viewport
-        const viewportWidth = window.innerWidth
-        const viewportHeight = window.innerHeight
+        const rightX = rect.right + TRIGGER_GAP
+        const leftX = rect.left - width - TRIGGER_GAP
+        const bottomY = rect.bottom + TRIGGER_GAP
+        const topY = rect.top - totalHeight - TRIGGER_GAP
+        let x = rightX
+        let y = rect.top + rect.height / 2 - totalHeight / 2
 
-        // Default: show on the right side
-        let x = mouseX + 20
-        let y = mouseY - 150
+        if (rightX + width > window.innerWidth - VIEWPORT_MARGIN && leftX >= VIEWPORT_MARGIN) {
+            x = leftX
+        } else if (rightX + width > window.innerWidth - VIEWPORT_MARGIN) {
+            x = clamp(rect.left + rect.width / 2 - width / 2, VIEWPORT_MARGIN, window.innerWidth - width - VIEWPORT_MARGIN)
 
-        // If preview would go off right edge, show on left
-        const previewWidth = previewSize === "sm" ? 192 : previewSize === "md" ? 256 : previewSize === "lg" ? 320 : 384
-        if (x + previewWidth > viewportWidth - 20) {
-            x = mouseX - previewWidth - 20
+            if (bottomY + totalHeight <= window.innerHeight - VIEWPORT_MARGIN) {
+                y = bottomY
+            } else if (topY >= VIEWPORT_MARGIN) {
+                y = topY
+            }
         }
 
-        // Keep within vertical bounds
-        const previewHeight = previewWidth // assuming square preview
-        if (y < 20) {
-            y = 20
-        } else if (y + previewHeight > viewportHeight - 20) {
-            y = viewportHeight - previewHeight - 20
-        }
+        y = clamp(y, VIEWPORT_MARGIN, window.innerHeight - totalHeight - VIEWPORT_MARGIN)
 
-        setPosition({ x, y })
+        setPosition({ x, y, width, height })
     }
+
+    const shouldShowPreview = isHovered && imageLoaded && !disabled && isMounted && position.width > 0 && position.height > 0
 
     return (
         <>
@@ -102,7 +133,8 @@ export function ImageHoverPreview({
                 className={cn("relative cursor-pointer", className)}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onMouseMove={handleMouseMove}
+                onFocus={handleMouseEnter}
+                onBlur={handleMouseLeave}
             >
                 {children || (
                     <img
@@ -113,34 +145,30 @@ export function ImageHoverPreview({
                 )}
             </div>
 
-            {/* Preview Portal */}
-            {isHovered && imageLoaded && !disabled && (
+            {shouldShowPreview && createPortal(
                 <div
-                    className="fixed z-[9999] pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+                    className="pointer-events-none fixed z-[9999] animate-in fade-in zoom-in-95 duration-150"
                     style={{
                         left: `${position.x}px`,
                         top: `${position.y}px`,
+                        width: `${position.width}px`,
                     }}
                 >
-                    <div className={cn(
-                        PREVIEW_SIZES[previewSize],
-                        "rounded-xl overflow-hidden shadow-2xl ring-1 ring-black/10 backdrop-blur-sm"
-                    )}>
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none z-10" />
+                    <div
+                        className="overflow-hidden rounded-xl border border-white/70 bg-slate-950 shadow-2xl shadow-slate-950/25 ring-1 ring-slate-950/10"
+                        style={{ height: `${position.height}px` }}
+                    >
                         <img
                             src={src}
                             alt={alt}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain"
                         />
-                        {/* Modern glassmorphism border effect */}
-                        <div className="absolute inset-0 ring-1 ring-inset ring-white/20 rounded-xl pointer-events-none" />
                     </div>
-
-                    {/* Optional: Image info overlay */}
-                    <div className="mt-2 bg-black/80 backdrop-blur-md text-white text-xs px-3 py-2 rounded-lg shadow-lg max-w-xs">
+                    <div className="mt-2 rounded-lg border border-slate-900/10 bg-slate-950/90 px-3 py-2 text-xs text-white shadow-lg backdrop-blur">
                         <p className="font-medium truncate">{alt}</p>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     )
