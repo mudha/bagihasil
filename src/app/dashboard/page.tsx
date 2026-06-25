@@ -637,6 +637,7 @@ export default function DashboardPage() {
                     <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
                         <CardHeader>
                             <CardTitle className="text-base font-black text-slate-950">Performa Pemodal</CardTitle>
+                            <p className="text-xs text-slate-500">Ranking berdasarkan bagi hasil 30 hari terakhir.</p>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-3">

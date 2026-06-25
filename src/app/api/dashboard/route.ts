@@ -5,6 +5,7 @@ import { getHijriMonthYear } from "@/lib/date-utils"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 
 const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
+const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000
 
 function getJakartaPeriodStart(monthsRange: number) {
     const now = new Date()
@@ -31,6 +32,7 @@ export async function GET(req: Request) {
         const requestedMonths = monthsParam ? Number.parseInt(monthsParam, 10) : 6
         const monthsRange = ALLOWED_MONTH_RANGES.has(requestedMonths) ? requestedMonths : 6
         const startDate = getJakartaPeriodStart(monthsRange)
+        const investorPerformanceStartDate = new Date(Date.now() - THIRTY_DAYS_IN_MS)
 
         if (session.user.role === "INVESTOR") {
             const investor = await getInvestorForSession(session)
@@ -104,7 +106,7 @@ export async function GET(req: Request) {
         const investorStats = investors.map(investor => {
             let activeUnitsCount = 0
             let completedTransactionsCount = 0
-            let totalInvestorProfit = 0
+            let totalInvestorProfitLast30Days = 0
             let totalCapitalDeployed = 0 // Capital in completed transactions
 
             investor.units.forEach(unit => {
@@ -116,7 +118,12 @@ export async function GET(req: Request) {
                     if (tx.status !== 'COMPLETED') return
                     completedTransactionsCount++
                     if (tx.profitSharing) {
-                        totalInvestorProfit += tx.profitSharing.investorProfitAmount
+                        const sellDate = tx.sellDate ? new Date(tx.sellDate) : null
+
+                        if (sellDate && sellDate >= investorPerformanceStartDate) {
+                            totalInvestorProfitLast30Days += tx.profitSharing.investorProfitAmount
+                        }
+
                         totalCapitalDeployed += tx.profitSharing.totalCapitalInvestor
                     }
                 })
@@ -127,9 +134,12 @@ export async function GET(req: Request) {
                 name: investor.name,
                 activeUnits: activeUnitsCount,
                 completedTransactions: completedTransactionsCount,
-                totalProfit: totalInvestorProfit,
+                totalProfit: totalInvestorProfitLast30Days,
                 totalCapital: totalCapitalDeployed
             }
+        }).sort((a, b) => {
+            if (b.totalProfit !== a.totalProfit) return b.totalProfit - a.totalProfit
+            return a.name.localeCompare(b.name, "id-ID")
         })
 
         // 3. Monthly Stats (Gregorian & Hijri)
