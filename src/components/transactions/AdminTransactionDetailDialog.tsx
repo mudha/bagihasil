@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import {
@@ -86,256 +85,285 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "AVAILABLE":
-                return <Badge variant="outline" className="border-green-600 text-green-600">Available</Badge>
+                return <Badge variant="outline" className="rounded-full border-green-600 bg-green-50 px-3 py-1 text-green-700">Available</Badge>
             case "ON_PROCESS":
-                return <Badge variant="secondary" className="bg-blue-100 text-blue-700">On Process</Badge>
+                return <Badge variant="secondary" className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">On Process</Badge>
             case "COMPLETED":
-                return <Badge variant="default" className="bg-emerald-600">Completed</Badge>
-            case "SOLD": // Assuming 'SOLD' maps to 'ON_PROCESS' or is a distinct status in your system. 
-                // Check constants, but Badge variant handles display adequately.
-                return <Badge variant="default" className="bg-blue-600">Sold</Badge>
+                return <Badge variant="default" className="rounded-full bg-emerald-600 px-3 py-1">Completed</Badge>
+            case "SOLD":
+                return <Badge variant="default" className="rounded-full bg-blue-600 px-3 py-1">Sold</Badge>
             default:
-                return <Badge variant="secondary">{status}</Badge>
+                return <Badge variant="secondary" className="rounded-full px-3 py-1">{status}</Badge>
         }
     }
+
+    const totalCosts = transaction.costs?.reduce((acc, curr) => acc + curr.amount, 0) || 0
+    const hasSaleInfo = transaction.status === "COMPLETED" && (transaction.sellDate || transaction.sellPrice)
 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-teal-900/10 p-0">
-                    <div className="bg-[#073f3b] p-5 text-white sm:p-6">
-                    <DialogHeader>
-                        <div className="flex justify-between items-start mr-8">
-                            <div>
-                                    <DialogTitle className="flex items-center gap-2 text-2xl font-black tracking-tight">
-                                    <Receipt className="h-5 w-5" />
-                                    Detail Transaksi
-                                </DialogTitle>
-                                    <p className="mt-2 w-fit rounded-full bg-white/10 px-3 py-1 font-mono text-sm text-teal-50">{transaction.transactionCode}</p>
+                <DialogContent className="grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl">
+                    <div className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-14 text-white sm:px-6 sm:py-5 sm:pr-16">
+                        <DialogHeader>
+                            <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="min-w-0 space-y-3">
+                                    <div className="flex items-center gap-2 text-teal-100/80">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                                            <Receipt className="h-5 w-5" />
+                                        </span>
+                                        <span className="text-xs font-black uppercase tracking-[0.16em]">Detail Transaksi</span>
+                                    </div>
+                                    <DialogTitle className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                                        {transaction.transactionCode}
+                                    </DialogTitle>
+                                    <p className="max-w-2xl text-sm leading-relaxed text-teal-50/80">
+                                        Ringkasan pembelian, unit kendaraan, bukti transaksi, dan rincian modal dalam satu tampilan.
+                                    </p>
+                                </div>
+
+                                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                                    <div className="flex justify-start sm:justify-end">
+                                        {getStatusBadge(transaction.status)}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 sm:flex">
+                                        {onEdit && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={onEdit}
+                                                className="h-10 rounded-lg bg-white text-teal-950 shadow-none hover:bg-teal-50"
+                                            >
+                                                <Pencil className="mr-2 h-4 w-4" />
+                                                Edit
+                                            </Button>
+                                        )}
+                                        {onViewDetail && (
+                                            <Button
+                                                size="sm"
+                                                onClick={onViewDetail}
+                                                className="h-10 rounded-lg bg-slate-950 text-white shadow-none hover:bg-slate-800"
+                                            >
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                Detail
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {getStatusBadge(transaction.status)}
-                                {onEdit && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={onEdit}
-                                        className="gap-1.5"
-                                    >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                        Edit
-                                    </Button>
-                                )}
-                                {onViewDetail && (
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={onViewDetail}
-                                        className="gap-1.5"
-                                    >
-                                        <Eye className="h-3.5 w-3.5" />
-                                        Detail
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </DialogHeader>
+                        </DialogHeader>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-2">
-                        {/* Left Column: Unit & Transaction Info */}
-                        <div className="space-y-6">
-
-                            {/* Unit Info Card */}
-                            <div className="space-y-3 rounded-lg border border-teal-900/10 bg-teal-50/60 p-4">
-                                <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                                    <Car className="h-4 w-4" /> Unit Kendaraan
-                                </h4>
-                                <div className="flex gap-4">
-                                    {transaction.unit.imageUrl ? (
-                                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-teal-900/10 bg-white">
-                                            <img
-                                                src={transaction.unit.imageUrl}
-                                                alt="Unit"
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
-                                            <Car className="h-6 w-6" />
-                                        </div>
-                                    )}
-                                    <div className="space-y-1">
-                                        <p className="font-medium text-sm">{transaction.unit.name}</p>
-                                        <p className="text-xs font-mono text-muted-foreground bg-white border px-1.5 py-0.5 rounded inline-block">
-                                            {transaction.unit.plateNumber}
-                                        </p>
-                                        <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                                            <span>{transaction.unit.year}</span>
-                                            <span>•</span>
-                                            <span>{transaction.unit.color}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Main Transaction Details */}
-                            <div className="space-y-3">
-                                <h4 className="text-sm font-semibold flex items-center gap-2">
-                                    <Tag className="h-4 w-4" /> Informasi Utama
-                                </h4>
-                                <div className="grid grid-cols-2 gap-y-4 text-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-xs">Tanggal Beli</p>
-                                        <div className="flex items-center gap-1.5 font-medium">
-                                            <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                                            {transaction.buyDate ? format(new Date(transaction.buyDate), "dd MMMM yyyy", { locale: id }) : "-"}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-muted-foreground text-xs">Harga Beli</p>
-                                        <div className="flex items-center gap-1.5 font-medium">
-                                            <DollarSign className="h-3.5 w-3.5 text-slate-500" />
-                                            {formatCurrency(transaction.buyPrice)}
+                    <div className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-4 sm:p-6">
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                            <section className="space-y-4">
+                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+                                            <Car className="h-5 w-5" />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <h3 className="font-black text-slate-950">Unit Kendaraan</h3>
+                                            <p className="text-xs text-slate-500">Unit yang terhubung dengan transaksi ini.</p>
                                         </div>
                                     </div>
 
-                                    <div className="col-span-2">
-                                        <Separator className="my-1" />
-                                    </div>
-
-                                    {transaction.initialInvestorCapital !== null && transaction.initialInvestorCapital !== undefined && (
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-xs">Modal Pemodal</p>
-                                            <p className="font-medium text-blue-600">
-                                                {formatCurrency(transaction.initialInvestorCapital)}
-                                            </p>
+                                    <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+                                        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                            {transaction.unit.imageUrl ? (
+                                                <img
+                                                    src={transaction.unit.imageUrl}
+                                                    alt={transaction.unit.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <Car className="h-8 w-8 text-slate-400" />
+                                            )}
                                         </div>
-                                    )}
-                                    {transaction.initialManagerCapital !== null && transaction.initialManagerCapital !== undefined && (
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-xs">Modal Pengelola</p>
-                                            <p className="font-medium text-orange-600">
-                                                {formatCurrency(transaction.initialManagerCapital)}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-
-                            {/* Costs */}
-                            {transaction.costs && transaction.costs.length > 0 && (
-                                <div className="space-y-3 p-4 border rounded-lg bg-orange-50/50 border-orange-100">
-                                    <h4 className="text-sm font-semibold flex items-center gap-2 text-orange-900">
-                                        <Banknote className="h-4 w-4" /> Biaya & Pengeluaran
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {transaction.costs.map((cost, index) => (
-                                            <div key={index} className="flex justify-between items-start text-sm">
-                                                <span className="text-muted-foreground">{cost.description}</span>
-                                                <span className="font-medium text-orange-700">
-                                                    {formatCurrency(cost.amount)}
-                                                </span>
+                                        <div className="min-w-0 space-y-3">
+                                            <div>
+                                                <p className="break-words text-lg font-black leading-snug text-slate-950">
+                                                    {transaction.unit.name}
+                                                </p>
+                                                <p className="mt-2 inline-flex max-w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 font-mono text-sm font-bold text-slate-700 [overflow-wrap:anywhere]">
+                                                    {transaction.unit.plateNumber || "-"}
+                                                </p>
                                             </div>
-                                        ))}
-                                        <Separator className="bg-orange-200" />
-                                        <div className="flex justify-between items-center font-medium text-sm pt-1">
-                                            <span>Total Biaya</span>
-                                            <span className="text-orange-700">
-                                                {formatCurrency(transaction.costs.reduce((acc, curr) => acc + curr.amount, 0))}
-                                            </span>
+                                            <div className="flex flex-wrap gap-2 text-xs text-slate-600">
+                                                {transaction.unit.year && <span className="rounded-full bg-slate-100 px-2 py-1">{transaction.unit.year}</span>}
+                                                {transaction.unit.color && <span className="rounded-full bg-slate-100 px-2 py-1">{transaction.unit.color}</span>}
+                                                {transaction.unit.vehicleType && <span className="rounded-full bg-slate-100 px-2 py-1">{transaction.unit.vehicleType}</span>}
+                                            </div>
+                                            <div className="rounded-lg bg-teal-50 p-3">
+                                                <p className="text-xs font-semibold text-teal-900/60">Pemilik Unit</p>
+                                                <p className="mt-1 break-words font-bold text-teal-950">{transaction.unit.investor.name}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Notes */}
+                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                                            <Tag className="h-5 w-5" />
+                                        </span>
+                                        <div>
+                                            <h3 className="font-black text-slate-950">Informasi Utama</h3>
+                                            <p className="text-xs text-slate-500">Tanggal, harga, dan komposisi modal.</p>
+                                        </div>
+                                    </div>
 
-                            {transaction.notes && (
-                                <div className="bg-yellow-50 border border-yellow-100 p-3 rounded-md">
-                                    <p className="text-xs font-semibold text-yellow-800 mb-1">Catatan:</p>
-                                    <p className="text-sm text-yellow-900">{transaction.notes}</p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                            <p className="text-xs font-semibold text-slate-500">Tanggal Beli</p>
+                                            <p className="mt-2 flex items-start gap-2 break-words font-bold text-slate-950">
+                                                <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
+                                                {transaction.buyDate ? format(new Date(transaction.buyDate), "dd MMMM yyyy", { locale: id }) : "-"}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                            <p className="text-xs font-semibold text-slate-500">Harga Beli</p>
+                                            <p className="mt-2 flex items-start gap-2 break-words font-bold text-slate-950">
+                                                <DollarSign className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
+                                                {formatCurrency(transaction.buyPrice)}
+                                            </p>
+                                        </div>
+                                        {transaction.initialInvestorCapital !== null && transaction.initialInvestorCapital !== undefined && (
+                                            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                                                <p className="text-xs font-semibold text-blue-900/60">Modal Pemodal</p>
+                                                <p className="mt-2 break-words font-black text-blue-700">{formatCurrency(transaction.initialInvestorCapital)}</p>
+                                            </div>
+                                        )}
+                                        {transaction.initialManagerCapital !== null && transaction.initialManagerCapital !== undefined && (
+                                            <div className="rounded-lg border border-orange-100 bg-orange-50 p-3">
+                                                <p className="text-xs font-semibold text-orange-900/60">Modal Pengelola</p>
+                                                <p className="mt-2 break-words font-black text-orange-700">{formatCurrency(transaction.initialManagerCapital)}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
 
-                        </div>
+                                {transaction.costs && transaction.costs.length > 0 && (
+                                    <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-sm">
+                                        <div className="mb-4 flex items-center gap-2 text-orange-950">
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-orange-700">
+                                                <Banknote className="h-5 w-5" />
+                                            </span>
+                                            <div>
+                                                <h3 className="font-black">Biaya & Pengeluaran</h3>
+                                                <p className="text-xs text-orange-900/60">Rincian biaya tambahan transaksi.</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {transaction.costs.map((cost, index) => (
+                                                <div key={index} className="grid gap-1 rounded-lg bg-white/75 p-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                                                    <span className="min-w-0 break-words text-slate-700">{cost.description || "Biaya"}</span>
+                                                    <span className="font-black text-orange-700 sm:text-right">{formatCurrency(cost.amount)}</span>
+                                                </div>
+                                            ))}
+                                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-orange-200 pt-3 font-black">
+                                                <span>Total Biaya</span>
+                                                <span className="text-orange-700">{formatCurrency(totalCosts)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                        {/* Right Column: Proofs & Status */}
-                        <div className="space-y-6">
-                            {/* Buy Proof */}
-                            <div>
-                                <p className="text-xs font-medium mb-2 text-muted-foreground flex items-center gap-1">
-                                    <ImageIcon className="h-3 w-3" /> Bukti Pembelian
-                                </p>
-                                <div className="group relative flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100">
-                                    {transaction.buyProofImageUrl ? (
-                                        <ImageHoverPreview
-                                            src={transaction.buyProofImageUrl}
-                                            alt="Bukti Beli"
-                                            className="w-full h-full"
-                                        >
-                                            <img
+                                {transaction.notes && (
+                                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                        <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-800">Catatan</p>
+                                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-amber-950">{transaction.notes}</p>
+                                    </div>
+                                )}
+                            </section>
+
+                            <aside className="space-y-4">
+                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                    <div className="mb-3 flex items-center gap-2">
+                                        <ImageIcon className="h-4 w-4 text-slate-500" />
+                                        <h3 className="font-black text-slate-950">Bukti Pembelian</h3>
+                                    </div>
+                                    <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                        {transaction.buyProofImageUrl ? (
+                                            <ImageHoverPreview
                                                 src={transaction.buyProofImageUrl}
                                                 alt="Bukti Beli"
-                                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                onClick={() => setPreviewImage(transaction.buyProofImageUrl || null)}
-                                            />
-                                        </ImageHoverPreview>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                            <ImageIcon className="h-8 w-8 opacity-20" />
-                                            <span className="text-xs">Tidak ada bukti foto</span>
-                                        </div>
+                                                className="h-full w-full"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="block h-full min-h-[220px] w-full cursor-pointer bg-slate-950"
+                                                    onClick={() => setPreviewImage(transaction.buyProofImageUrl || null)}
+                                                >
+                                                    <img
+                                                        src={transaction.buyProofImageUrl}
+                                                        alt="Bukti Beli"
+                                                        className="h-full max-h-[360px] w-full object-contain transition-opacity hover:opacity-95"
+                                                    />
+                                                </button>
+                                            </ImageHoverPreview>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2 p-8 text-center text-slate-500">
+                                                <ImageIcon className="h-10 w-10 opacity-30" />
+                                                <span className="text-sm font-semibold">Tidak ada bukti foto</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {transaction.buyProofDescription && (
+                                        <p className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm italic text-slate-600">
+                                            "{transaction.buyProofDescription}"
+                                        </p>
                                     )}
                                 </div>
-                                {transaction.buyProofDescription && (
-                                    <p className="text-xs text-muted-foreground mt-1 italic text-center">
-                                        "{transaction.buyProofDescription}"
-                                    </p>
-                                )}
-                            </div>
 
-                            <Separator />
-
-                            {/* Additional Info */}
-                            <div className="space-y-3 rounded-lg border border-teal-900/10 p-4">
-                                <h4 className="text-sm font-semibold flex items-center gap-2">
-                                    <Hash className="h-4 w-4" /> Detail Lainnya
-                                </h4>
-                                <div className="space-y-3 text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4 text-muted-foreground" />
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted-foreground">Pemilik Unit</p>
-                                            <p className="font-medium">{transaction.unit.investor.name}</p>
+                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                    <div className="mb-4 flex items-center gap-2">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                                            <Hash className="h-5 w-5" />
+                                        </span>
+                                        <div>
+                                            <h3 className="font-black text-slate-950">Detail Lainnya</h3>
+                                            <p className="text-xs text-slate-500">Status dan info tambahan transaksi.</p>
                                         </div>
                                     </div>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-3 rounded-lg bg-slate-50 p-3">
+                                            <User className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold text-slate-500">Pemilik Unit</p>
+                                                <p className="mt-1 break-words font-bold text-slate-950">{transaction.unit.investor.name}</p>
+                                            </div>
+                                        </div>
 
-                                    {transaction.status === "COMPLETED" && transaction.sellDate && (
-                                        <div className="flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-emerald-600" />
-                                            <div className="flex-1">
-                                                <p className="text-xs text-muted-foreground">Tanggal Jual</p>
-                                                <p className="font-medium text-emerald-700">
-                                                    {format(new Date(transaction.sellDate), "dd MMMM yyyy", { locale: id })}
-                                                </p>
+                                        {hasSaleInfo && (
+                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                                                {transaction.sellDate && (
+                                                    <div className="flex gap-3 rounded-lg bg-emerald-50 p-3">
+                                                        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-emerald-900/60">Tanggal Jual</p>
+                                                            <p className="mt-1 break-words font-bold text-emerald-800">
+                                                                {format(new Date(transaction.sellDate), "dd MMMM yyyy", { locale: id })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {transaction.sellPrice && (
+                                                    <div className="flex gap-3 rounded-lg bg-emerald-50 p-3">
+                                                        <Banknote className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-emerald-900/60">Harga Jual</p>
+                                                            <p className="mt-1 break-words font-bold text-emerald-800">
+                                                                {formatCurrency(transaction.sellPrice)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                    )}
-                                    {transaction.status === "COMPLETED" && transaction.sellPrice && (
-                                        <div className="flex items-center gap-2">
-                                            <Banknote className="h-4 w-4 text-emerald-600" />
-                                            <div className="flex-1">
-                                                <p className="text-xs text-muted-foreground">Harga Jual</p>
-                                                <p className="font-medium text-emerald-700">
-                                                    {formatCurrency(transaction.sellPrice)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </aside>
                         </div>
                     </div>
                 </DialogContent>
