@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { authConfig } from "./auth.config"
+import { getLoginCity } from "./login-location"
 
 const loginSchema = z.object({
     identifier: z.string().min(1),
@@ -21,7 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 identifier: { label: "Username / Email", type: "text" },
                 password: { label: "Password", type: "password" }
             },
-            authorize: async (credentials) => {
+            authorize: async (credentials, request) => {
                 const parsedCredentials = loginSchema.safeParse(credentials)
 
                 if (!parsedCredentials.success) {
@@ -46,7 +47,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 if (!isValid) return null
 
-                return user
+                try {
+                    return await prisma.user.update({
+                        where: { id: user.id },
+                        data: {
+                            lastLoginAt: new Date(),
+                            lastLoginCity: getLoginCity(request),
+                        }
+                    })
+                } catch (error) {
+                    // Login tetap diizinkan jika pencatatan metadata gagal.
+                    console.error("Failed to record last login:", error)
+                    return user
+                }
             }
         })
     ],

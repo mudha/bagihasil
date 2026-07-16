@@ -13,7 +13,7 @@ const userSchema = z.object({
     role: z.enum(["ADMIN", "INVESTOR", "VIEWER"]).default("VIEWER")
 })
 
-export async function GET(req: Request) {
+export async function GET() {
     const session = await auth()
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -26,6 +26,8 @@ export async function GET(req: Request) {
             username: true,
             email: true,
             role: true,
+            lastLoginAt: true,
+            lastLoginCity: true,
             createdAt: true,
             investor: {
                 select: {

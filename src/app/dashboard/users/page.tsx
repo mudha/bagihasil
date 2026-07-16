@@ -59,6 +59,8 @@ interface User {
     username: string | null
     email: string | null
     role: "ADMIN" | "INVESTOR" | "VIEWER"
+    lastLoginAt: string | null
+    lastLoginCity: string | null
     createdAt: string
     investor?: {
         name: string
@@ -92,7 +94,7 @@ export default function UsersPage() {
                 const data = await res.json()
                 setUsers(data)
             }
-        } catch (error) {
+        } catch {
             console.error("Failed to fetch users")
         }
     }
@@ -152,7 +154,7 @@ export default function UsersPage() {
                 const errorData = await res.json()
                 toast.error(errorData.error || "Gagal menyimpan user")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem")
         }
     }
@@ -171,7 +173,7 @@ export default function UsersPage() {
                 const errorData = await res.json()
                 toast.error(errorData.error || "Gagal menghapus user")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem")
         } finally {
             setDeleteId(null)
@@ -187,6 +189,16 @@ export default function UsersPage() {
             default:
                 return <Badge variant="secondary"><UserIcon className="w-3 h-3 mr-1" /> Viewer</Badge>
         }
+    }
+
+    const formatLastLogin = (lastLoginAt: string | null) => {
+        if (!lastLoginAt) return null
+
+        return new Intl.DateTimeFormat('id-ID', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+            timeZone: 'Asia/Jakarta',
+        }).format(new Date(lastLoginAt))
     }
 
     const handleEditClick = (user: User) => {
@@ -352,6 +364,19 @@ export default function UsersPage() {
                                     )}
                                 </div>
                                 <div>
+                                    <span className="block text-xs text-muted-foreground mb-0.5">Login Terakhir</span>
+                                    {user.lastLoginAt ? (
+                                        <div className="space-y-0.5">
+                                            <span className="block font-medium text-foreground">{formatLastLogin(user.lastLoginAt)} WIB</span>
+                                            <span className="block text-xs text-muted-foreground">
+                                                {user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs italic text-muted-foreground">Belum pernah tercatat</span>
+                                    )}
+                                </div>
+                                <div>
                                     <span className="block text-xs text-muted-foreground mb-0.5">Dibuat Pada</span>
                                     <span className="text-muted-foreground">{new Date(user.createdAt).toLocaleDateString('id-ID')}</span>
                                 </div>
@@ -390,6 +415,7 @@ export default function UsersPage() {
                             <TableHead>Email</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Terhubung ke...</TableHead>
+                            <TableHead>Login Terakhir</TableHead>
                             <TableHead>Tanggal Dibuat</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
@@ -406,6 +432,22 @@ export default function UsersPage() {
                                         <span className="text-emerald-600 font-medium">Pemodal: {user.investor.name}</span>
                                     ) : (
                                         <span className="text-muted-foreground italic text-xs">-</span>
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {user.lastLoginAt ? (
+                                        <div className="space-y-0.5">
+                                            <div className="whitespace-nowrap text-sm font-medium">
+                                                {formatLastLogin(user.lastLoginAt)} WIB
+                                            </div>
+                                            <div className="whitespace-nowrap text-xs text-muted-foreground">
+                                                {user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="whitespace-nowrap text-xs italic text-muted-foreground">
+                                            Belum pernah tercatat
+                                        </span>
                                     )}
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
@@ -434,7 +476,7 @@ export default function UsersPage() {
                         ))}
                         {users.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                                <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
                                     Belum ada data user.
                                 </TableCell>
                             </TableRow>
