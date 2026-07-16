@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -90,6 +90,7 @@ export function ManageCostProofsDialog({
                 payer: cost.payer,
                 amount: cost.amount,
                 description: cost.description || "",
+                replaceProofs: true,
                 proofs: uploadedProofs
             }
 

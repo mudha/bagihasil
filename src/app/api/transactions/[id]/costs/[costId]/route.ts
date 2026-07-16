@@ -8,6 +8,7 @@ const costSchema = z.object({
     payer: z.enum(["INVESTOR", "MANAGER"]),
     amount: z.number().positive(),
     description: z.string().optional(),
+    replaceProofs: z.boolean().optional(),
     proofs: z.array(z.object({
         imageUrl: z.string(),
         description: z.string().optional()
@@ -26,13 +27,13 @@ export async function PUT(
         const body = await req.json()
         const validatedData = costSchema.parse(body)
 
-        const { proofs, ...data } = validatedData
+        const { proofs, replaceProofs, ...data } = validatedData
 
         const updateData: any = { ...data }
-        if (proofs) {
+        if (replaceProofs) {
             updateData.proofs = {
                 deleteMany: {},
-                create: proofs
+                create: proofs ?? []
             }
         }
 

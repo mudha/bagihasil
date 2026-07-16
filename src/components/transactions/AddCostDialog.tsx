@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/form"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
 import { toast } from "sonner"
-import { Plus, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const costSchema = z.object({
@@ -80,7 +80,7 @@ export function AddCostDialog({
         },
     })
 
-    const analyzeImage = async (file: File, imageId: string) => {
+    const analyzeImage = useCallback(async (file: File, imageId: string) => {
         if (isAnalyzing) return
 
         setIsAnalyzing(true)
@@ -150,7 +150,7 @@ export function AddCostDialog({
         } finally {
             setIsAnalyzing(false)
         }
-    }
+    }, [form, isAnalyzing])
 
     // Effect to auto-analyze new images
     useEffect(() => {
@@ -166,7 +166,7 @@ export function AddCostDialog({
         if (newImage && newImage.file) {
             analyzeImage(newImage.file, newImage.id)
         }
-    }, [images, form])
+    }, [images, analyzeImage])
 
     useEffect(() => {
         if (existingCost) {
@@ -176,21 +176,9 @@ export function AddCostDialog({
                 amount: existingCost.amount,
                 description: existingCost.description || "",
             })
-            // If existing cost has proofs, we should load them.
-            // However, current API response might not include proofs yet unless we updated the fetcher.
-            // For now, we only handle adding NEW proofs or replacing.
-            // If existingCost has proofs loaded, we would need to map them to preview state.
-            // Assuming existingCost.proofs = [{ id, imageUrl, description }]
-            if (existingCost.proofs) {
-                setImages(existingCost.proofs.map((p: any) => ({
-                    id: p.id,
-                    file: null, // Existing images have no File object
-                    preview: p.imageUrl,
-                    description: p.description || ""
-                })))
-            } else {
-                setImages([])
-            }
+            // Bukti biaya dikelola melalui dialog khusus agar edit metadata
+            // tidak pernah menghapus atau mengganti lampiran secara tidak sengaja.
+            setImages([])
         } else {
             form.reset({
                 amount: 0,
@@ -218,25 +206,25 @@ export function AddCostDialog({
     const onSubmit = async (values: z.infer<typeof costSchema>) => {
         setIsLoading(true)
         try {
-            // Upload images
-            const uploadedProofs = []
-            for (const img of images) {
-                // If it's an existing image (placeholder file size 0), stick with preview URL
-                // Actually, my placeholder logic above is weak.
-                // Better check if preview starts with http or /
-                let url = img.preview
-                if (img.file && img.file.size > 0) {
-                    url = await uploadFile(img.file)
-                }
-                uploadedProofs.push({
-                    imageUrl: url,
-                    description: img.description
-                })
-            }
+            const payload: z.infer<typeof costSchema> & {
+                proofs?: { imageUrl: string; description: string }[]
+            } = { ...values }
 
-            const payload = {
-                ...values,
-                proofs: uploadedProofs
+            // Lampiran hanya dikirim saat membuat biaya baru. Saat mengedit,
+            // tidak adanya field `proofs` membuat API mempertahankan bukti lama.
+            if (!existingCost) {
+                const uploadedProofs = []
+                for (const img of images) {
+                    let url = img.preview
+                    if (img.file && img.file.size > 0) {
+                        url = await uploadFile(img.file)
+                    }
+                    uploadedProofs.push({
+                        imageUrl: url,
+                        description: img.description
+                    })
+                }
+                payload.proofs = uploadedProofs
             }
 
             let res
@@ -406,18 +394,23 @@ export function AddCostDialog({
                             )}
                         />
 
-                        <div className="space-y-2">
-                            <Label>Lampiran Bukti (Foto/Nota)</Label>
-                            <MultipleImageUpload
-                                onImagesChange={setImages}
-                                maxImages={5}
-                            />
-                            {existingCost && existingCost.proofs && existingCost.proofs.length > 0 && images.length === 0 && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    *Upload gambar baru akan menggantikan gambar lama.
+                        {existingCost ? (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                                <p className="font-medium">Bukti biaya tetap tersimpan saat data ini diedit.</p>
+                                <p className="mt-1 text-xs text-blue-700">
+                                    Gunakan tombol Kelola Bukti pada tabel jika ingin menambah atau menghapus lampiran.
+                                    {existingCost.proofs?.length > 0 && ` Saat ini ada ${existingCost.proofs.length} bukti.`}
                                 </p>
-                            )}
-                        </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <Label>Lampiran Bukti (Foto/Nota)</Label>
+                                <MultipleImageUpload
+                                    onImagesChange={setImages}
+                                    maxImages={5}
+                                />
+                            </div>
+                        )}
 
                         <div className="flex justify-end gap-2 pt-4">
                             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
