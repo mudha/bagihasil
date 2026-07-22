@@ -376,7 +376,9 @@ function UnitsPageContent() {
             setInvestorStatusFilter(investorStatus)
         }
     }, [searchParams])
-    const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort", "code", "asc")
+    // Gunakan key baru agar preferensi lama "kode terlama" di perangkat mobile
+    // tidak menimpa urutan awal terbaru berdasarkan tanggal unit dibuat.
+    const [sortBy, setSortBy, sortOrder, setSortOrder] = usePersistedSort("units-sort-v2", "createdAt", "desc")
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     // Pagination State
