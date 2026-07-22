@@ -884,8 +884,8 @@ function TransactionsPageContent() {
                 </div>
             </section>
 
-            <div className="flex flex-col gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
+            <div className="rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur">
+                <div className="grid w-full grid-cols-2 gap-2 [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
                     {selectedIds.length > 0 && !isViewer && (
                         <>
                             <AlertDialog>
@@ -1170,9 +1170,8 @@ function TransactionsPageContent() {
             </div>
 
 
-            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
-                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
-                    <div className="relative w-full lg:max-w-sm">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
+                    <div className="relative col-span-2 w-full lg:col-span-1">
                         <Input
                             placeholder="Cari transaksi..."
                             value={searchQuery}
@@ -1222,7 +1221,6 @@ function TransactionsPageContent() {
                             <SelectItem value="all">Semua Pemodal</SelectItem>
                         </SelectContent>
                     </Select>
-                    <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
                                 <SelectValue placeholder="Status" />
@@ -1250,10 +1248,6 @@ function TransactionsPageContent() {
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
-                </div>
-
-                <div className="flex w-full gap-2 lg:w-auto">
                     <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
                         <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[220px]">
                             <SelectValue placeholder="Pilih Investor" />
@@ -1267,7 +1261,6 @@ function TransactionsPageContent() {
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
             </div>
 
             {/* Mobile Card View */}
