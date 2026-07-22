@@ -1095,13 +1095,12 @@ function UnitsPageContent() {
                 </div>
             </section>
 
-            <div className="flex flex-col gap-3 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
-                    {/* ... (Alert Dialogs & Import Buttons) ... */}
-                    {selectedIds.length > 0 && !isViewer && (
+            {!isViewer && (
+                <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
+                    {selectedIds.length > 0 && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
+                                <Button variant="destructive" size="sm" className="col-span-2">
                                     <Trash className="mr-2 h-4 w-4" /> Hapus ({selectedIds.length})
                                 </Button>
                             </AlertDialogTrigger>
@@ -1121,21 +1120,19 @@ function UnitsPageContent() {
                             </AlertDialogContent>
                         </AlertDialog>
                     )}
-                    {!isViewer && (
-                        <>
-                            <ImportUnitsDialog onImportSuccess={fetchUnits} />
-                            <Dialog open={isOpen} onOpenChange={(open) => {
+                    <ImportUnitsDialog onImportSuccess={fetchUnits} />
+                    <Dialog open={isOpen} onOpenChange={(open) => {
                                 setIsOpen(open)
                                 if (!open) {
                                     setEditingUnit(null)
                                     setViewingUnit(null)
                                 }
-                            }}>
-                                <DialogTrigger asChild>
-                                    <Button className="h-11 rounded-lg bg-teal-600 px-4 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">
-                                        <Plus className="mr-2 h-4 w-4" /> Tambah Unit
-                                    </Button>
-                                </DialogTrigger>
+                    }}>
+                        <DialogTrigger asChild>
+                            <Button className="rounded-lg bg-teal-600 px-3 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 sm:px-4">
+                                <Plus className="mr-1.5 h-4 w-4 sm:mr-2" /> Tambah Unit
+                            </Button>
+                        </DialogTrigger>
                                 <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
                                     <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-7 sm:py-5 sm:pr-20">
                                         <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
@@ -1494,15 +1491,12 @@ function UnitsPageContent() {
                                         </form>
                                     </Form>
                                 </DialogContent>
-                            </Dialog>
-                        </>
-                    )}
+                    </Dialog>
                 </div>
-            </div>
+            )}
 
-            <div className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[1fr_auto] lg:items-center">
-                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-1 lg:flex-row lg:gap-4">
-                    <div className="relative w-full lg:max-w-sm">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
+                    <div className="relative col-span-2 w-full lg:col-span-1">
                         <Input
                             placeholder="Cari unit..."
                             value={searchQuery}
@@ -1543,7 +1537,7 @@ function UnitsPageContent() {
                         else params.delete('investorStatus')
                         window.history.replaceState(null, '', `?${params.toString()}`)
                     }}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
                             <SelectValue placeholder="Status Pemodal" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1552,38 +1546,34 @@ function UnitsPageContent() {
                             <SelectItem value="all">Semua Pemodal</SelectItem>
                         </SelectContent>
                     </Select>
-                    <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
-                                <SelectValue placeholder="Status" />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Status</SelectItem>
+                            <SelectItem value="AVAILABLE">Available</SelectItem>
+                            <SelectItem value="SOLD">Sold</SelectItem>
+                            <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Mobile Sort Dropdown */}
+                    <div className="w-full lg:hidden">
+                        <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
+                            <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                                <SelectValue placeholder="Urutkan" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ALL">Semua Status</SelectItem>
-                                <SelectItem value="AVAILABLE">Available</SelectItem>
-                                <SelectItem value="SOLD">Sold</SelectItem>
-                                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                                <SelectItem value="NEWEST">Terbaru</SelectItem>
+                                <SelectItem value="NAME_ASC">Nama (A-Z)</SelectItem>
+                                <SelectItem value="PLATE_ASC">Plat Nomor</SelectItem>
+                                <SelectItem value="STATUS">Status</SelectItem>
                             </SelectContent>
                         </Select>
-
-                        {/* Mobile Sort Dropdown */}
-                        <div className="w-full lg:hidden">
-                            <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
-                                <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
-                                    <SelectValue placeholder="Urutkan" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="NEWEST">Terbaru</SelectItem>
-                                    <SelectItem value="NAME_ASC">Nama (A-Z)</SelectItem>
-                                    <SelectItem value="PLATE_ASC">Plat Nomor</SelectItem>
-                                    <SelectItem value="STATUS">Status</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
-                </div>
-
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[220px]">
+                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>
