@@ -407,19 +407,17 @@ export default function TransactionDetailPage() {
                 <TabsContent value="costs" className="space-y-4">
                     <div className="flex justify-stretch sm:justify-end">
                         {transaction.status !== 'COMPLETED' && (
-                            <>
-                                <Button variant="outline" onClick={() => setIsCostOpen(true)} className="min-h-11 w-full rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 sm:w-auto">
-                                    <Plus className="mr-2 h-4 w-4" /> Tambah Biaya
-                                </Button>
-                                <AddCostDialog
-                                    transactionId={transaction.id}
-                                    open={isCostOpen}
-                                    onOpenChange={handleCloseCostDialog}
-                                    existingCost={editingCost}
-                                    onSuccess={fetchTransaction}
-                                />
-                            </>
+                            <Button variant="outline" onClick={() => setIsCostOpen(true)} className="min-h-11 w-full rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 sm:w-auto">
+                                <Plus className="mr-2 h-4 w-4" /> Tambah Biaya
+                            </Button>
                         )}
+                        <AddCostDialog
+                            transactionId={transaction.id}
+                            open={isCostOpen}
+                            onOpenChange={handleCloseCostDialog}
+                            existingCost={editingCost}
+                            onSuccess={fetchTransaction}
+                        />
                     </div>
 
                     <div className="overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm">
@@ -475,16 +473,17 @@ export default function TransactionDetailPage() {
                                                     <Upload className="h-3 w-3 mr-1.5" />
                                                     Kelola
                                                 </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEditCost(cost)}
+                                                    className="h-8 border-slate-300 px-3 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+                                                    title="Edit biaya"
+                                                >
+                                                    <Pencil className="mr-1.5 h-3 w-3" />
+                                                    Edit
+                                                </Button>
                                                 {transaction.status !== 'COMPLETED' && (
-                                                    <>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleEditCost(cost)}
-                                                            className="h-8 w-8 p-0 text-slate-600 hover:text-slate-900"
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
@@ -493,7 +492,6 @@ export default function TransactionDetailPage() {
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
-                                                    </>
                                                 )}
                                             </div>
                                         </TableCell>
