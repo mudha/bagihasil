@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { getHijriMonthYear } from "@/lib/date-utils"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
+import { investorStatsScope } from "@/lib/dashboard-access"
 
 const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000
@@ -81,8 +82,9 @@ export async function GET(req: Request) {
             }
         })
 
-        // 2. Investor Stats (Always fetch all for the list/selector)
+        // 2. Investor Stats. Admin/viewer see the selector; investors only see their own row.
         const investors = await prisma.investor.findMany({
+            where: investorStatsScope(session.user.role === "INVESTOR" ? investorId : null),
             include: {
                 units: {
                     select: {
