@@ -5,6 +5,7 @@ import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
 import { canAccessTransaction, forbidden } from "@/lib/api-auth"
+import { calculateProfitSharing } from "@/lib/profit-sharing"
 
 
 const transactionUpdateSchema = z.object({
@@ -171,31 +172,16 @@ export async function PUT(
                     const investorSharePct = validatedData.investorSharePercentage ?? investorDefaultMargin
                     const managerSharePct = validatedData.managerSharePercentage ?? (100 - investorSharePct)
 
-                    // 3. Calculate Financials
-                    const buyPrice = existingTransaction.buyPrice
-                    const sellPrice = finalSellPrice
-
-                    const investorCosts = fullTransaction.costs.filter(c => c.payer === "INVESTOR").reduce((sum, c) => sum + c.amount, 0)
-                    const managerCosts = fullTransaction.costs.filter(c => c.payer === "MANAGER").reduce((sum, c) => sum + c.amount, 0)
-                    const totalCosts = investorCosts + managerCosts
-
-                    const baseInvestorCapital = existingTransaction.initialInvestorCapital ?? buyPrice
-                    const baseManagerCapital = existingTransaction.initialManagerCapital ?? 0
-
-                    const totalCapitalInvestor = baseInvestorCapital + investorCosts
-                    const totalCapitalManager = baseManagerCapital + managerCosts
-                    const totalCapital = totalCapitalInvestor + totalCapitalManager
-
-                    const grossProfit = sellPrice - buyPrice
-                    const netMargin = grossProfit - totalCosts
-
-                    let investorProfit = 0
-                    let managerProfit = 0
-
-                    if (netMargin > 0) {
-                        investorProfit = (netMargin * investorSharePct) / 100
-                        managerProfit = netMargin - investorProfit // Ensure raw sum matches
-                    }
+                    // 3. Calculate financials through the tested shared calculator.
+                    const calculation = calculateProfitSharing({
+                        buyPrice: existingTransaction.buyPrice,
+                        sellPrice: finalSellPrice,
+                        initialInvestorCapital: existingTransaction.initialInvestorCapital,
+                        initialManagerCapital: existingTransaction.initialManagerCapital,
+                        costs: fullTransaction.costs,
+                        investorSharePercentage: investorSharePct,
+                        managerSharePercentage: managerSharePct,
+                    })
 
                     // 4. Create ProfitSharing Record
                     // Delete existing if any to avoid duplicates logic
@@ -204,14 +190,14 @@ export async function PUT(
                     await prisma.profitSharing.create({
                         data: {
                             transactionId: id,
-                            netMargin: netMargin,
+                            netMargin: calculation.netMargin,
                             investorSharePercentage: investorSharePct,
                             managerSharePercentage: managerSharePct,
-                            investorProfitAmount: investorProfit,
-                            managerProfitAmount: managerProfit,
-                            totalCapitalInvestor: totalCapitalInvestor,
-                            totalCapitalManager: totalCapitalManager,
-                            totalCapital: totalCapital
+                            investorProfitAmount: calculation.investorProfitAmount,
+                            managerProfitAmount: calculation.managerProfitAmount,
+                            totalCapitalInvestor: calculation.totalCapitalInvestor,
+                            totalCapitalManager: calculation.totalCapitalManager,
+                            totalCapital: calculation.totalCapital
                         }
                     })
 
