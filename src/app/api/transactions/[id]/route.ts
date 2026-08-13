@@ -6,6 +6,7 @@ import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
 import { canAccessTransaction, forbidden } from "@/lib/api-auth"
 import { calculateProfitSharing } from "@/lib/profit-sharing"
+import { runSerializableTransaction } from "@/lib/serializable-transaction"
 
 
 const transactionUpdateSchema = z.object({
@@ -126,111 +127,76 @@ export async function PUT(
         const body = await req.json()
         const validatedData = transactionUpdateSchema.parse(body)
 
-        // Check if transaction exists and is editable
-        const existingTransaction = await prisma.transaction.findUnique({
-            where: { id }
-        })
-
-        if (!existingTransaction) {
-            return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
-        }
-
-        // Handle status changes
-        if (body.status && body.status !== existingTransaction.status) {
-            if (body.status === "COMPLETED") {
-                // Check merged data for requirements
-                const finalSellDate = validatedData.sellDate || existingTransaction.sellDate
-                const finalSellPrice = validatedData.sellPrice ?? existingTransaction.sellPrice
-
-                // Changing to COMPLETED requires sell date and sell price
-                if (!finalSellDate || finalSellPrice === undefined || finalSellPrice === null || finalSellPrice === 0) {
-                    return NextResponse.json({
-                        error: "Cannot mark as COMPLETED without sell date and sell price. Please finalize the sale first."
-                    }, { status: 400 })
-                }
-                // Update unit status to SOLD
-                await prisma.unit.update({
-                    where: { id: existingTransaction.unitId },
-                    data: { status: "SOLD" }
-                })
-
-                // --- Auto-create Profit Sharing Record ---
-                // 1. Fetch related data (Costs & Investor Margin)
-                const fullTransaction = await prisma.transaction.findUnique({
-                    where: { id },
-                    include: {
-                        costs: true,
-                        unit: { include: { investor: true } }
-                    }
-                })
-
-                if (fullTransaction) {
-                    // @ts-ignore
-                    const investorDefaultMargin = fullTransaction.unit.investor.marginPercentage ?? 50
-
-                    // 2. Determine Percentages (Body > Default)
-                    const investorSharePct = validatedData.investorSharePercentage ?? investorDefaultMargin
-                    const managerSharePct = validatedData.managerSharePercentage ?? (100 - investorSharePct)
-
-                    // 3. Calculate financials through the tested shared calculator.
-                    const calculation = calculateProfitSharing({
-                        buyPrice: existingTransaction.buyPrice,
-                        sellPrice: finalSellPrice,
-                        initialInvestorCapital: existingTransaction.initialInvestorCapital,
-                        initialManagerCapital: existingTransaction.initialManagerCapital,
-                        costs: fullTransaction.costs,
-                        investorSharePercentage: investorSharePct,
-                        managerSharePercentage: managerSharePct,
-                    })
-
-                    // 4. Create ProfitSharing Record
-                    // Delete existing if any to avoid duplicates logic
-                    await prisma.profitSharing.deleteMany({ where: { transactionId: id } })
-
-                    await prisma.profitSharing.create({
-                        data: {
-                            transactionId: id,
-                            netMargin: calculation.netMargin,
-                            investorSharePercentage: investorSharePct,
-                            managerSharePercentage: managerSharePct,
-                            investorProfitAmount: calculation.investorProfitAmount,
-                            managerProfitAmount: calculation.managerProfitAmount,
-                            totalCapitalInvestor: calculation.totalCapitalInvestor,
-                            totalCapitalManager: calculation.totalCapitalManager,
-                            totalCapital: calculation.totalCapital
-                        }
-                    })
-
-                    // Trigger Notification
-                    try {
-                        await notifyUnitSold(fullTransaction.unit.investorId, id)
-                    } catch (error) {
-                        console.error("Failed to send notification:", error)
-                    }
-                }
-            } else if (body.status === "ON_PROCESS") {
-                // Changing back to ON_PROCESS from COMPLETED
-                // Delete profitSharing record if exists
-                await prisma.profitSharing.deleteMany({
-                    where: { transactionId: id }
-                })
-                // Update unit status back to AVAILABLE
-                await prisma.unit.update({
-                    where: { id: existingTransaction.unitId },
-                    data: { status: "AVAILABLE" }
-                })
-            }
-        }
-
         // Extract proofs to handle separately
         const { buyProofs, sellProofs, investorSharePercentage, managerSharePercentage, ...transactionData } = validatedData
-
         const updateData: any = { ...transactionData }
 
-        // Use transaction to update data and proofs
-        const result = await prisma.$transaction(async (tx) => {
-            // Handle status validation logic if needed (it was before this block in the file)
-            // But I am targeting the update call.
+        const outcome = await runSerializableTransaction(prisma, async (tx) => {
+            const currentTransaction = await tx.transaction.findUnique({
+                where: { id },
+                include: {
+                    costs: true,
+                    unit: { include: { investor: true } },
+                },
+            })
+
+            if (!currentTransaction) {
+                return { kind: "NOT_FOUND" as const }
+            }
+
+            const statusChanged = body.status && body.status !== currentTransaction.status
+            let notifyInvestorId: string | null = null
+
+            if (statusChanged && body.status === "COMPLETED") {
+                const finalSellDate = validatedData.sellDate || currentTransaction.sellDate
+                const finalSellPrice = validatedData.sellPrice ?? currentTransaction.sellPrice
+
+                if (!finalSellDate || finalSellPrice === undefined || finalSellPrice === null || finalSellPrice === 0) {
+                    return { kind: "INVALID_COMPLETION" as const }
+                }
+
+                const investorSharePct = validatedData.investorSharePercentage
+                    ?? currentTransaction.unit.investor.marginPercentage
+                    ?? 50
+                const managerSharePct = validatedData.managerSharePercentage ?? (100 - investorSharePct)
+                const calculation = calculateProfitSharing({
+                    buyPrice: currentTransaction.buyPrice,
+                    sellPrice: finalSellPrice,
+                    initialInvestorCapital: currentTransaction.initialInvestorCapital,
+                    initialManagerCapital: currentTransaction.initialManagerCapital,
+                    costs: currentTransaction.costs,
+                    investorSharePercentage: investorSharePct,
+                    managerSharePercentage: managerSharePct,
+                })
+
+                await tx.unit.update({
+                    where: { id: currentTransaction.unitId },
+                    data: { status: "SOLD" },
+                })
+
+                await tx.profitSharing.deleteMany({ where: { transactionId: id } })
+                await tx.profitSharing.create({
+                    data: {
+                        transactionId: id,
+                        netMargin: calculation.netMargin,
+                        investorSharePercentage: investorSharePct,
+                        managerSharePercentage: managerSharePct,
+                        investorProfitAmount: calculation.investorProfitAmount,
+                        managerProfitAmount: calculation.managerProfitAmount,
+                        totalCapitalInvestor: calculation.totalCapitalInvestor,
+                        totalCapitalManager: calculation.totalCapitalManager,
+                        totalCapital: calculation.totalCapital,
+                    },
+                })
+
+                notifyInvestorId = currentTransaction.unit.investorId
+            } else if (statusChanged && body.status === "ON_PROCESS") {
+                await tx.profitSharing.deleteMany({ where: { transactionId: id } })
+                await tx.unit.update({
+                    where: { id: currentTransaction.unitId },
+                    data: { status: "AVAILABLE" },
+                })
+            }
 
             // 1. Update Transaction
             await tx.transaction.update({
@@ -272,11 +238,31 @@ export async function PUT(
                 }
             }
 
-            return await tx.transaction.findUnique({
+            const result = await tx.transaction.findUnique({
                 where: { id },
                 include: { costs: true, proofs: true }
             })
+            return { kind: "OK" as const, result, notifyInvestorId }
         })
+
+        // Transaction committed. External side effects start only after this point.
+        if (outcome.kind === "NOT_FOUND") {
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+        }
+        if (outcome.kind === "INVALID_COMPLETION") {
+            return NextResponse.json({
+                error: "Cannot mark as COMPLETED without sell date and sell price. Please finalize the sale first."
+            }, { status: 400 })
+        }
+
+        const { result, notifyInvestorId } = outcome
+        if (notifyInvestorId) {
+            try {
+                await notifyUnitSold(notifyInvestorId, id)
+            } catch (error) {
+                console.error("Failed to send notification:", error)
+            }
+        }
 
         // Log update
         if (result) {
