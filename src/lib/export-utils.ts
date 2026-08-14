@@ -1026,7 +1026,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
                             addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, url)
                         })
                     }
-                } catch (e) {
+                } catch {
                     addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
                 }
             } else {
@@ -1188,7 +1188,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
                             const imgX = x + (colWidth - d.imgData.w) / 2
                             doc.addImage(d.imgData.base64, 'JPEG', imgX, localY, d.imgData.w, d.imgData.h)
                             localY += d.imgData.h + 3
-                        } catch (e) { }
+                        } catch { }
                     }
 
                     // Description
