@@ -713,7 +713,7 @@ function TransactionsPageContent() {
                     try {
                         const errorData = await res.json()
                         errorMessage = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error)
-                    } catch (e) {
+                    } catch {
                         const text = await resClone.text()
                         console.error("Non-JSON response:", res.status, res.statusText, text)
                         errorMessage = `Server Error (${res.status}): ${text.substring(0, 100)}`

@@ -769,7 +769,7 @@ function UnitsPageContent() {
                     try {
                         const errData = await uploadRes.json();
                         errMsg = errData.error || errMsg;
-                    } catch (e) { }
+                    } catch { }
                     throw new Error(errMsg);
                 }
                 const uploadData = await uploadRes.json()
@@ -798,7 +798,7 @@ function UnitsPageContent() {
                     try {
                         const errData = await uploadRes.json();
                         errMsg = errData.error || errMsg;
-                    } catch (e) { }
+                    } catch { }
                     throw new Error(errMsg);
                 }
                 const uploadData = await uploadRes.json()
