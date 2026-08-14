@@ -48,8 +48,6 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
         const files = e.target.files
         if (!files || files.length === 0) return
 
-        const newImages: ImageFileWithDescription[] = []
-
         // Check limit
         if (images.length + files.length > maxImages) {
             toast.error(`Maksimal ${maxImages} gambar`)
@@ -142,10 +140,8 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
             const items = e.clipboardData?.items
             if (!items) return
 
-            let hasImage = false
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.startsWith("image/")) {
-                    hasImage = true
                     const file = items[i].getAsFile()
                     if (file) {
                         const currentImages = imagesRef.current
@@ -215,7 +211,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
             onMouseLeave={() => (isHovered.current = false)}
         >
             <div className="grid gap-4">
-                {images.map((img, index) => (
+                {images.map((img) => (
                     <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-slate-50 relative group">
                         <ImageHoverPreview
                             src={img.preview}
