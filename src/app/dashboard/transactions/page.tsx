@@ -2,7 +2,7 @@
 
 import { Suspense } from "react"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -348,11 +348,6 @@ function TransactionsPageContent() {
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
     const [isScanning, setIsScanning] = useState(false)
     const [resetKey, setResetKey] = useState(0)
-
-    const handleImagesChange = useCallback((images: any[]) => {
-        const files = images.map(img => img.file).filter((f): f is File => f !== null)
-        setUploadedFiles(files)
-    }, [])
 
     const handleScanProof = async () => {
         if (uploadedFiles.length === 0) return
