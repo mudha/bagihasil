@@ -1100,7 +1100,7 @@ function TransactionsPageContent() {
                                             maxImages={5}
                                         />
                                         <p className="text-[10px] text-muted-foreground">
-                                            Upload bukti transfer DP & Pelunasan. Klik "Scan AI" untuk menjumlahkan nominal otomatis.
+                                            Upload bukti transfer DP & Pelunasan. Klik &quot;Scan AI&quot; untuk menjumlahkan nominal otomatis.
                                         </p>
                                     </div>
 
