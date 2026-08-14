@@ -35,7 +35,7 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden font-sans lg:h-screen lg:overflow-hidden">
+        <div className="relative min-h-dvh overflow-x-hidden font-sans">
             <Navbar type="admin" />
             <div
                 onWheel={handleDesktopSidebarWheel}
@@ -45,7 +45,7 @@ export default function DashboardLayout({
             </div>
             <main
                 ref={mainScrollRef}
-                className="min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] pb-10 lg:h-screen lg:overflow-y-auto lg:pl-72"
+                className="min-h-dvh bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] pb-10 lg:h-screen lg:overflow-y-auto lg:pl-72"
             >
                 <PullToRefresh>
                     <div className="w-full max-w-[100vw] p-3 sm:p-4 lg:p-8">
