@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X, Upload, Plus, Image as ImageIcon } from "lucide-react"
+import { X, Upload } from "lucide-react"
 import { toast } from "sonner"
-import { validateImageFile, formatFileSize } from "@/lib/image-utils"
+import { validateImageFile } from "@/lib/image-utils"
 import { ImageHoverPreview } from "./image-hover-preview"
 
 interface SingleImageUploadProps {
