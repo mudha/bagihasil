@@ -32,7 +32,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "sonner"
-import { exportInvestorReportXLSX, exportInvestorReportPDF, exportAllInvestorsXLSX } from "@/lib/export-utils"
+import { runExportAction } from "@/lib/run-export-action"
 import { useSession } from "next-auth/react"
 import {
     Select,
@@ -195,42 +195,51 @@ export default function InvestorsPage() {
     }
 
     const handleExportXLSX = async (investorId: string, investorName: string) => {
-        setExportingInvestor(investorId)
-        toast.loading(`Mengekspor laporan Excel untuk ${investorName}...`)
-        const result = await exportInvestorReportXLSX(investorId, investorName)
-        toast.dismiss()
-        if (result.success) {
-            toast.success("Laporan Excel berhasil diunduh!")
-        } else {
-            toast.error(result.error || "Gagal mengekspor laporan Excel")
-        }
-        setExportingInvestor(null)
+        await runExportAction({
+            loadingMessage: `Mengekspor laporan Excel untuk ${investorName}...`,
+            successMessage: "Laporan Excel berhasil diunduh!",
+            fallbackErrorMessage: "Gagal mengekspor laporan Excel",
+            thrownErrorMessage: "Gagal mengekspor laporan Excel. Silakan coba lagi.",
+            run: async () => {
+                const { exportInvestorReportXLSX } = await import("@/lib/export-utils")
+                return exportInvestorReportXLSX(investorId, investorName)
+            },
+            onStart: () => setExportingInvestor(investorId),
+            onFinish: () => setExportingInvestor(null),
+            toast,
+        })
     }
 
     const handleExportPDF = async (investorId: string, investorName: string) => {
-        setExportingInvestor(investorId)
-        toast.loading(`Mengekspor laporan PDF untuk ${investorName}...`)
-        const result = await exportInvestorReportPDF(investorId, investorName)
-        toast.dismiss()
-        if (result.success) {
-            toast.success("Laporan PDF berhasil diunduh!")
-        } else {
-            toast.error(result.error || "Gagal mengekspor laporan PDF")
-        }
-        setExportingInvestor(null)
+        await runExportAction({
+            loadingMessage: `Mengekspor laporan PDF untuk ${investorName}...`,
+            successMessage: "Laporan PDF berhasil diunduh!",
+            fallbackErrorMessage: "Gagal mengekspor laporan PDF",
+            thrownErrorMessage: "Gagal mengekspor laporan PDF. Silakan coba lagi.",
+            run: async () => {
+                const { exportInvestorReportPDF } = await import("@/lib/export-utils")
+                return exportInvestorReportPDF(investorId, investorName)
+            },
+            onStart: () => setExportingInvestor(investorId),
+            onFinish: () => setExportingInvestor(null),
+            toast,
+        })
     }
 
     const handleExportAll = async () => {
-        setIsExportingAll(true)
-        toast.loading('Mengekspor data semua pemodal...')
-        const result = await exportAllInvestorsXLSX()
-        toast.dismiss()
-        if (result.success) {
-            toast.success('Laporan semua pemodal berhasil diunduh!')
-        } else {
-            toast.error(result.error || 'Gagal mengekspor laporan')
-        }
-        setIsExportingAll(false)
+        await runExportAction({
+            loadingMessage: 'Mengekspor data semua pemodal...',
+            successMessage: 'Laporan semua pemodal berhasil diunduh!',
+            fallbackErrorMessage: 'Gagal mengekspor laporan',
+            thrownErrorMessage: 'Gagal mengekspor laporan semua pemodal. Silakan coba lagi.',
+            run: async () => {
+                const { exportAllInvestorsXLSX } = await import("@/lib/export-utils")
+                return exportAllInvestorsXLSX()
+            },
+            onStart: () => setIsExportingAll(true),
+            onFinish: () => setIsExportingAll(false),
+            toast,
+        })
     }
 
     const handleToggleActive = async (investor: Investor) => {
