@@ -880,7 +880,7 @@ function UnitsPageContent() {
             } else {
                 toast.error("Gagal menghapus unit")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         } finally {
             setDeleteId(null)
@@ -996,7 +996,7 @@ function UnitsPageContent() {
             } else {
                 toast.error("Gagal menghapus unit")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         }
     }
