@@ -41,7 +41,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { exportInvestorReportXLSX, exportInvestorReportPDF } from "@/lib/export-utils"
+
 
 interface InvestorStat {
     id: string
@@ -303,17 +303,24 @@ export default function DashboardPage() {
         if (!investor) return
 
         setExportingReport(true)
-        toast.loading(`Mengekspor laporan Excel untuk ${investor.name}...`)
+        const loadingToastId = toast.loading(`Mengekspor laporan Excel untuk ${investor.name}...`)
 
-        const result = await exportInvestorReportXLSX(selectedInvestorId, investor.name)
+        try {
+            const { exportInvestorReportXLSX } = await import("@/lib/export-utils")
+            const result = await exportInvestorReportXLSX(selectedInvestorId, investor.name)
 
-        toast.dismiss()
-        if (result.success) {
-            toast.success("Laporan Excel berhasil diunduh!")
-        } else {
-            toast.error(result.error || "Gagal mengekspor laporan Excel")
+            toast.dismiss(loadingToastId)
+            if (result.success) {
+                toast.success("Laporan Excel berhasil diunduh!")
+            } else {
+                toast.error(result.error || "Gagal mengekspor laporan Excel")
+            }
+        } catch {
+            toast.dismiss(loadingToastId)
+            toast.error("Gagal memuat modul ekspor Excel. Silakan coba lagi.")
+        } finally {
+            setExportingReport(false)
         }
-        setExportingReport(false)
     }
 
     const handleExportPDF = async () => {
@@ -322,17 +329,24 @@ export default function DashboardPage() {
         if (!investor) return
 
         setExportingReport(true)
-        toast.loading(`Mengekspor laporan PDF untuk ${investor.name}...`)
+        const loadingToastId = toast.loading(`Mengekspor laporan PDF untuk ${investor.name}...`)
 
-        const result = await exportInvestorReportPDF(selectedInvestorId, investor.name)
+        try {
+            const { exportInvestorReportPDF } = await import("@/lib/export-utils")
+            const result = await exportInvestorReportPDF(selectedInvestorId, investor.name)
 
-        toast.dismiss()
-        if (result.success) {
-            toast.success("Laporan PDF berhasil diunduh!")
-        } else {
-            toast.error(result.error || "Gagal mengekspor laporan PDF")
+            toast.dismiss(loadingToastId)
+            if (result.success) {
+                toast.success("Laporan PDF berhasil diunduh!")
+            } else {
+                toast.error(result.error || "Gagal mengekspor laporan PDF")
+            }
+        } catch {
+            toast.dismiss(loadingToastId)
+            toast.error("Gagal memuat modul ekspor PDF. Silakan coba lagi.")
+        } finally {
+            setExportingReport(false)
         }
-        setExportingReport(false)
     }
 
     const currentMonthlyStats = calendarMode === "hijri" ? (stats.monthlyStatsHijri || []) : (stats.monthlyStats || [])
