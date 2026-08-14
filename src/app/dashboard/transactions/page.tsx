@@ -48,6 +48,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { formatHijriFull } from "@/lib/date-utils"
+import { getInvestorInitials } from "@/lib/investor-initials"
 import { ImportTransactionsDialog } from "@/components/import/ImportTransactionsDialog"
 import { EditStatusDialog } from "@/components/transactions/EditStatusDialog"
 
@@ -224,17 +225,6 @@ const getInvestorTone = (investorKey?: string | null) => {
     }
 
     return INVESTOR_TONES[hash % INVESTOR_TONES.length]
-}
-
-const getInvestorInitials = (name?: string | null) => {
-    const initials = name
-        ?.trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((part) => part.charAt(0).toUpperCase())
-        .join("")
-
-    return initials || "?"
 }
 
 const calculateDuration = (buyDate: string, sellDate?: string | null) => {
