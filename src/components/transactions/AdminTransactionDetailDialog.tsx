@@ -311,7 +311,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                                     </div>
                                     {transaction.buyProofDescription && (
                                         <p className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm italic text-slate-600">
-                                            "{transaction.buyProofDescription}"
+                                            &quot;{transaction.buyProofDescription}&quot;
                                         </p>
                                     )}
                                 </div>
