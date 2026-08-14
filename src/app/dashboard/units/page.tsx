@@ -353,7 +353,7 @@ function UnitsPageContent() {
     const [unitImages, setUnitImages] = useState<ImageFileWithDescription[]>([])
     const [stnkImages, setStnkImages] = useState<ImageFileWithDescription[]>([])
     const [isScanningStnk, setIsScanningStnk] = useState(false)
-    const [isUploading, setIsUploading] = useState(false)
+
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
