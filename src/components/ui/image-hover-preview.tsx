@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useLayoutEffect } from "react"
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
@@ -55,40 +55,7 @@ export function ImageHoverPreview({
         img.onload = () => setImageLoaded(true)
     }, [src])
 
-    useLayoutEffect(() => {
-        if (!isHovered) return
-
-        updatePosition()
-
-        const handleViewportChange = () => updatePosition()
-
-        window.addEventListener("resize", handleViewportChange)
-        window.addEventListener("scroll", handleViewportChange, true)
-
-        return () => {
-            window.removeEventListener("resize", handleViewportChange)
-            window.removeEventListener("scroll", handleViewportChange, true)
-        }
-    }, [isHovered, previewSize])
-
-    const handleMouseEnter = () => {
-        if (disabled || !imageLoaded) return
-        if (window.matchMedia("(hover: none), (pointer: coarse)").matches) return
-
-        timeoutRef.current = setTimeout(() => {
-            updatePosition()
-            setIsHovered(true)
-        }, 120)
-    }
-
-    const handleMouseLeave = () => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current)
-        }
-        setIsHovered(false)
-    }
-
-    const updatePosition = () => {
+    const updatePosition = useCallback(() => {
         const container = containerRef.current
         if (!container) return
 
@@ -122,7 +89,41 @@ export function ImageHoverPreview({
         y = clamp(y, VIEWPORT_MARGIN, window.innerHeight - totalHeight - VIEWPORT_MARGIN)
 
         setPosition({ x, y, width, height })
+    }, [previewSize])
+
+    useLayoutEffect(() => {
+        if (!isHovered) return
+
+        updatePosition()
+
+        const handleViewportChange = () => updatePosition()
+
+        window.addEventListener("resize", handleViewportChange)
+        window.addEventListener("scroll", handleViewportChange, true)
+
+        return () => {
+            window.removeEventListener("resize", handleViewportChange)
+            window.removeEventListener("scroll", handleViewportChange, true)
+        }
+    }, [isHovered, updatePosition])
+
+    const handleMouseEnter = () => {
+        if (disabled || !imageLoaded) return
+        if (window.matchMedia("(hover: none), (pointer: coarse)").matches) return
+
+        timeoutRef.current = setTimeout(() => {
+            updatePosition()
+            setIsHovered(true)
+        }, 120)
     }
+
+    const handleMouseLeave = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+        }
+        setIsHovered(false)
+    }
+
 
     const shouldShowPreview = isHovered && imageLoaded && !disabled && isMounted && position.width > 0 && position.height > 0
 
