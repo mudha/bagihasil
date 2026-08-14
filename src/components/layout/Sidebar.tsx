@@ -86,8 +86,8 @@ export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
     const secondaryRoutes = compact ? visibleRoutes.filter(route => !route.featured) : []
 
     return (
-        <div className="flex h-full flex-col bg-[#062f2d] text-white">
-            <div className="px-3 py-2 flex-1">
+        <div className="flex h-full min-h-0 flex-col bg-[#062f2d] text-white">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2">
                 <Link href="/dashboard" className="mb-8 mt-3 flex items-center rounded-lg px-2 py-3" onClick={onNavigate}>
                     <BrandMark inverse />
                 </Link>
@@ -136,7 +136,7 @@ export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
                     )}
                 </div>
             </div>
-            <div className="px-3 py-2 mt-auto">
+            <div className="mt-auto shrink-0 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 <Button
                     onClick={signOutToLogin}
                     variant="ghost"
