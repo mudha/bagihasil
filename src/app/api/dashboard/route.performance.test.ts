@@ -14,3 +14,9 @@ describe("dashboard recent transactions query", () => {
         expect(source).toMatch(/const recentTransactions = await prisma\.transaction\.findMany\(\{[\s\S]*?take: 5,[\s\S]*?select:\s*\{\s*id: true,\s*transactionCode: true,\s*status: true,\s*buyPrice: true,\s*sellPrice: true,\s*buyDate: true,\s*sellDate: true,\s*updatedAt: true,\s*unit:\s*\{\s*select:\s*\{\s*name: true\s*\}\s*\}\s*\}/)
     })
 })
+
+describe("dashboard investor statistics query", () => {
+    it("selects only nested fields used to calculate investor summaries", () => {
+        expect(source).toMatch(/const investors = await prisma\.investor\.findMany\(\{[\s\S]*?select:\s*\{\s*id: true,\s*name: true,\s*units:\s*\{\s*select:\s*\{\s*status: true,\s*transactions:\s*\{[\s\S]*?select:\s*\{\s*status: true,\s*sellDate: true,\s*profitSharing:\s*\{\s*select:\s*\{\s*investorProfitAmount: true,\s*totalCapitalInvestor: true\s*\}\s*\}\s*\}/)
+    })
+})
