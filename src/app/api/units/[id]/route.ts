@@ -75,7 +75,7 @@ export async function DELETE(
         await logActivity("DELETE", "UNIT", id, `Deleted unit with ID ${id}`)
 
         return NextResponse.json({ success: true })
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }
