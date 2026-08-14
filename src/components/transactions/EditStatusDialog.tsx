@@ -79,7 +79,7 @@ export function EditStatusDialog({ transaction, open, onOpenChange, onSuccess }:
                 const error = await res.json()
                 toast.error(error.error || "Gagal mengubah status")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         } finally {
             setIsLoading(false)
