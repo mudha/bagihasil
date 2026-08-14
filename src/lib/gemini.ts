@@ -217,9 +217,9 @@ export async function parseStnk(
             const data = JSON.parse(jsonMatch[0]);
 
             // We removed hardcoded typescript mappings. The LLM prompt now handles specific vehicle codes.
-            let finalBrand = data.brand;
-            let finalModel = data.model;
-            let finalVehicleType = data.vehicleType;
+            const finalBrand = data.brand;
+            const finalModel = data.model;
+            const finalVehicleType = data.vehicleType;
 
 
             return {

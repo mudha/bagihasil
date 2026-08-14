@@ -28,14 +28,14 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }: Pa
             const shouldShowRightDots = rightSiblingIndex < totalPages - 1;
 
             if (!shouldShowLeftDots && shouldShowRightDots) {
-                let leftItemCount = 3 + 2 * 1;
+                const leftItemCount = 3 + 2 * 1;
                 for (let i = 1; i <= leftItemCount; i++) {
                     pages.push(i);
                 }
                 pages.push("...");
                 pages.push(totalPages);
             } else if (shouldShowLeftDots && !shouldShowRightDots) {
-                let rightItemCount = 3 + 2 * 1;
+                const rightItemCount = 3 + 2 * 1;
                 pages.push(1);
                 pages.push("...");
                 for (let i = totalPages - rightItemCount + 1; i <= totalPages; i++) {
