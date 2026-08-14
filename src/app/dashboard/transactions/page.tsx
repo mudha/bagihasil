@@ -535,7 +535,7 @@ function TransactionsPageContent() {
             } else {
                 toast.error("Gagal menghapus transaksi")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         }
     }
@@ -557,7 +557,7 @@ function TransactionsPageContent() {
             } else {
                 toast.error("Gagal mengupdate transaksi")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         }
     }
@@ -746,7 +746,7 @@ function TransactionsPageContent() {
                 const error = await res.json()
                 toast.error(error.error || "Gagal menghapus transaksi")
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         }
     }
