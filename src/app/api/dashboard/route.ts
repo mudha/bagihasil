@@ -70,17 +70,18 @@ export async function GET(req: Request) {
             profitWhere.transaction.unit = { investorId }
         }
 
-        const activeUnits = await prisma.unit.count({ where: unitWhere })
-        const completedTransactions = await prisma.transaction.count({ where: transactionWhere })
-
-        const profitStats = await prisma.profitSharing.aggregate({
-            where: profitWhere,
-            _sum: {
-                netMargin: true,
-                investorProfitAmount: true,
-                managerProfitAmount: true
-            }
-        })
+        const [activeUnits, completedTransactions, profitStats] = await Promise.all([
+            prisma.unit.count({ where: unitWhere }),
+            prisma.transaction.count({ where: transactionWhere }),
+            prisma.profitSharing.aggregate({
+                where: profitWhere,
+                _sum: {
+                    netMargin: true,
+                    investorProfitAmount: true,
+                    managerProfitAmount: true
+                }
+            })
+        ])
 
         // 2. Investor Stats. Admin/viewer see the selector; investors only see their own row.
         const investors = await prisma.investor.findMany({
