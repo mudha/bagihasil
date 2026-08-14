@@ -37,7 +37,7 @@ async function listModels() {
             try {
                 const model = genAI.getGenerativeModel({ model: modelName });
                 const result = await model.generateContent("Hello");
-                const response = await result.response;
+                await result.response;
                 console.log(`SUCCESS!`);
             } catch (error: any) {
                 console.log(`FAILED: ${error.message.split('\n')[0]}`);
