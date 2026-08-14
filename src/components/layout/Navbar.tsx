@@ -43,11 +43,11 @@ export function Navbar({ type = "admin" }: NavbarProps) {
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <Button aria-label="Buka menu" variant="ghost" size="icon" className="-ml-2 shrink-0 rounded-lg hover:bg-teal-50 lg:hidden">
+                        <Button aria-label="Buka menu" variant="ghost" size="icon" className="-ml-2 h-11 w-11 shrink-0 rounded-lg hover:bg-teal-50 lg:hidden">
                             <Menu className="h-6 w-6 text-teal-950 dark:text-gray-200" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[min(84vw,280px)] border-none bg-[#062f2d] p-0 shadow-xl">
+                    <SheetContent side="left" className="h-dvh w-[min(84vw,280px)] overflow-hidden overscroll-contain border-none bg-[#062f2d] p-0 text-white shadow-xl">
                         <SheetTitle className="sr-only">Navigasi Menu</SheetTitle>
                         <SheetDescription className="sr-only">Menu Navigasi Utama</SheetDescription>
                         {type === "admin" ? (
