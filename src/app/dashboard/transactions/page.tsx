@@ -49,7 +49,6 @@ import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { formatHijriFull } from "@/lib/date-utils"
-import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { ImportTransactionsDialog } from "@/components/import/ImportTransactionsDialog"
 import { EditStatusDialog } from "@/components/transactions/EditStatusDialog"
 
@@ -768,17 +767,24 @@ function TransactionsPageContent() {
 
     async function handleExportPDF(transactionId: string, transactionCode: string) {
         setExportingTransactionId(transactionId)
-        toast.loading(`Mengekspor laporan ${transactionCode}...`)
+        const loadingToastId = toast.loading(`Mengekspor laporan ${transactionCode}...`)
 
-        const result = await exportTransactionReportPDF(transactionId, transactionCode)
+        try {
+            const { exportTransactionReportPDF } = await import("@/lib/export-utils")
+            const result = await exportTransactionReportPDF(transactionId, transactionCode)
 
-        toast.dismiss()
-        if (result.success) {
-            toast.success("Laporan PDF berhasil diunduh!")
-        } else {
-            toast.error(result.error || "Gagal mengekspor laporan PDF")
+            toast.dismiss(loadingToastId)
+            if (result.success) {
+                toast.success("Laporan PDF berhasil diunduh!")
+            } else {
+                toast.error(result.error || "Gagal mengekspor laporan PDF")
+            }
+        } catch {
+            toast.dismiss(loadingToastId)
+            toast.error("Gagal memuat modul ekspor PDF. Silakan coba lagi.")
+        } finally {
+            setExportingTransactionId(null)
         }
-        setExportingTransactionId(null)
     }
 
     // Custom Logic for Mobile Sort that mimics Investor Portal (Combination of Field + Order)
