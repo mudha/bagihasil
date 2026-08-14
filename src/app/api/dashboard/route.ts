@@ -263,11 +263,18 @@ export async function GET(req: Request) {
             where: investorId ? { unit: { investorId } } : {},
             take: 5,
             orderBy: { createdAt: 'desc' },
-            include: {
+            select: {
+                id: true,
+                transactionCode: true,
+                status: true,
+                buyPrice: true,
+                sellPrice: true,
+                buyDate: true,
+                sellDate: true,
+                updatedAt: true,
                 unit: {
                     select: {
-                        name: true,
-                        plateNumber: true
+                        name: true
                     }
                 }
             }
