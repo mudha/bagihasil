@@ -39,6 +39,7 @@ import * as z from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { getInvestorInitials } from "@/lib/investor-initials"
 import { ImportUnitsDialog } from "@/components/import/ImportUnitsDialog"
 import {
     DropdownMenu,
@@ -198,17 +199,6 @@ const getInvestorTone = (investorKey?: string | null) => {
     }
 
     return INVESTOR_TONES[hash % INVESTOR_TONES.length]
-}
-
-const getInvestorInitials = (name?: string | null) => {
-    const initials = name
-        ?.trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((part) => part.charAt(0).toUpperCase())
-        .join("")
-
-    return initials || "?"
 }
 
 const VEHICLE_TYPES = ["Mobil", "Motor"] as const;
