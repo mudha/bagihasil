@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -65,69 +65,10 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
         }
     })
 
-    // Handle paste event for images from clipboard
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            // Only handle paste when dialog is open
-            if (!isOpen) return
-
-            const items = e.clipboardData?.items
-            if (!items) return
-
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i]
-
-                // Check if the item is an image
-                if (item.type.startsWith('image/')) {
-                    e.preventDefault()
-
-                    const blob = item.getAsFile()
-                    if (!blob) continue
-
-                    // Convert blob to File object with a name
-                    const file = new File(
-                        [blob],
-                        `pasted-image-${Date.now()}.${blob.type.split('/')[1]}`,
-                        { type: blob.type }
-                    )
-
-                    const validation = validateImageFile(file)
-                    if (!validation.valid) {
-                        toast.error(validation.error)
-                        return
-                    }
-
-                    setImageFile(file)
-                    analyzeImage(file) // Trigger AI analysis
-
-                    const reader = new FileReader()
-                    reader.onloadend = () => {
-                        setImagePreview(reader.result as string)
-                    }
-                    reader.readAsDataURL(file)
-
-                    toast.success('Gambar berhasil di-paste!')
-                    break
-                }
-            }
-        }
-
-        // Add event listener when dialog is open
-        if (isOpen) {
-            document.addEventListener('paste', handlePaste)
-        }
-
-        // Cleanup
-        return () => {
-            document.removeEventListener('paste', handlePaste)
-        }
-    }, [isOpen])
-
-
     // Ref for AI analysis
     const isAnalyzingRef = useRef(false)
 
-    const analyzeImage = async (file: File) => {
+    const analyzeImage = useCallback(async (file: File) => {
         if (isAnalyzingRef.current) return
 
         isAnalyzingRef.current = true
@@ -190,7 +131,65 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
         } finally {
             isAnalyzingRef.current = false
         }
-    }
+    }, [setValue, watch])
+
+    // Handle paste event for images from clipboard
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            // Only handle paste when dialog is open
+            if (!isOpen) return
+
+            const items = e.clipboardData?.items
+            if (!items) return
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i]
+
+                // Check if the item is an image
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault()
+
+                    const blob = item.getAsFile()
+                    if (!blob) continue
+
+                    // Convert blob to File object with a name
+                    const file = new File(
+                        [blob],
+                        `pasted-image-${Date.now()}.${blob.type.split('/')[1]}`,
+                        { type: blob.type }
+                    )
+
+                    const validation = validateImageFile(file)
+                    if (!validation.valid) {
+                        toast.error(validation.error)
+                        return
+                    }
+
+                    setImageFile(file)
+                    analyzeImage(file) // Trigger AI analysis
+
+                    const reader = new FileReader()
+                    reader.onloadend = () => {
+                        setImagePreview(reader.result as string)
+                    }
+                    reader.readAsDataURL(file)
+
+                    toast.success('Gambar berhasil di-paste!')
+                    break
+                }
+            }
+        }
+
+        // Add event listener when dialog is open
+        if (isOpen) {
+            document.addEventListener('paste', handlePaste)
+        }
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('paste', handlePaste)
+        }
+    }, [isOpen, analyzeImage])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
