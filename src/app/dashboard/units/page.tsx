@@ -48,10 +48,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format, isPast, isWithinInterval, addDays, differenceInMonths, differenceInCalendarMonths, differenceInDays } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { format, isPast, isWithinInterval, addDays, differenceInCalendarMonths, differenceInDays } from "date-fns"
 import { cn } from "@/lib/utils"
 import {
     AlertDialog,
@@ -69,7 +66,7 @@ import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminUnitDetailDialog } from "@/components/units/AdminUnitDetailDialog"
-import { compressImage } from "@/lib/image-compression"
+
 
 
 const unitSchema = z.object({
