@@ -58,7 +58,7 @@ export function UpdateTransactionProofDialog({
                                     })
                                 })
                             }
-                        } catch (e) {
+                        } catch {
                             // Fallback if parse fails
                             initialProofs.push({
                                 id: 'legacy',

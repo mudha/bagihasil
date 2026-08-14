@@ -52,7 +52,7 @@ export function LoginForm() {
                 router.push("/dashboard")
                 router.refresh()
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan")
         } finally {
             setIsLoading(false)
