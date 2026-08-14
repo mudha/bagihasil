@@ -410,10 +410,8 @@ function TransactionsPageContent() {
 
         let matchesInvestorStatus = true
         if (investorStatusFilter === 'active') {
-            // @ts-ignore
             matchesInvestorStatus = trx.unit.investor?.isActive !== false
         } else if (investorStatusFilter === 'inactive') {
-            // @ts-ignore
             matchesInvestorStatus = trx.unit.investor?.isActive === false
         }
 
@@ -1697,7 +1695,6 @@ function TransactionsPageContent() {
                                     ) {
                                         return
                                     }
-                                    // @ts-ignore
                                     setViewingTransaction(trx)
                                 }}
                             >
@@ -1914,7 +1911,6 @@ function TransactionsPageContent() {
             <AdminTransactionDetailDialog
                 open={!!viewingTransaction && !isOpen}
                 onOpenChange={(open) => !open && setViewingTransaction(null)}
-                // @ts-ignore
                 transaction={viewingTransaction}
                 onEdit={() => {
                     if (viewingTransaction) {

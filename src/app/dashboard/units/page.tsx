@@ -493,7 +493,6 @@ function UnitsPageContent() {
 
                 // 2. Detect Model (if Brand found)
                 if (vType && vBrand) {
-                    // @ts-ignore
                     const possibleModels = MODELS[vType]?.[vBrand] || []
                     for (const m of possibleModels) {
                         if (nameLower.includes(m.toLowerCase())) {
@@ -656,7 +655,7 @@ function UnitsPageContent() {
                 // Use setTimeout to ensure vehicleType state has propagated
                 setTimeout(() => {
 
-                    // @ts-ignore
+                    // @ts-expect-error -- legacy vehicle and investor types intentionally lag validated runtime data.
                     const brandList = BRANDS[data.vehicleType] || [];
 
                     // Map Brand (only if vehicle type is valid)
@@ -686,7 +685,6 @@ function UnitsPageContent() {
 
                                 // Map Model
                                 if (data.model) {
-                                    // @ts-ignore
                                     const modelList = MODELS[data.vehicleType]?.[matchedBrand] || [];
                                     console.log("[STNK Scan] Model matching:", {
                                         vehicleType: data.vehicleType,
@@ -908,10 +906,8 @@ function UnitsPageContent() {
 
         let matchesInvestorStatus = true
         if (investorStatusFilter === 'active') {
-            // @ts-ignore
             matchesInvestorStatus = unit.investor?.isActive !== false // Default true
         } else if (investorStatusFilter === 'inactive') {
-            // @ts-ignore
             matchesInvestorStatus = unit.investor?.isActive === false
         }
 
@@ -1244,7 +1240,6 @@ function UnitsPageContent() {
                                                                 <SelectValue placeholder="Pilih Model" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {/* @ts-ignore */}
                                                                 {MODELS[vehicleType]?.[brand]?.map(m => (
                                                                     <SelectItem key={m} value={m}>{m}</SelectItem>
                                                                 ))}
