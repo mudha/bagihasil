@@ -1,5 +1,4 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,8 +9,6 @@ if (!apiKey) {
     console.error("No API key found");
     process.exit(1);
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 async function listModels() {
     try {
