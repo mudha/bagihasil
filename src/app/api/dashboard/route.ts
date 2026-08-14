@@ -86,7 +86,9 @@ export async function GET(req: Request) {
         // 2. Investor Stats. Admin/viewer see the selector; investors only see their own row.
         const investors = await prisma.investor.findMany({
             where: investorStatsScope(session.user.role === "INVESTOR" ? investorId : null),
-            include: {
+            select: {
+                id: true,
+                name: true,
                 units: {
                     select: {
                         status: true,
@@ -97,8 +99,15 @@ export async function GET(req: Request) {
                                     { status: 'COMPLETED', sellDate: { gte: startDate } }
                                 ]
                             },
-                            include: {
-                                profitSharing: true
+                            select: {
+                                status: true,
+                                sellDate: true,
+                                profitSharing: {
+                                    select: {
+                                        investorProfitAmount: true,
+                                        totalCapitalInvestor: true
+                                    }
+                                }
                             }
                         }
                     }
