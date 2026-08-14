@@ -176,7 +176,7 @@ export default function InvestorsPage() {
                     toast.error(errorData.error || "Gagal menambahkan pemodal")
                 }
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem")
         }
     }
@@ -268,7 +268,7 @@ export default function InvestorsPage() {
                     const errorData = await res.json()
                     errorMessage = errorData.error || errorMessage
                     console.error("API Error:", errorData)
-                } catch (parseError) {
+                } catch {
                     console.error("Failed to parse error response. Status:", res.status, res.statusText)
                 }
                 toast.error(errorMessage)
