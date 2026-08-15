@@ -172,7 +172,8 @@ function Calendar({
           )
         },
         DayButton: CalendarDayButton,
-        // Replace Dropdown with Custom Select
+        // Replace Dropdown with Custom Select (props received from Radix but forwarded to native Select)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Contract from radix-ui-primitives DropdownProps
         Dropdown: ({ value, onChange, children, style, className, ...props }: any) => {
           const options = React.Children.toArray(children) as React.ReactElement<React.OptionHTMLAttributes<HTMLOptionElement>>[]
           const selected = options.find((child) => child.props.value === value)

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -218,11 +219,15 @@ export default function TransactionDetailPage() {
                                         title="Lihat Foto Unit"
                                     >
                                         {transaction.unit.imageUrl ? (
-                                            <img
-                                                src={transaction.unit.imageUrl}
-                                                alt="Unit"
-                                                className="h-full w-full object-cover"
-                                            />
+                                            <div className="relative h-full w-full">
+                                                <Image
+                                                    src={transaction.unit.imageUrl}
+                                                    alt="Unit"
+                                                    fill
+                                                    className="object-cover"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         ) : (
                                             <ImageIcon className="size-5 text-teal-50/70" />
                                         )}

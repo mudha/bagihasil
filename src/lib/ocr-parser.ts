@@ -7,7 +7,7 @@ let cachedWorker: any = null;
 
 export async function parseReceiptWithOCR(
     buffer: Buffer,
-    mimeType: string
+    _mimeType: string
 ): Promise<ParsedReceipt> {
     console.log("Starting OCR fallback...");
 
