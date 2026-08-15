@@ -1297,9 +1297,6 @@ interface AllInvestorData {
     transactions: AllInvestorTx[]
 }
 
-const fmt = (v: number) =>
-    new Intl.NumberFormat('id-ID').format(v)
-
 const fmtDate = (d: string | null | undefined) => {
     if (!d) return '-'
     return format(new Date(d), 'dd/MM/yyyy')
@@ -1311,7 +1308,6 @@ const GOLD     = 'FFFFD700'   // teks gold
 const BLUE_HDR = 'FF1E3A5F'   // sub-header biru tua
 const WHITE    = 'FFFFFFFF'
 const GREEN_BG = 'FFD9F0D9'   // baris total
-const COST_BG  = 'FFEEF4FF'   // baris biaya detail
 const GRAY_ROW = 'FFF8F8F8'   // alternating row
 const RED_LOSS = 'FFFFF0F0'   // merah muda untuk rugi
 
@@ -1367,8 +1363,6 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
             // FIXED KANAN : Total Biaya, Biaya Pemodal, Biaya Pengelola, Margin, BH Pemodal, BH Pengelola, Total Transfer, Status Bayar, Status Tx
 
             const FIXED_LEFT  = 10  // kolom 1-10
-            const COST_START  = FIXED_LEFT + 1          // kolom pertama biaya dinamis
-            const COST_END    = FIXED_LEFT + costTypes.length  // kolom terakhir biaya
             const FIXED_RIGHT = 9   // jumlah kolom kanan tetap
             const TOTAL_COLS  = FIXED_LEFT + costTypes.length + FIXED_RIGHT
 

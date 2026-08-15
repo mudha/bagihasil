@@ -52,8 +52,7 @@ async function main() {
             inspStr, transportStr, mealsStr, tollStr, adsStr, repairStr, legalStr, brokerStr,
             investorPStr, managerPStr, managerTotalStr,
             investorPctStr, managerPctStr, totalModalStr, sellPriceStr,
-            marginStr, investorProfitStr, managerProfitStr,
-            totalTrfInvestorStr, finalTrfStr
+            marginStr, investorProfitStr, managerProfitStr
         ] = cols;
 
         try {

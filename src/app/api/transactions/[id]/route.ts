@@ -128,7 +128,7 @@ export async function PUT(
         const validatedData = transactionUpdateSchema.parse(body)
 
         // Extract proofs to handle separately
-        const { buyProofs, sellProofs, investorSharePercentage, managerSharePercentage, ...transactionData } = validatedData
+        const { buyProofs, sellProofs, ...transactionData } = validatedData
         const updateData: any = { ...transactionData }
 
         const outcome = await runSerializableTransaction(prisma, async (tx) => {
