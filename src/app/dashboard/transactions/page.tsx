@@ -799,7 +799,7 @@ function TransactionsPageContent() {
                         <>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
+                                    <Button variant="destructive" size="sm" className="min-h-[44px]">
                                         <Trash className="mr-2 h-4 w-4" /> Hapus ({selectedIds.length})
                                     </Button>
                                 </AlertDialogTrigger>
@@ -821,7 +821,7 @@ function TransactionsPageContent() {
 
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="secondary" size="sm">
+                                    <Button variant="secondary" size="sm" className="min-h-[44px]">
                                         <CheckCircle className="mr-2 h-4 w-4" /> Set Lunas ({selectedIds.length})
                                     </Button>
                                 </AlertDialogTrigger>
@@ -1283,16 +1283,16 @@ function TransactionsPageContent() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 h-8 text-xs"
+                                    className="flex-1 min-h-[44px] text-xs"
                                     onClick={() => setViewingTransaction(trx)}
                                 >
-                                    <Eye className="h-3 w-3 mr-2" /> Detail
+                                    <Eye className="h-4 w-4 mr-2" /> Detail
                                 </Button>
                                 {!isViewer && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
-                                                <MoreHorizontal className="h-3 w-3 mr-1.5" />
+                                            <Button variant="outline" size="sm" className="min-h-[44px] px-3 text-xs">
+                                                <MoreHorizontal className="h-4 w-4 mr-1.5" />
                                                 Aksi
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -1687,8 +1687,8 @@ function TransactionsPageContent() {
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
                                         <Link href={`/dashboard/transactions/${trx.id}`}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                                <Eye className="h-4 w-4" />
+                                            <Button variant="ghost" size="icon" className="min-h-[44px] w-[44px] items-center justify-center rounded-lg text-muted-foreground hover:text-primary">
+                                                <Eye className="h-5 w-5" />
                                                 <span className="sr-only">Detail</span>
                                             </Button>
                                         </Link>
@@ -1697,8 +1697,8 @@ function TransactionsPageContent() {
                                             <>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
-                                                            <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                                                        <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                            <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                                             Aksi
                                                         </Button>
                                                     </DropdownMenuTrigger>

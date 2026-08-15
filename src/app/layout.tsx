@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mudha - Profit Share",
   description: "Sistem Manajemen Bagi Hasil Mudha",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    viewportFit: "cover"
+  }
 };
 
 import { AuthProvider } from "@/components/providers/AuthProvider";

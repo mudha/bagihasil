@@ -1004,7 +1004,7 @@ function UnitsPageContent() {
                     {selectedIds.length > 0 && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm" className="col-span-2">
+                                <Button variant="destructive" size="sm" className="col-span-2 min-h-[44px]">
                                     <Trash className="mr-2 h-4 w-4" /> Hapus ({selectedIds.length})
                                 </Button>
                             </AlertDialogTrigger>
@@ -1607,8 +1607,8 @@ function UnitsPageContent() {
                                  <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" size="sm" className="h-9">
-                                                <MoreHorizontal className="h-4 w-4 mr-2" />
+                                            <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                                 Aksi
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -1896,8 +1896,8 @@ function UnitsPageContent() {
                                         <div className="flex justify-end">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
-                                                        <MoreHorizontal className="mr-1.5 h-4 w-4" />
+                                                    <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                        <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                                         Aksi
                                                     </Button>
                                                 </DropdownMenuTrigger>
