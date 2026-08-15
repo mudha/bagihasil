@@ -6,6 +6,7 @@ import { X, Upload, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { validateImageFile } from "@/lib/image-utils"
 import { ImageHoverPreview } from "./image-hover-preview"
+import Image from "next/image"
 
 export interface UploadedImage {
     id: string
@@ -142,9 +143,9 @@ export function MultipleImageUpload({
                         <ImageHoverPreview
                             src={img.preview}
                             alt="Preview"
-                            className="h-full w-full"
+                            className="h-full w-full relative"
                         >
-                            <img src={img.preview} alt="Preview" className="h-full w-full object-contain" />
+                            <Image src={img.preview} alt="Preview" fill className="object-contain" style={{ top: 0, left: 0 }} />
                         </ImageHoverPreview>
                         <button
                             type="button"

@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Download, X } from "lucide-react"
+import Image from "next/image"
 
 interface ImagePreviewDialogProps {
     src: string | null
@@ -51,11 +52,13 @@ export function ImagePreviewDialog({ src, isOpen, onOpenChange, title = "Pratinj
                     </div>
 
                     {/* Image Container */}
-                    <div className="w-full h-full flex items-center justify-center p-4">
-                        <img
+                    <div className="w-full h-full flex items-center justify-center p-4 relative">
+                        <Image
                             src={src}
                             alt={title}
+                            fill
                             className="max-w-full max-h-[85vh] object-contain rounded-sm shadow-2xl animate-in zoom-in-95 duration-200"
+                            style={{ top: 0, left: 0 }}
                         />
                     </div>
 

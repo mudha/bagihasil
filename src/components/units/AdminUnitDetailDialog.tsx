@@ -11,6 +11,7 @@ import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Calendar, Car, FileText, Fingerprint, Gauge, Hash, Image as ImageIcon, Palette, User } from "lucide-react"
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
+import Image from "next/image"
 import { useState } from "react"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 
@@ -127,22 +128,24 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                                 <ImageIcon className="h-3.5 w-3.5" />
                                                 Foto Unit
                                             </p>
-                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
                                                 {unit.imageUrl ? (
                                                     <ImageHoverPreview
                                                         src={unit.imageUrl}
                                                         alt="Foto Unit"
-                                                        className="h-full w-full"
+                                                        className="h-full w-full relative"
                                                     >
                                                         <button
                                                             type="button"
-                                                            className="block h-full min-h-[180px] w-full cursor-pointer bg-slate-950"
+                                                            className="block h-full min-h-[180px] w-full cursor-pointer bg-slate-950 relative"
                                                             onClick={() => setPreviewImage(unit.imageUrl || null)}
                                                         >
-                                                            <img
+                                                            <Image
                                                                 src={unit.imageUrl}
                                                                 alt="Foto Unit"
-                                                                className="h-full max-h-[320px] w-full object-contain transition-opacity hover:opacity-95"
+                                                                fill
+                                                                className="object-contain transition-opacity hover:opacity-95"
+                                                                style={{ top: 0, left: 0 }}
                                                             />
                                                         </button>
                                                     </ImageHoverPreview>
@@ -160,22 +163,24 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                                 <FileText className="h-3.5 w-3.5" />
                                                 Foto STNK
                                             </p>
-                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
                                                 {unit.stnkImageUrl ? (
                                                     <ImageHoverPreview
                                                         src={unit.stnkImageUrl}
                                                         alt="Foto STNK"
-                                                        className="h-full w-full"
+                                                        className="h-full w-full relative"
                                                     >
                                                         <button
                                                             type="button"
-                                                            className="block h-full min-h-[180px] w-full cursor-pointer bg-slate-950"
+                                                            className="block h-full min-h-[180px] w-full cursor-pointer bg-slate-950 relative"
                                                             onClick={() => setPreviewImage(unit.stnkImageUrl || null)}
                                                         >
-                                                            <img
+                                                            <Image
                                                                 src={unit.stnkImageUrl}
                                                                 alt="Foto STNK"
-                                                                className="h-full max-h-[320px] w-full object-contain transition-opacity hover:opacity-95"
+                                                                fill
+                                                                className="object-contain transition-opacity hover:opacity-95"
+                                                                style={{ top: 0, left: 0 }}
                                                             />
                                                         </button>
                                                     </ImageHoverPreview>

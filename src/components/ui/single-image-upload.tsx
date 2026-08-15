@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { X, Upload } from "lucide-react"
@@ -111,11 +112,11 @@ export function SingleImageUpload({ value, onChange, label = "Upload Gambar", de
                 <div className="relative border rounded-lg overflow-hidden group bg-slate-50">
                     <ImageHoverPreview
                         src={preview}
-                        alt={fileName || "Preview"}
+                        alt="Preview"
                         previewSize="lg"
-                        className="h-48 w-full flex items-center justify-center"
+                        className="h-48 w-full flex items-center justify-center relative"
                     >
-                        <img src={preview} alt="Preview" className="h-full w-full object-contain cursor-pointer" />
+                        <Image src={preview} alt="Preview" fill className="object-contain cursor-pointer" style={{ top: 0, left: 0 }} />
                     </ImageHoverPreview>
                     <div className="absolute top-2 right-2 flex gap-2">
                         <Button

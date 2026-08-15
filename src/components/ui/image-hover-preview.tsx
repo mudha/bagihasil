@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import NextImage from "next/image"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
@@ -49,7 +50,7 @@ export function ImageHoverPreview({
     }, [])
 
     useEffect(() => {
-        const img = new Image()
+        const img = new globalThis.Image()
         setImageLoaded(false)
         img.src = src
         img.onload = () => setImageLoaded(true)
@@ -138,11 +139,14 @@ export function ImageHoverPreview({
                 onBlur={handleMouseLeave}
             >
                 {children || (
-                    <img
-                        src={src}
-                        alt={alt}
-                        className="h-full w-full object-cover"
-                    />
+                    <div className="relative h-full w-full">
+                        <NextImage
+                            src={src}
+                            alt={alt}
+                            fill
+                            className="object-cover"
+                        />
+                    </div>
                 )}
             </div>
 
@@ -159,10 +163,12 @@ export function ImageHoverPreview({
                         className="overflow-hidden rounded-xl border border-white/70 bg-slate-950 shadow-2xl shadow-slate-950/25 ring-1 ring-slate-950/10"
                         style={{ height: `${position.height}px` }}
                     >
-                        <img
+                        <NextImage
                             src={src}
                             alt={alt}
-                            className="h-full w-full object-contain"
+                            fill
+                            className="object-cover"
+                            style={{ top: 0, left: 0 }}
                         />
                     </div>
                     <div className="mt-2 rounded-lg border border-slate-900/10 bg-slate-950/90 px-3 py-2 text-xs text-white shadow-lg backdrop-blur">

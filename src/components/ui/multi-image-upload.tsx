@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -215,11 +216,10 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                     <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-slate-50 relative group">
                         <ImageHoverPreview
                             src={img.preview}
-                            alt={img.description || img.file?.name || "Preview"}
-                            previewSize="md"
-                            className="w-24 h-24 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden"
+                            alt="Preview"
+                            className="w-24 h-24 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden relative"
                         >
-                            <img src={img.preview} alt="Preview" className="w-full h-full object-cover cursor-pointer" />
+                            <Image src={img.preview} alt="Preview" fill className="object-cover cursor-pointer" style={{ top: 0, left: 0 }} />
                         </ImageHoverPreview>
                         <div className="flex-1 space-y-2">
                             <div className="flex justify-between items-start">

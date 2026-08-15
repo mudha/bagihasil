@@ -2,6 +2,7 @@
 
 import { Suspense } from "react"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -1199,12 +1200,15 @@ function TransactionsPageContent() {
                                             previewSize="lg"
                                             className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-teal-900/10"
                                         >
-                                            <img
-                                                src={trx.unit.imageUrl}
-                                                alt={trx.unit.name}
-                                                className="h-full w-full object-cover cursor-pointer"
-                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
-                                            />
+                                            <div className="relative h-full w-full">
+                                                <Image
+                                                    src={trx.unit.imageUrl}
+                                                    alt={trx.unit.name}
+                                                    fill
+                                                    className="object-cover cursor-pointer"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         </ImageHoverPreview>
                                     ) : (
                                         <div className="relative h-14 w-14 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-teal-900/10">
@@ -1644,14 +1648,17 @@ function TransactionsPageContent() {
                                             src={trx.unit.imageUrl}
                                             alt={trx.unit.name}
                                             previewSize="lg"
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity relative"
                                         >
-                                            <img
-                                                src={trx.unit.imageUrl}
-                                                alt={trx.unit.name}
-                                                className="h-full w-full object-cover cursor-pointer"
-                                                onClick={() => trx.unit.imageUrl && setPreviewUrl(trx.unit.imageUrl)}
-                                            />
+                                            <div className="relative h-full w-full">
+                                                <Image
+                                                    src={trx.unit.imageUrl}
+                                                    alt={trx.unit.name}
+                                                    fill
+                                                    className="object-cover cursor-pointer"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         </ImageHoverPreview>
                                     ) : (
                                         <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">

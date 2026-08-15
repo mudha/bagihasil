@@ -25,6 +25,7 @@ import {
     Eye
 } from "lucide-react"
 import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
+import Image from "next/image"
 import { useState } from "react"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 
@@ -169,12 +170,14 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                                     </div>
 
                                     <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
-                                        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
                                             {transaction.unit.imageUrl ? (
-                                                <img
+                                                <Image
                                                     src={transaction.unit.imageUrl}
                                                     alt={transaction.unit.name}
-                                                    className="h-full w-full object-cover"
+                                                    fill
+                                                    className="object-cover"
+                                                    style={{ top: 0, left: 0 }}
                                                 />
                                             ) : (
                                                 <Car className="h-8 w-8 text-slate-400" />
@@ -283,22 +286,24 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
                                         <ImageIcon className="h-4 w-4 text-slate-500" />
                                         <h3 className="font-black text-slate-950">Bukti Pembelian</h3>
                                     </div>
-                                    <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                    <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
                                         {transaction.buyProofImageUrl ? (
                                             <ImageHoverPreview
                                                 src={transaction.buyProofImageUrl}
                                                 alt="Bukti Beli"
-                                                className="h-full w-full"
+                                                className="h-full w-full relative"
                                             >
                                                 <button
                                                     type="button"
-                                                    className="block h-full min-h-[220px] w-full cursor-pointer bg-slate-950"
+                                                    className="block h-full min-h-[220px] w-full cursor-pointer bg-slate-950 relative"
                                                     onClick={() => setPreviewImage(transaction.buyProofImageUrl || null)}
                                                 >
-                                                    <img
+                                                    <Image
                                                         src={transaction.buyProofImageUrl}
                                                         alt="Bukti Beli"
-                                                        className="h-full max-h-[360px] w-full object-contain transition-opacity hover:opacity-95"
+                                                        fill
+                                                        className="object-contain transition-opacity hover:opacity-95"
+                                                        style={{ top: 0, left: 0 }}
                                                     />
                                                 </button>
                                             </ImageHoverPreview>

@@ -2,6 +2,7 @@
 
 import { Suspense } from "react"
 
+import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
@@ -1517,12 +1518,15 @@ function UnitsPageContent() {
                                             previewSize="lg"
                                             className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-teal-900/10"
                                         >
-                                            <img
-                                                src={unit.imageUrl}
-                                                alt={unit.name}
-                                                className="h-full w-full object-cover transition-transform group-hover:scale-105 cursor-pointer"
-                                                onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
-                                            />
+                                            <div className="relative h-full w-full">
+                                                <Image
+                                                    src={unit.imageUrl}
+                                                    alt={unit.name}
+                                                    fill
+                                                    className="object-cover transition-transform group-hover:scale-105 cursor-pointer"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         </ImageHoverPreview>
                                     ) : (
                                         <div
@@ -1814,14 +1818,17 @@ function UnitsPageContent() {
                                             src={unit.imageUrl}
                                             alt={unit.name}
                                             previewSize="lg"
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity relative"
                                         >
-                                            <img
-                                                src={unit.imageUrl}
-                                                alt={unit.name}
-                                                className="h-full w-full object-cover cursor-pointer"
-                                                onClick={() => unit.imageUrl && setPreviewUrl(unit.imageUrl)}
-                                            />
+                                            <div className="relative h-full w-full">
+                                                <Image
+                                                    src={unit.imageUrl}
+                                                    alt={unit.name}
+                                                    fill
+                                                    className="object-cover cursor-pointer"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         </ImageHoverPreview>
                                     ) : (
                                         <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import Image from "next/image"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -407,11 +408,15 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                                 <div className="flex gap-2">
                                     <div className="flex-1">
                                         {imageFile?.type.startsWith('image/') ? (
-                                            <img
-                                                src={imagePreview}
-                                                alt="Preview"
-                                                className="w-full h-32 object-contain rounded"
-                                            />
+                                            <div className="w-full h-32 relative">
+                                                <Image
+                                                    src={imagePreview}
+                                                    alt="Preview"
+                                                    fill
+                                                    className="object-contain rounded"
+                                                    style={{ top: 0, left: 0 }}
+                                                />
+                                            </div>
                                         ) : (
                                             <div className="w-full h-32 flex items-center justify-center bg-muted rounded">
                                                 <p className="text-sm">{imageFile?.name}</p>
