@@ -4,6 +4,7 @@ import { loadE2EEnvironment } from "./test-env"
 import { UNIT_FIXTURE } from "./unit-fixtures"
 
 const E2E_TRANSACTION_CODE_PREFIX = "E2E-TRX-"
+const FINAL_INVESTOR_NAME = "E2E Investor Finalization Flow"
 
 export const TRANSACTION_FIXTURE = {
     code: "E2E-TRX-001",
@@ -12,6 +13,20 @@ export const TRANSACTION_FIXTURE = {
     initialInvestorCapital: 40_000_000,
     initialManagerCapital: 10_000_000,
     notes: "E2E transaksi pembelian dasar",
+} as const
+
+export const FINALIZATION_FIXTURE = {
+    code: "E2E-TRX-FINAL-001",
+    buyDate: "2026-08-20",
+    sellDate: "2026-08-21",
+    buyPrice: 50_000_000,
+    sellPrice: 70_000_000,
+    initialInvestorCapital: 40_000_000,
+    initialManagerCapital: 10_000_000,
+    investorSharePercentage: 40,
+    managerSharePercentage: 60,
+    notes: "E2E finalisasi profit tanpa pembayaran",
+    unitCode: "E2E-UNIT-FINAL-001",
 } as const
 
 type TransactionFixtureClient = Pick<
@@ -55,11 +70,14 @@ async function cleanupAllWithVerifiedClient(direct: TransactionFixtureClient): P
     await direct.activityLog.deleteMany({
         where: {
             entity: "UNIT",
-            details: { contains: UNIT_FIXTURE.code },
+            OR: [
+                { details: { contains: UNIT_FIXTURE.code } },
+                { details: { contains: FINALIZATION_FIXTURE.unitCode } },
+            ],
         },
     })
-    await direct.unit.deleteMany({ where: { code: UNIT_FIXTURE.code } })
-    await direct.investor.deleteMany({ where: { name: UNIT_FIXTURE.investorName } })
+    await direct.unit.deleteMany({ where: { code: { in: [UNIT_FIXTURE.code, FINALIZATION_FIXTURE.unitCode] } } })
+    await direct.investor.deleteMany({ where: { name: { in: [UNIT_FIXTURE.investorName, FINAL_INVESTOR_NAME] } } })
 }
 
 export async function cleanupE2ETransactionFixtures(): Promise<void> {
@@ -99,6 +117,44 @@ export async function seedE2ETransactionFixtures(): Promise<void> {
     })
 }
 
+export async function seedE2EFinalizationFixture(): Promise<void> {
+    const env = loadE2EEnvironment()
+    await withVerifiedE2EDatabase(env, async ({ direct }) => {
+        await cleanupAllWithVerifiedClient(direct)
+        const investor = await direct.investor.create({
+            data: { name: FINAL_INVESTOR_NAME, marginPercentage: 50, isActive: true },
+        })
+        const unit = await direct.unit.create({
+            data: {
+                investorId: investor.id,
+                code: FINALIZATION_FIXTURE.unitCode,
+                name: "Yamaha XMAX Finalization 2025",
+                plateNumber: "B 9002 E2E",
+                status: "AVAILABLE",
+                vehicleType: "Motor",
+                brand: "Yamaha",
+                model: "XMAX",
+                type: "Connected",
+                year: "2025",
+                color: "Hitam",
+                kilometer: 2000,
+            },
+        })
+        await direct.transaction.create({
+            data: {
+                unitId: unit.id,
+                transactionCode: FINALIZATION_FIXTURE.code,
+                buyDate: new Date(`${FINALIZATION_FIXTURE.buyDate}T00:00:00.000Z`),
+                buyPrice: FINALIZATION_FIXTURE.buyPrice,
+                initialInvestorCapital: FINALIZATION_FIXTURE.initialInvestorCapital,
+                initialManagerCapital: FINALIZATION_FIXTURE.initialManagerCapital,
+                status: "ON_PROCESS",
+                paymentStatus: "UNPAID",
+            },
+        })
+    })
+}
+
 export async function getE2ETransactionByCode(code: string) {
     if (!code.startsWith(E2E_TRANSACTION_CODE_PREFIX)) {
         throw new Error("E2E safety guard: refusing to inspect a non-E2E transaction code")
@@ -133,5 +189,22 @@ export async function countE2ETransactionFixtures(): Promise<number> {
             }),
         ])
         return transactions + payments + shares + costs + proofs + logs
+    })
+}
+
+export async function countE2EFinalizationFixtures(): Promise<number> {
+    const env = loadE2EEnvironment()
+    return withVerifiedE2EDatabase(env, async ({ direct }) => {
+        const [units, investors, unitLogs] = await Promise.all([
+            direct.unit.count({ where: { code: FINALIZATION_FIXTURE.unitCode } }),
+            direct.investor.count({ where: { name: FINAL_INVESTOR_NAME } }),
+            direct.activityLog.count({
+                where: {
+                    entity: "UNIT",
+                    details: { contains: FINALIZATION_FIXTURE.unitCode },
+                },
+            }),
+        ])
+        return units + investors + unitLogs
     })
 }
