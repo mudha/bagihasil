@@ -14,6 +14,7 @@
     "test:e2e:unit": "tsx e2e/run-unit.ts",
     "test:e2e:transaction": "tsx e2e/run-transaction.ts",
     "test:e2e:finalize": "tsx e2e/run-finalize.ts",
+    "test:e2e:payment": "tsx e2e/run-payment.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
