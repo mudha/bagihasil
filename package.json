@@ -12,6 +12,7 @@
     "test:e2e": "tsx e2e/run-all.ts",
     "test:e2e:auth": "tsx e2e/run-auth.ts",
     "test:e2e:unit": "tsx e2e/run-unit.ts",
+    "test:e2e:transaction": "tsx e2e/run-transaction.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

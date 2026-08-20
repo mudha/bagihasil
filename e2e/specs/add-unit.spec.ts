@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import { E2E_USERS } from "../test-env"
+import { cleanupE2EUsers, seedE2EUsers } from "../seed"
 import {
     cleanupE2EFinancialFixtures,
     getE2EUnitByCode,
@@ -13,8 +14,14 @@ async function choose(page: Page, dialog: Locator, label: string, option: string
     await page.getByRole("option", { name: option, exact: true }).click()
 }
 
-test.beforeAll(seedE2EFinancialFixtures)
-test.afterAll(cleanupE2EFinancialFixtures)
+test.beforeAll(async () => {
+    await seedE2EUsers()
+    await seedE2EFinancialFixtures()
+})
+test.afterAll(async () => {
+    await cleanupE2EFinancialFixtures()
+    await cleanupE2EUsers()
+})
 
 test("admin adds an isolated unit through the real dialog", async ({ page }) => {
     await page.goto("/login")
