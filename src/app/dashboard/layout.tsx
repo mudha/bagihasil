@@ -45,7 +45,7 @@ export default function DashboardLayout({
             </div>
             <main
                 ref={mainScrollRef}
-                className="md:min-h-dvh min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] pb-10 lg:h-screen lg:overflow-y-auto lg:pl-72"
+                className="min-w-0 min-h-dvh bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] pb-10 lg:h-screen lg:overflow-y-auto lg:pl-72"
             >
                 <PullToRefresh>
                     <div className="w-full max-w-[100vw] p-3 sm:p-4 lg:p-8">

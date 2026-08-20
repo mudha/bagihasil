@@ -745,8 +745,8 @@ function TransactionsPageContent() {
             <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
                 <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
                 <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
-                <div className="relative flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-end xl:justify-between xl:p-8">
-                    <div className="max-w-2xl space-y-3">
+                <div className="relative flex min-w-0 flex-col gap-5 p-5 sm:p-6 2xl:flex-row 2xl:items-end 2xl:justify-between 2xl:p-8">
+                    <div className="min-w-0 max-w-2xl space-y-3">
                         <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
                             <Sparkles className="size-3" />
                             Deal flow
@@ -761,7 +761,7 @@ function TransactionsPageContent() {
                             Pantau transaksi berjalan, status bayar, nilai beli, dan laporan selesai dengan tampilan yang lebih fokus.
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[560px]">
+                    <div className="grid min-w-0 w-full grid-cols-2 gap-3 sm:grid-cols-4 2xl:min-w-[560px] 2xl:w-auto">
                         <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
                             <CardContent className="p-4">
                                 <ReceiptText className="mb-3 size-5 text-lime-200" />
@@ -1080,7 +1080,7 @@ function TransactionsPageContent() {
             </div>
 
 
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
+            <div className="grid min-w-0 grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
                     <div className="relative col-span-2 w-full lg:col-span-1">
                         <Input
                             placeholder="Cari transaksi..."
@@ -1237,7 +1237,7 @@ function TransactionsPageContent() {
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Investor</span>
                                     <span
-                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black"
+                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2 py-1 text-xs font-black"
                                         style={{
                                             backgroundColor: investorTone.chipBg,
                                             borderColor: investorTone.accent,
@@ -1250,7 +1250,7 @@ function TransactionsPageContent() {
                                         >
                                             {getInvestorInitials(trx.unit.investor.name)}
                                         </span>
-                                        <span className="truncate [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
+                                        <span className="min-w-0 flex-1 break-words leading-tight">{trx.unit.investor.name}</span>
                                     </span>
                                 </div>
                                 <div>
@@ -1381,8 +1381,8 @@ function TransactionsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
-                <Table className="min-w-[1540px]">
+            <div className="hidden min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
+                <Table className="min-w-[1540px] table-fixed">
                     <TableHeader className="bg-teal-50/70">
                         <TableRow className="hover:bg-teal-50/70">
                             <TableHead className="w-[50px]">
@@ -1396,7 +1396,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "transactionCode") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1417,7 +1417,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "investor") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1437,11 +1437,11 @@ function TransactionsPageContent() {
 
                             </TableHead>
                             <TableHead className="w-[80px]">Foto</TableHead>
-                            <TableHead>Unit</TableHead>
-                            <TableHead>
+                            <TableHead className="w-[340px]">Unit</TableHead>
+                            <TableHead className="w-[190px]">
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "buyDate") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1462,7 +1462,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "buyPrice") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1483,7 +1483,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "sellDate") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1504,7 +1504,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "sellPrice") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1525,7 +1525,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "duration") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1546,7 +1546,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "status") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1567,7 +1567,7 @@ function TransactionsPageContent() {
                             <TableHead>
                                 <Button
                                     variant="ghost"
-                                    className="p-0 hover:bg-transparent font-semibold"
+                                    className="h-auto min-h-11 whitespace-normal p-0 text-left leading-tight hover:bg-transparent font-semibold"
                                     onClick={() => {
                                         if (sortBy === "paymentStatus") {
                                             setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -1623,10 +1623,10 @@ function TransactionsPageContent() {
                                         disabled={isViewer}
                                     />
                                 </TableCell>
-                                <TableCell className="font-mono text-sm font-bold text-teal-700 [overflow-wrap:anywhere]">{trx.transactionCode}</TableCell>
+                                <TableCell className="whitespace-normal break-words font-mono text-sm font-bold text-teal-700">{trx.transactionCode}</TableCell>
                                 <TableCell className="max-w-[240px] whitespace-normal">
                                     <span
-                                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black"
+                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2 py-1 text-xs font-black"
                                         style={{
                                             backgroundColor: investorTone.chipBg,
                                             borderColor: investorTone.accent,
@@ -1639,7 +1639,7 @@ function TransactionsPageContent() {
                                         >
                                             {getInvestorInitials(trx.unit.investor.name)}
                                         </span>
-                                        <span className="truncate [overflow-wrap:anywhere]">{trx.unit.investor.name}</span>
+                                        <span className="min-w-0 flex-1 break-words leading-tight">{trx.unit.investor.name}</span>
                                     </span>
                                 </TableCell>
                                 <TableCell>
@@ -1666,21 +1666,21 @@ function TransactionsPageContent() {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell className="max-w-[320px] whitespace-normal">
-                                    <div className="font-semibold text-slate-950 [overflow-wrap:anywhere]">{trx.unit.name}</div>
-                                    <div className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{trx.unit.plateNumber}</div>
+                                <TableCell className="w-[340px] max-w-[340px] whitespace-normal">
+                                    <div className="whitespace-normal break-words font-semibold leading-snug text-slate-950">{trx.unit.name}</div>
+                                    <div className="whitespace-normal break-words text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
                                 </TableCell>
-                                <TableCell className="max-w-[180px] whitespace-normal [overflow-wrap:anywhere]">{formatHijriFull(new Date(trx.buyDate))}</TableCell>
-                                <TableCell className="[overflow-wrap:anywhere]">
+                                <TableCell className="max-w-[190px] whitespace-normal break-words">{formatHijriFull(new Date(trx.buyDate))}</TableCell>
+                                <TableCell className="whitespace-normal break-words">
                                     {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.buyPrice)}
                                 </TableCell>
-                                <TableCell className="max-w-[180px] whitespace-normal [overflow-wrap:anywhere]">
+                                <TableCell className="max-w-[190px] whitespace-normal break-words">
                                     {trx.sellDate ? formatHijriFull(new Date(trx.sellDate)) : "-"}
                                 </TableCell>
-                                <TableCell className="[overflow-wrap:anywhere]">
+                                <TableCell className="whitespace-normal break-words">
                                     {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(trx.sellPrice) : "-"}
                                 </TableCell>
-                                <TableCell className="whitespace-normal [overflow-wrap:anywhere]">
+                                <TableCell className="whitespace-normal break-words">
                                     {calculateDuration(trx.buyDate, trx.sellDate)}
                                 </TableCell>
                                 <TableCell>

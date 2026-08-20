@@ -215,6 +215,9 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
     const handleRemoveImage = () => {
         setImageFile(null)
         setImagePreview(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
     }
 
     const uploadImage = async (): Promise<string | null> => {
@@ -301,8 +304,8 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     Tambah Pembayaran
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
+            <DialogContent className="grid h-[min(92dvh,760px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:rounded-2xl">
+                <DialogHeader className="border-b bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-6 sm:py-5 sm:pr-20">
                     <DialogTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                             Tambah Pembayaran
@@ -319,11 +322,11 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                             </span>
                         )}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-teal-50/75">
                         Catat pembayaran bagi hasil kepada pemodal
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-6">
                     <div className="space-y-2">
                         <Label htmlFor="amount">Jumlah (Rp)</Label>
                         <div className="relative">
@@ -384,62 +387,43 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="proofImage">Bukti Transfer (Opsional)</Label>
+                        <div className="flex items-center justify-between gap-2">
+                            <Label htmlFor="proofImage">Bukti Transfer (Opsional)</Label>
+                            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{imageFile ? 1 : 0}/1</span>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            id="proofImage"
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,application/pdf"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
                         {!imagePreview ? (
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                        ref={fileInputRef}
-                                        id="proofImage"
-                                        type="file"
-                                        accept="image/jpeg,image/jpg,image/png,application/pdf"
-                                        onChange={handleFileChange}
-                                    />
-                                    <Upload className="h-4 w-4" />
-                                </div>
-                                <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                                    <p className="text-xs text-blue-800 font-medium flex items-center gap-1">
-                                        💡 <span>Tips: Copy gambar dari WhatsApp, lalu tekan <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-[10px] font-mono">Ctrl+V</kbd> untuk paste langsung!</span>
-                                    </p>
-                                </div>
-                            </>
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                            >
+                                <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100"><Upload className="h-5 w-5 text-blue-600" /></span>
+                                <span className="text-sm font-medium text-slate-700">Klik untuk Upload</span>
+                                <span className="mt-1 text-xs text-slate-500">Pilih file atau paste (Ctrl+V)</span>
+                            </button>
                         ) : (
-                            <div className="border rounded p-2">
-                                <div className="flex gap-2">
-                                    <div className="flex-1">
-                                        {imageFile?.type.startsWith('image/') ? (
-                                            <div className="w-full h-32 relative">
-                                                <Image
-                                                    src={imagePreview}
-                                                    alt="Preview"
-                                                    fill
-                                                    className="object-contain rounded"
-                                                    style={{ top: 0, left: 0 }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-full h-32 flex items-center justify-center bg-muted rounded">
-                                                <p className="text-sm">{imageFile?.name}</p>
-                                            </div>
-                                        )}
-                                        <p className="text-xs mt-1">
-                                            {imageFile && formatFileSize(imageFile.size)}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleRemoveImage}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                            <div className="relative overflow-hidden rounded-lg border bg-slate-50 p-2">
+                                <div className="relative h-40 w-full">
+                                    {imageFile?.type.startsWith('image/') ? (
+                                        <Image src={imagePreview} alt="Preview bukti transfer" fill className="rounded object-contain" style={{ top: 0, left: 0 }} />
+                                    ) : <div className="flex h-full items-center justify-center text-sm text-slate-600">{imageFile?.name}</div>}
                                 </div>
+                                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
+                                    <span className="truncate">{imageFile?.name}</span><span>{imageFile && formatFileSize(imageFile.size)}</span>
+                                </div>
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 h-9 w-9 bg-white/90 text-red-600 shadow" onClick={handleRemoveImage} aria-label="Hapus bukti"><X className="h-4 w-4" /></Button>
                             </div>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                            Format: JPG, PNG, atau PDF (Maks. 5MB)
-                        </p>
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">💡 Copy gambar dari WhatsApp, lalu tekan <kbd className="rounded border border-blue-300 bg-white px-1.5 py-0.5 font-mono">Ctrl+V</kbd> untuk paste langsung.</div>
+                        <p className="text-xs text-muted-foreground">Format: JPG, PNG, atau PDF (Maks. 5MB)</p>
                     </div>
 
                     <div className="space-y-2">
