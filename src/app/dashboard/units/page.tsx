@@ -951,8 +951,8 @@ function UnitsPageContent() {
             <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
                 <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
                 <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
-                <div className="relative flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-end xl:justify-between xl:p-8">
-                    <div className="max-w-2xl space-y-3">
+                <div className="relative flex min-w-0 flex-col gap-5 p-5 sm:p-6 2xl:flex-row 2xl:items-end 2xl:justify-between 2xl:p-8">
+                    <div className="min-w-0 max-w-2xl space-y-3">
                         <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
                             <Sparkles className="size-3" />
                             Garage view
@@ -967,7 +967,7 @@ function UnitsPageContent() {
                             Kelola stok aktif, unit terjual, pajak, foto kendaraan, dan data STNK dari satu tampilan yang lebih ringan.
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
+                    <div className="grid min-w-0 w-full grid-cols-2 gap-3 sm:grid-cols-4 2xl:min-w-[520px] 2xl:w-auto">
                         <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
                             <CardContent className="p-4">
                                 <Car className="mb-3 size-5 text-lime-200" />

@@ -240,8 +240,8 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                     <DollarSign className="mr-2 h-4 w-4" /> Finalisasi Penjualan
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md" onPaste={handlePaste}>
-                <DialogHeader>
+            <DialogContent className="grid h-[min(92dvh,820px)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:rounded-2xl" onPaste={handlePaste}>
+                <DialogHeader className="border-b bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-6 sm:py-5 sm:pr-20">
                     <DialogTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                             Finalisasi Penjualan Unit
@@ -260,7 +260,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="min-h-0 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-6">
                         <FormField
                             control={form.control}
                             name="sellDate"
