@@ -179,6 +179,8 @@ export async function PUT(
                     managerSharePercentage: managerSharePct,
                 })
 
+                updateData.profitStatus = calculation.profitStatus
+
                 await tx.unit.update({
                     where: { id: currentTransaction.unitId },
                     data: { status: "SOLD" },
