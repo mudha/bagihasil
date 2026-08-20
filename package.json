@@ -9,7 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "tsx e2e/run-all.ts",
     "test:e2e:auth": "tsx e2e/run-auth.ts",
+    "test:e2e:unit": "tsx e2e/run-unit.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
