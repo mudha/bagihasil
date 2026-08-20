@@ -127,8 +127,18 @@ export async function PUT(
         const body = await req.json()
         const validatedData = transactionUpdateSchema.parse(body)
 
-        // Extract proofs to handle separately
-        const { buyProofs, sellProofs, ...transactionData } = validatedData
+        // Extract non-Transaction fields before updating the Transaction model.
+        // Share percentages belong to ProfitSharing and proof arrays are handled below;
+        // passing them to transaction.update() causes Prisma "Unknown argument" errors.
+        const {
+            buyProofs,
+            sellProofs,
+            investorSharePercentage: _investorSharePercentage,
+            managerSharePercentage: _managerSharePercentage,
+            ...transactionData
+        } = validatedData
+        void _investorSharePercentage
+        void _managerSharePercentage
         const updateData: any = { ...transactionData }
 
         const outcome = await runSerializableTransaction(prisma, async (tx) => {
