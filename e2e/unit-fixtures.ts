@@ -1,3 +1,4 @@
+import type { PrismaClient } from "@prisma/client"
 import { withVerifiedE2EDatabase } from "../src/lib/e2e-database-collector"
 import { loadE2EEnvironment } from "./test-env"
 
@@ -17,35 +18,59 @@ export const UNIT_FIXTURE = {
     expectedName: "Yamaha XMAX Connected 2025 warna Hitam",
 } as const
 
-export async function cleanupE2EFinancialFixtures(): Promise<void> {
-    const env = loadE2EEnvironment()
-    await withVerifiedE2EDatabase(env, async ({ direct }) => {
-        await direct.activityLog.deleteMany({
+type FinancialFixtureClient = Pick<PrismaClient, "activityLog" | "unit" | "investor">
+
+async function cleanupWithVerifiedClient(direct: FinancialFixtureClient): Promise<void> {
+    await direct.activityLog.deleteMany({
+        where: {
+            entity: "UNIT",
+            details: { contains: UNIT_FIXTURE.code },
+        },
+    })
+    await direct.unit.deleteMany({
+        where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } },
+    })
+    await direct.investor.deleteMany({
+        where: { name: UNIT_FIXTURE.investorName },
+    })
+}
+
+async function createInvestorWithVerifiedClient(direct: FinancialFixtureClient): Promise<void> {
+    await direct.investor.create({
+        data: {
+            name: UNIT_FIXTURE.investorName,
+            marginPercentage: 50,
+            isActive: true,
+        },
+    })
+}
+
+async function countWithVerifiedClient(direct: FinancialFixtureClient): Promise<number> {
+    const [logs, units, investors] = await Promise.all([
+        direct.activityLog.count({
             where: {
                 entity: "UNIT",
                 details: { contains: UNIT_FIXTURE.code },
             },
-        })
-        await direct.unit.deleteMany({
-            where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } },
-        })
-        await direct.investor.deleteMany({
-            where: { name: UNIT_FIXTURE.investorName },
-        })
+        }),
+        direct.unit.count({ where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } } }),
+        direct.investor.count({ where: { name: UNIT_FIXTURE.investorName } }),
+    ])
+    return logs + units + investors
+}
+
+export async function cleanupE2EFinancialFixtures(): Promise<void> {
+    const env = loadE2EEnvironment()
+    await withVerifiedE2EDatabase(env, async ({ direct }) => {
+        await cleanupWithVerifiedClient(direct)
     })
 }
 
 export async function seedE2EFinancialFixtures(): Promise<void> {
-    await cleanupE2EFinancialFixtures()
     const env = loadE2EEnvironment()
     await withVerifiedE2EDatabase(env, async ({ direct }) => {
-        await direct.investor.create({
-            data: {
-                name: UNIT_FIXTURE.investorName,
-                marginPercentage: 50,
-                isActive: true,
-            },
-        })
+        await cleanupWithVerifiedClient(direct)
+        await createInvestorWithVerifiedClient(direct)
     })
 }
 
@@ -62,17 +87,5 @@ export async function getE2EUnitByCode(code: string) {
 
 export async function countE2EFinancialFixtures(): Promise<number> {
     const env = loadE2EEnvironment()
-    return withVerifiedE2EDatabase(env, async ({ direct }) => {
-        const [logs, units, investors] = await Promise.all([
-            direct.activityLog.count({
-                where: {
-                    entity: "UNIT",
-                    details: { contains: UNIT_FIXTURE.code },
-                },
-            }),
-            direct.unit.count({ where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } } }),
-            direct.investor.count({ where: { name: UNIT_FIXTURE.investorName } }),
-        ])
-        return logs + units + investors
-    })
+    return withVerifiedE2EDatabase(env, async ({ direct }) => countWithVerifiedClient(direct))
 }
