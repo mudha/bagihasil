@@ -2,8 +2,6 @@ import type { PrismaClient } from "@prisma/client"
 import { withVerifiedE2EDatabase } from "../src/lib/e2e-database-collector"
 import { loadE2EEnvironment } from "./test-env"
 
-const E2E_UNIT_CODE_PREFIX = "E2E-"
-
 export const UNIT_FIXTURE = {
     investorName: "E2E Investor Unit Flow",
     code: "E2E-UNIT-001",
@@ -28,7 +26,7 @@ async function cleanupWithVerifiedClient(direct: FinancialFixtureClient): Promis
         },
     })
     await direct.unit.deleteMany({
-        where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } },
+        where: { code: UNIT_FIXTURE.code },
     })
     await direct.investor.deleteMany({
         where: { name: UNIT_FIXTURE.investorName },
@@ -53,7 +51,7 @@ async function countWithVerifiedClient(direct: FinancialFixtureClient): Promise<
                 details: { contains: UNIT_FIXTURE.code },
             },
         }),
-        direct.unit.count({ where: { code: { startsWith: E2E_UNIT_CODE_PREFIX } } }),
+        direct.unit.count({ where: { code: UNIT_FIXTURE.code } }),
         direct.investor.count({ where: { name: UNIT_FIXTURE.investorName } }),
     ])
     return logs + units + investors
@@ -75,7 +73,7 @@ export async function seedE2EFinancialFixtures(): Promise<void> {
 }
 
 export async function getE2EUnitByCode(code: string) {
-    if (!code.startsWith(E2E_UNIT_CODE_PREFIX)) {
+    if (!code.startsWith("E2E-")) {
         throw new Error("E2E safety guard: refusing to inspect a non-E2E unit code")
     }
     const env = loadE2EEnvironment()

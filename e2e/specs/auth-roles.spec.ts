@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "@playwright/test"
 import { E2E_USERS } from "../test-env"
-import { cleanupE2EUsers, countE2EUserByUsername, seedE2EUsers } from "../seed"
+import {
+    cleanupE2EUsers,
+    countE2EAccessFixtures,
+    countE2EUserByUsername,
+    getE2EAccessFixtures,
+    getE2EAccessMutationState,
+    seedE2EUsers,
+} from "../seed"
 
 async function login(page: Page, user: typeof E2E_USERS[keyof typeof E2E_USERS]) {
     await page.goto("/login")
@@ -78,6 +85,57 @@ test("investor is confined to investor portal", async ({ page }) => {
     expect(await sessionResponse.json()).toMatchObject({ user: { role: "INVESTOR" } })
     await page.goto("/dashboard/transactions")
     await expect(page).toHaveURL(/\/dashboard\/investor$/)
+})
+
+test("investor reads only their own tenant and cannot mutate", async ({ page }) => {
+    const fixtures = await getE2EAccessFixtures()
+    await login(page, E2E_USERS.investor)
+
+    const investors = await (await page.request.get("/api/investors")).json()
+    expect(investors.map((item: { id: string }) => item.id)).toEqual([fixtures.ownInvestorId])
+
+    const units = await (await page.request.get("/api/units?investorStatus=inactive")).json()
+    expect(units.map((item: { id: string }) => item.id)).toEqual([fixtures.ownUnitId])
+
+    const transactions = await (await page.request.get("/api/transactions?investorStatus=inactive")).json()
+    expect(transactions.map((item: { id: string }) => item.id)).toEqual([fixtures.ownTransactionId])
+
+    expect((await page.request.get(`/api/transactions/${fixtures.otherTransactionId}`)).status()).toBe(403)
+    expect((await page.request.get(`/api/reports/transaction/${fixtures.otherTransactionId}`)).status()).toBe(403)
+    expect((await page.request.get(`/api/reports/investor/${fixtures.otherInvestorId}`)).status()).toBe(403)
+    expect((await page.request.get(`/api/reports/investor/${fixtures.otherInvestorId}/csv`)).status()).toBe(403)
+
+    const forbiddenCode = "E2E-RBAC-FORBIDDEN-UNIT"
+    const forbiddenWrite = await page.request.post("/api/units", {
+        data: { investorId: fixtures.ownInvestorId, name: "Must Not Exist", code: forbiddenCode },
+    })
+    expect(forbiddenWrite.status()).toBe(403)
+    const before = await getE2EAccessMutationState(fixtures.ownTransactionId)
+    const malformed = { headers: { "content-type": "application/json" }, data: "{malformed-json" }
+    expect((await page.request.post(`/api/transactions/${fixtures.ownTransactionId}/sell`, malformed)).status()).toBe(403)
+    expect((await page.request.post(`/api/transactions/${fixtures.ownTransactionId}/payments`, malformed)).status()).toBe(403)
+    expect(await getE2EAccessMutationState(fixtures.ownTransactionId)).toEqual(before)
+    expect(await countE2EAccessFixtures({ unitCode: forbiddenCode })).toBe(0)
+})
+
+test("viewer can read admin data but representative mutations are denied", async ({ page }) => {
+    const fixtures = await getE2EAccessFixtures()
+    await login(page, E2E_USERS.viewer)
+
+    expect((await page.request.get("/api/activity-logs")).status()).toBe(200)
+    expect((await page.request.get("/api/reports/all-investors")).status()).toBe(200)
+
+    const before = await getE2EAccessMutationState(fixtures.ownTransactionId)
+    const malformed = { headers: { "content-type": "application/json" }, data: "{malformed-json" }
+    const attempts = [
+        page.request.post("/api/transactions", malformed),
+        page.request.post(`/api/transactions/${fixtures.ownTransactionId}/sell`, malformed),
+        page.request.post(`/api/transactions/${fixtures.ownTransactionId}/payments`, malformed),
+        page.request.post("/api/investors", malformed),
+        page.request.post("/api/units", malformed),
+    ]
+    for (const response of await Promise.all(attempts)) expect(response.status()).toBe(403)
+    expect(await getE2EAccessMutationState(fixtures.ownTransactionId)).toEqual(before)
 })
 
 test("unauthenticated transactions API returns 401", async ({ request }) => {
