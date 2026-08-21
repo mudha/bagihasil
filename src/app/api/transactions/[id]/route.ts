@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
-import { canAccessTransaction, forbidden } from "@/lib/api-auth"
+import { canAccessTransaction } from "@/lib/api-auth"
 import { calculateProfitSharing } from "@/lib/profit-sharing"
 import { runSerializableTransaction } from "@/lib/serializable-transaction"
 
@@ -52,6 +52,13 @@ export async function GET(
     try {
         const { id } = await params
 
+        // Authorize ownership before loading financial details and proof URLs.
+        // Return the same response for foreign and nonexistent IDs to avoid an
+        // object-existence oracle for investor sessions.
+        if (!(await canAccessTransaction(session, id))) {
+            return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+        }
+
         const transaction = await prisma.transaction.findUnique({
             where: { id },
             include: {
@@ -74,10 +81,6 @@ export async function GET(
 
         if (!transaction) {
             return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
-        }
-
-        if (!(await canAccessTransaction(session, id))) {
-            return forbidden()
         }
 
         // Calculate payment info
