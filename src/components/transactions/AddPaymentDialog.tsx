@@ -68,6 +68,8 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
 
     // Ref for AI analysis
     const isAnalyzingRef = useRef(false)
+    const idempotencyKeyRef = useRef<string | null>(null)
+    const proofImageUrlRef = useRef<string | null>(null)
 
     const analyzeImage = useCallback(async (file: File) => {
         if (isAnalyzingRef.current) return
@@ -166,6 +168,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                         return
                     }
 
+                    proofImageUrlRef.current = null
                     setImageFile(file)
                     analyzeImage(file) // Trigger AI analysis
 
@@ -202,6 +205,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
             return
         }
 
+        proofImageUrlRef.current = null
         setImageFile(file)
         analyzeImage(file) // Trigger AI analysis
 
@@ -213,6 +217,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
     }
 
     const handleRemoveImage = () => {
+        proofImageUrlRef.current = null
         setImageFile(null)
         setImagePreview(null)
         if (fileInputRef.current) {
@@ -251,17 +256,18 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
 
     const onSubmit = async (values: z.infer<typeof paymentSchema>) => {
         setIsLoading(true)
+        idempotencyKeyRef.current ??= crypto.randomUUID()
 
         try {
-            let proofImageUrl: string | null = null
-            if (imageFile) {
+            let proofImageUrl = proofImageUrlRef.current
+            if (imageFile && !proofImageUrl) {
                 proofImageUrl = await uploadImage()
                 if (!proofImageUrl) {
                     setIsLoading(false)
                     return
                 }
+                proofImageUrlRef.current = proofImageUrl
             }
-
             const response = await fetch(`/api/transactions/${transactionId}/payments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -272,12 +278,15 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     method: values.method,
                     proofImageUrl,
                     notes: values.notes,
+                    idempotencyKey: idempotencyKeyRef.current,
                 }),
             })
 
             if (!response.ok) {
                 const error = await response.json()
-                throw new Error(error.error || 'Gagal menambahkan pembayaran')
+                throw Object.assign(new Error(error.error || 'Gagal menambahkan pembayaran'), {
+                    status: response.status,
+                })
             }
 
             const result = await response.json()
@@ -286,18 +295,33 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
             setIsOpen(false)
             reset()
             handleRemoveImage()
+            idempotencyKeyRef.current = null
+            proofImageUrlRef.current = null
 
             if (onSuccess) onSuccess()
         } catch (error: any) {
             console.error('Error adding payment:', error)
+            if (error.status === 400 || error.status === 409) {
+                // A corrected submission is a new logical request, but reuse the
+                // already-uploaded proof URL to avoid creating an orphan upload.
+                idempotencyKeyRef.current = null
+            }
             toast.error(error.message || 'Gagal menambahkan pembayaran')
         } finally {
             setIsLoading(false)
         }
     }
 
+    const handleDialogOpenChange = (open: boolean) => {
+        if (!open) {
+            idempotencyKeyRef.current = null
+            proofImageUrlRef.current = null
+        }
+        setIsOpen(open)
+    }
+
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button size="sm">
                     <DollarSign className="h-4 w-4 mr-2" />
@@ -439,7 +463,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => handleDialogOpenChange(false)}
                             disabled={isLoading || isUploading}
                         >
                             Batal

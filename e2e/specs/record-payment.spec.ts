@@ -62,6 +62,54 @@ test("admin records partial then final payment through the real UI", async ({ pa
     })
 })
 
+test("same idempotency key is safe under concurrent retry", async ({ page }) => {
+    await page.goto("/login")
+    await page.getByLabel("Username / Email").fill(E2E_USERS.admin.username)
+    await page.getByLabel("Password").fill(E2E_USERS.admin.password)
+    await page.getByRole("button", { name: "Login" }).click()
+    await expect(page).toHaveURL(/dashboard$/)
+
+    const seeded = await getE2ETransactionByCode(PAYMENT_FIXTURE.code)
+    expect(seeded).not.toBeNull()
+    const investorId = seeded!.unit.investorId
+    const paymentDate = new Date(`${PAYMENT_FIXTURE.paymentDate}T00:00:00.000Z`).toISOString()
+    const idempotencyKey = "e2e-payment-retry-key-0001"
+
+    const postPayment = () => page.evaluate(async ({ transactionId, investorId, paymentDate, idempotencyKey, amount, notes }) => {
+        const response = await fetch(`/api/transactions/${transactionId}/payments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ investorId, amount, paymentDate, method: "TRANSFER", proofImageUrl: null, notes, idempotencyKey }),
+        })
+        return { status: response.status, body: await response.json() }
+    }, { transactionId: seeded!.id, investorId, paymentDate, idempotencyKey, amount: PAYMENT_FIXTURE.firstPayment, notes: PAYMENT_FIXTURE.firstNotes })
+
+    const responses = await Promise.all([postPayment(), postPayment()])
+    expect(responses.every((response) => response.status === 200)).toBe(true)
+    expect(responses.map((response) => response.body.totalPaid)).toEqual([PAYMENT_FIXTURE.firstPayment, PAYMENT_FIXTURE.firstPayment])
+
+    const finalState = await getE2ETransactionByCode(PAYMENT_FIXTURE.code)
+    expect(finalState?.paymentHistories).toHaveLength(1)
+    expect(finalState?.paymentHistories[0]).toMatchObject({
+        amount: PAYMENT_FIXTURE.firstPayment,
+        idempotencyKey,
+    })
+    expect(finalState?.paymentStatus).toBe("PARTIAL")
+
+    const mismatch = await postPayment()
+    expect(mismatch.status).toBe(200)
+
+    const differentPayload = await page.evaluate(async ({ transactionId, investorId, paymentDate, idempotencyKey }) => {
+        const response = await fetch(`/api/transactions/${transactionId}/payments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ investorId, amount: 3_000_001, paymentDate, method: "TRANSFER", proofImageUrl: null, notes: "different payload", idempotencyKey }),
+        })
+        return response.status
+    }, { transactionId: seeded!.id, investorId, paymentDate, idempotencyKey })
+    expect(differentPayload).toBe(409)
+})
+
 test("payment endpoint rejects duplicate and overpayment without side effects", async ({ page }) => {
     await page.goto("/login")
     await page.getByLabel("Username / Email").fill(E2E_USERS.admin.username)

@@ -32,8 +32,9 @@ describe("payment route atomicity and safety", () => {
         expect(routeSource.slice(outcome, notification)).toContain("if (outcome.kind === 'OVERPAYMENT')")
     })
 
-    it("keeps cross-retry idempotency explicit rather than pretending exact matching is a key", () => {
-        expect(routeSource).toContain("persisted idempotency key")
-        expect(routeSource).toContain("cross-retry idempotency remains a follow-up")
+    it("persists and replays an idempotency key", () => {
+        expect(routeSource).toContain("idempotencyKey")
+        expect(routeSource).toContain("IDEMPOTENT_REPLAY")
+        expect(routeSource).toContain("replayed: true")
     })
 })

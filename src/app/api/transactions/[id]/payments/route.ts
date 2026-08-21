@@ -4,6 +4,14 @@ import { z } from 'zod'
 import { notifyPaymentProof } from '@/lib/notifications'
 import { requireAdmin } from '@/lib/api-auth'
 import { runSerializableTransaction } from '@/lib/serializable-transaction'
+import { createHash } from 'node:crypto'
+
+function isUniqueConstraintError(error: unknown): error is { code: string } {
+    return typeof error === 'object'
+        && error !== null
+        && 'code' in error
+        && error.code === 'P2002'
+}
 
 const paymentHistorySchema = z.object({
     transactionId: z.string(),
@@ -13,7 +21,20 @@ const paymentHistorySchema = z.object({
     method: z.enum(['TRANSFER', 'CASH']),
     proofImageUrl: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
+    idempotencyKey: z.string().min(16).max(200).optional(),
 })
+
+function paymentFingerprint(data: z.infer<typeof paymentHistorySchema>): string {
+    return createHash('sha256').update(JSON.stringify({
+        transactionId: data.transactionId,
+        investorId: data.investorId,
+        amount: data.amount,
+        paymentDate: data.paymentDate,
+        method: data.method,
+        proofImageUrl: data.proofImageUrl ?? null,
+        notes: data.notes ?? null,
+    })).digest('hex')
+}
 
 export async function POST(
     request: NextRequest,
@@ -22,6 +43,8 @@ export async function POST(
     const authResult = await requireAdmin()
     if ("response" in authResult) return authResult.response
 
+    let parsedIdempotencyKey: string | undefined
+    let parsedFingerprint: string | undefined
     try {
         const { id: transactionId } = await params
         const body = await request.json()
@@ -29,8 +52,35 @@ export async function POST(
             ...body,
             transactionId,
         })
+        parsedIdempotencyKey = validatedData.idempotencyKey
+        const fingerprint = paymentFingerprint(validatedData)
+        parsedFingerprint = fingerprint
 
         const outcome = await runSerializableTransaction(prisma, async (tx) => {
+            if (validatedData.idempotencyKey) {
+                const existing = await tx.paymentHistory.findUnique({
+                    where: { idempotencyKey: validatedData.idempotencyKey },
+                    include: { transaction: { select: { paymentStatus: true } } },
+                })
+                if (existing) {
+                    if (existing.idempotencyFingerprint !== fingerprint) {
+                        return { kind: 'IDEMPOTENCY_MISMATCH' as const }
+                    }
+                    const totalPaid = existing.transactionId
+                        ? (await tx.paymentHistory.aggregate({
+                            where: { transactionId: existing.transactionId },
+                            _sum: { amount: true },
+                        }))._sum.amount ?? 0
+                        : existing.amount
+                    return {
+                        kind: 'IDEMPOTENT_REPLAY' as const,
+                        payment: existing,
+                        paymentStatus: existing.transaction?.paymentStatus ?? 'UNPAID',
+                        totalPaid,
+                    }
+                }
+            }
+
             const transaction = await tx.transaction.findUnique({
                 where: { id: transactionId },
                 include: {
@@ -83,6 +133,8 @@ export async function POST(
                     method: validatedData.method,
                     proofImageUrl: validatedData.proofImageUrl,
                     notes: validatedData.notes,
+                    idempotencyKey: validatedData.idempotencyKey,
+                    idempotencyFingerprint: validatedData.idempotencyKey ? fingerprint : null,
                 },
             })
 
@@ -117,6 +169,20 @@ export async function POST(
             }, { status: 400 })
         }
 
+        if (outcome.kind === 'IDEMPOTENCY_MISMATCH') {
+            return NextResponse.json({ error: 'Idempotency key sudah dipakai untuk pembayaran berbeda' }, { status: 409 })
+        }
+
+        if (outcome.kind === 'IDEMPOTENT_REPLAY') {
+            return NextResponse.json({
+                success: true,
+                replayed: true,
+                payment: outcome.payment,
+                paymentStatus: outcome.paymentStatus,
+                totalPaid: outcome.totalPaid,
+            })
+        }
+
         try {
             await notifyPaymentProof(
                 validatedData.investorId,
@@ -135,6 +201,35 @@ export async function POST(
             totalPaid: outcome.totalPaid,
         })
     } catch (error) {
+        if (isUniqueConstraintError(error) && parsedIdempotencyKey) {
+            // A concurrent request may win the unique idempotency-key insert.
+            // The winner's committed row is the authoritative replay response.
+            const replay = await prisma.paymentHistory.findUnique({
+                where: { idempotencyKey: parsedIdempotencyKey },
+                include: { transaction: { select: { paymentStatus: true } } },
+            })
+            if (replay) {
+                if (replay.idempotencyFingerprint !== parsedFingerprint) {
+                    return NextResponse.json(
+                        { error: 'Idempotency key sudah dipakai untuk pembayaran berbeda' },
+                        { status: 409 }
+                    )
+                }
+                const totalPaid = replay.transactionId
+                    ? (await prisma.paymentHistory.aggregate({
+                        where: { transactionId: replay.transactionId },
+                        _sum: { amount: true },
+                    }))._sum.amount ?? 0
+                    : replay.amount
+                return NextResponse.json({
+                    success: true,
+                    replayed: true,
+                    payment: replay,
+                    paymentStatus: replay.transaction?.paymentStatus ?? 'UNPAID',
+                    totalPaid,
+                })
+            }
+        }
         console.error('Error creating payment history:', error)
 
         if (error instanceof z.ZodError) {
@@ -150,6 +245,3 @@ export async function POST(
         )
     }
 }
-
-// A persisted idempotency key is intentionally not added without an approved schema migration.
-// Exact duplicate payloads are rejected within the transaction; cross-retry idempotency remains a follow-up.
