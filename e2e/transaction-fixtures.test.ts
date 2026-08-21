@@ -82,7 +82,14 @@ describe("E2E transaction fixture safety", () => {
         await cleanup
 
         expect(client.transaction.findMany).toHaveBeenCalledWith({
-            where: { transactionCode: { startsWith: "E2E-TRX-" } },
+            where: { transactionCode: { in: [
+                "E2E-TRX-001",
+                "E2E-TRX-FINAL-001",
+                "E2E-TRX-PAY-001",
+                "E2E-TRX-LOSS-001",
+                "E2E-TRX-BREAK-EVEN-001",
+                "E2E-TRX-ROUNDING-001",
+            ] } },
             select: { id: true },
         })
         expect(client.activityLog.deleteMany).toHaveBeenCalledWith({
