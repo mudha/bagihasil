@@ -6,6 +6,11 @@ import { UNIT_FIXTURE } from "./unit-fixtures"
 const E2E_TRANSACTION_CODE_PREFIX = "E2E-TRX-"
 const FINAL_INVESTOR_NAME = "E2E Investor Finalization Flow"
 const PAYMENT_INVESTOR_NAME = "E2E Investor Payment Flow"
+const EDGE_INVESTOR_NAMES = {
+    loss: "E2E Investor Loss Flow",
+    breakEven: "E2E Investor Break Even Flow",
+    rounding: "E2E Investor Rounding Flow",
+} as const
 
 export const TRANSACTION_FIXTURE = {
     code: "E2E-TRX-001",
@@ -28,6 +33,33 @@ export const FINALIZATION_FIXTURE = {
     managerSharePercentage: 60,
     notes: "E2E finalisasi profit tanpa pembayaran",
     unitCode: "E2E-UNIT-FINAL-001",
+} as const
+
+export const EDGE_FIXTURES = {
+    loss: {
+        code: "E2E-TRX-LOSS-001",
+        unitCode: "E2E-UNIT-LOSS-001",
+        buyPrice: 100,
+        sellPrice: 90,
+        investorSharePercentage: 40,
+        managerSharePercentage: 60,
+    },
+    breakEven: {
+        code: "E2E-TRX-BREAK-EVEN-001",
+        unitCode: "E2E-UNIT-BREAK-EVEN-001",
+        buyPrice: 100,
+        sellPrice: 100,
+        investorSharePercentage: 40,
+        managerSharePercentage: 60,
+    },
+    rounding: {
+        code: "E2E-TRX-ROUNDING-001",
+        unitCode: "E2E-UNIT-ROUNDING-001",
+        buyPrice: 100,
+        sellPrice: 101,
+        investorSharePercentage: 40,
+        managerSharePercentage: 60,
+    },
 } as const
 
 export const PAYMENT_FIXTURE = {
@@ -57,9 +89,18 @@ type TransactionFixtureClient = Pick<
     | "unit"
 >
 
+function fixtureTransactionCodes(): string[] {
+    return [
+        TRANSACTION_FIXTURE.code,
+        FINALIZATION_FIXTURE.code,
+        PAYMENT_FIXTURE.code,
+        ...Object.values(EDGE_FIXTURES).map((fixture) => fixture.code),
+    ]
+}
+
 async function transactionIds(direct: TransactionFixtureClient): Promise<string[]> {
     const rows = await direct.transaction.findMany({
-        where: { transactionCode: { startsWith: E2E_TRANSACTION_CODE_PREFIX } },
+        where: { transactionCode: { in: fixtureTransactionCodes() } },
         select: { id: true },
     })
     return rows.map(({ id }) => id)
@@ -90,11 +131,22 @@ async function cleanupAllWithVerifiedClient(direct: TransactionFixtureClient): P
                 { details: { contains: UNIT_FIXTURE.code } },
                 { details: { contains: FINALIZATION_FIXTURE.unitCode } },
                 { details: { contains: PAYMENT_FIXTURE.unitCode } },
+                ...Object.values(EDGE_FIXTURES).map((fixture) => ({ details: { contains: fixture.unitCode } })),
             ],
         },
     })
-    await direct.unit.deleteMany({ where: { code: { in: [UNIT_FIXTURE.code, FINALIZATION_FIXTURE.unitCode, PAYMENT_FIXTURE.unitCode] } } })
-    await direct.investor.deleteMany({ where: { name: { in: [UNIT_FIXTURE.investorName, FINAL_INVESTOR_NAME, PAYMENT_INVESTOR_NAME] } } })
+    await direct.unit.deleteMany({ where: { code: { in: [
+        UNIT_FIXTURE.code,
+        FINALIZATION_FIXTURE.unitCode,
+        PAYMENT_FIXTURE.unitCode,
+        ...Object.values(EDGE_FIXTURES).map((fixture) => fixture.unitCode),
+    ] } } })
+    await direct.investor.deleteMany({ where: { name: { in: [
+        UNIT_FIXTURE.investorName,
+        FINAL_INVESTOR_NAME,
+        PAYMENT_INVESTOR_NAME,
+        ...Object.values(EDGE_INVESTOR_NAMES),
+    ] } } })
 }
 
 export async function cleanupE2ETransactionFixtures(): Promise<void> {
@@ -131,6 +183,46 @@ export async function seedE2ETransactionFixtures(): Promise<void> {
                 kilometer: UNIT_FIXTURE.kilometer,
             },
         })
+    })
+}
+
+export async function seedE2EFinancialEdgeFixtures(): Promise<void> {
+    const env = loadE2EEnvironment()
+    await withVerifiedE2EDatabase(env, async ({ direct }) => {
+        await cleanupAllWithVerifiedClient(direct)
+        for (const [kind, fixture] of Object.entries(EDGE_FIXTURES) as Array<[keyof typeof EDGE_FIXTURES, typeof EDGE_FIXTURES[keyof typeof EDGE_FIXTURES]]>) {
+            const investor = await direct.investor.create({
+                data: { name: EDGE_INVESTOR_NAMES[kind], marginPercentage: 50, isActive: true },
+            })
+            const unit = await direct.unit.create({
+                data: {
+                    investorId: investor.id,
+                    code: fixture.unitCode,
+                    name: `Yamaha XMAX ${kind} edge case`,
+                    plateNumber: `B 9${kind.length} E2E`,
+                    status: "AVAILABLE",
+                    vehicleType: "Motor",
+                    brand: "Yamaha",
+                    model: "XMAX",
+                    type: "Connected",
+                    year: "2025",
+                    color: "Hitam",
+                    kilometer: 2000,
+                },
+            })
+            await direct.transaction.create({
+                data: {
+                    unitId: unit.id,
+                    transactionCode: fixture.code,
+                    buyDate: new Date("2026-08-20T00:00:00.000Z"),
+                    buyPrice: fixture.buyPrice,
+                    initialInvestorCapital: fixture.buyPrice,
+                    initialManagerCapital: 0,
+                    status: "ON_PROCESS",
+                    paymentStatus: "UNPAID",
+                },
+            })
+        }
     })
 }
 
@@ -243,6 +335,26 @@ export async function getE2ETransactionByCode(code: string) {
     }))
 }
 
+export async function getE2ETransactionSideEffectState(code: string) {
+    if (!code.startsWith(E2E_TRANSACTION_CODE_PREFIX)) {
+        throw new Error("E2E safety guard: refusing to inspect a non-E2E transaction code")
+    }
+    const env = loadE2EEnvironment()
+    return withVerifiedE2EDatabase(env, async ({ direct }) => {
+        const transaction = await direct.transaction.findUnique({
+            where: { transactionCode: code },
+            select: { id: true },
+        })
+        if (!transaction) throw new Error(`E2E transaction not found: ${code}`)
+        const [profitSharing, paymentHistories, activityLogs] = await Promise.all([
+            direct.profitSharing.count({ where: { transactionId: transaction.id } }),
+            direct.paymentHistory.count({ where: { transactionId: transaction.id } }),
+            direct.activityLog.count({ where: { entity: "TRANSACTION", entityId: transaction.id } }),
+        ])
+        return { profitSharing, paymentHistories, activityLogs }
+    })
+}
+
 export async function countE2ETransactionFixtures(): Promise<number> {
     const env = loadE2EEnvironment()
     return withVerifiedE2EDatabase(env, async ({ direct }) => {
@@ -260,6 +372,23 @@ export async function countE2ETransactionFixtures(): Promise<number> {
             }),
         ])
         return transactions + payments + shares + costs + proofs + logs
+    })
+}
+
+export async function countE2EFinancialEdgeFixtures(): Promise<number> {
+    const env = loadE2EEnvironment()
+    return withVerifiedE2EDatabase(env, async ({ direct }) => {
+        const [units, investors, unitLogs] = await Promise.all([
+            direct.unit.count({ where: { code: { in: Object.values(EDGE_FIXTURES).map((fixture) => fixture.unitCode) } } }),
+            direct.investor.count({ where: { name: { in: Object.values(EDGE_INVESTOR_NAMES) } } }),
+            direct.activityLog.count({
+                where: {
+                    entity: "UNIT",
+                    OR: Object.values(EDGE_FIXTURES).map((fixture) => ({ details: { contains: fixture.unitCode } })),
+                },
+            }),
+        ])
+        return units + investors + unitLogs
     })
 }
 

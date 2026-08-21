@@ -149,12 +149,34 @@ export async function PUT(
                 where: { id },
                 include: {
                     costs: true,
+                    profitSharing: true,
                     unit: { include: { investor: true } },
                 },
             })
 
             if (!currentTransaction) {
                 return { kind: "NOT_FOUND" as const }
+            }
+
+            if (body.status === "COMPLETED" && currentTransaction.status === "COMPLETED") {
+                const requestedSellDate = validatedData.sellDate?.getTime()
+                const storedSellDate = currentTransaction.sellDate?.getTime()
+                const storedProfitSharing = currentTransaction.profitSharing
+                const sameFinalization = (
+                    (requestedSellDate === undefined || requestedSellDate === storedSellDate)
+                    && (validatedData.sellPrice === undefined || validatedData.sellPrice === currentTransaction.sellPrice)
+                    && (
+                        validatedData.investorSharePercentage === undefined
+                        || validatedData.investorSharePercentage === storedProfitSharing?.investorSharePercentage
+                    )
+                    && (
+                        validatedData.managerSharePercentage === undefined
+                        || validatedData.managerSharePercentage === storedProfitSharing?.managerSharePercentage
+                    )
+                )
+                return sameFinalization
+                    ? { kind: "ALREADY_COMPLETED" as const }
+                    : { kind: "COMPLETION_CONFLICT" as const }
             }
 
             const statusChanged = body.status && body.status !== currentTransaction.status
@@ -268,6 +290,15 @@ export async function PUT(
             return NextResponse.json({
                 error: "Cannot mark as COMPLETED without sell date and sell price. Please finalize the sale first."
             }, { status: 400 })
+        }
+        if (outcome.kind === "ALREADY_COMPLETED") {
+            return NextResponse.json({ ok: true, idempotent: true })
+        }
+        if (outcome.kind === "COMPLETION_CONFLICT") {
+            return NextResponse.json(
+                { error: "Transaction already completed with different finalization data" },
+                { status: 409 }
+            )
         }
 
         const { result, notifyInvestorId } = outcome

@@ -58,6 +58,37 @@ describe("calculateProfitSharing", () => {
         expect(result.managerProfitAmount).toBe(0)
     })
 
+    it("rounds fractional rupiah to integers while preserving the full margin", () => {
+        const result = calculateProfitSharing({
+            buyPrice: 100,
+            sellPrice: 101,
+            costs: [],
+            investorSharePercentage: 40,
+            managerSharePercentage: 60,
+        })
+
+        expect(result.investorProfitAmount).toBe(0)
+        expect(result.managerProfitAmount).toBe(1)
+        expect(Number.isInteger(result.investorProfitAmount)).toBe(true)
+        expect(Number.isInteger(result.managerProfitAmount)).toBe(true)
+        expect(result.investorProfitAmount + result.managerProfitAmount).toBe(result.netMargin)
+    })
+
+    it("rounds a fractional distributable margin before splitting it", () => {
+        const result = calculateProfitSharing({
+            buyPrice: 100,
+            sellPrice: 101.5,
+            costs: [],
+            investorSharePercentage: 50,
+            managerSharePercentage: 50,
+        })
+
+        expect(result.netMargin).toBe(2)
+        expect(result.investorProfitAmount).toBe(1)
+        expect(result.managerProfitAmount).toBe(1)
+        expect(result.investorProfitAmount + result.managerProfitAmount).toBe(result.netMargin)
+    })
+
     it("tracks explicit investor and manager capital in capital totals", () => {
         const result = calculateProfitSharing({
             buyPrice: 100_000_000,
