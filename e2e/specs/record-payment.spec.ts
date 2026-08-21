@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test"
 import { cleanupE2EUsers, seedE2EUsers } from "../seed"
 import { E2E_USERS } from "../test-env"
+import { loginE2E } from "../login"
 import {
     cleanupE2ETransactionFixtures,
     getE2ETransactionByCode,
@@ -18,11 +19,7 @@ test.afterEach(async () => {
 })
 
 test("admin records partial then final payment through the real UI", async ({ page }) => {
-    await page.goto("/login")
-    await page.getByLabel("Username / Email").fill(E2E_USERS.admin.username)
-    await page.getByLabel("Password").fill(E2E_USERS.admin.password)
-    await page.getByRole("button", { name: "Login" }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await loginE2E(page, E2E_USERS.admin, /\/dashboard$/)
 
     const seeded = await getE2ETransactionByCode(PAYMENT_FIXTURE.code)
     expect(seeded).not.toBeNull()
@@ -63,11 +60,7 @@ test("admin records partial then final payment through the real UI", async ({ pa
 })
 
 test("same idempotency key is safe under concurrent retry", async ({ page }) => {
-    await page.goto("/login")
-    await page.getByLabel("Username / Email").fill(E2E_USERS.admin.username)
-    await page.getByLabel("Password").fill(E2E_USERS.admin.password)
-    await page.getByRole("button", { name: "Login" }).click()
-    await expect(page).toHaveURL(/dashboard$/)
+    await loginE2E(page, E2E_USERS.admin, /\/dashboard$/)
 
     const seeded = await getE2ETransactionByCode(PAYMENT_FIXTURE.code)
     expect(seeded).not.toBeNull()
@@ -111,11 +104,7 @@ test("same idempotency key is safe under concurrent retry", async ({ page }) => 
 })
 
 test("payment endpoint rejects duplicate and overpayment without side effects", async ({ page }) => {
-    await page.goto("/login")
-    await page.getByLabel("Username / Email").fill(E2E_USERS.admin.username)
-    await page.getByLabel("Password").fill(E2E_USERS.admin.password)
-    await page.getByRole("button", { name: "Login" }).click()
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await loginE2E(page, E2E_USERS.admin, /\/dashboard$/)
 
     const seeded = await getE2ETransactionByCode(PAYMENT_FIXTURE.code)
     expect(seeded).not.toBeNull()

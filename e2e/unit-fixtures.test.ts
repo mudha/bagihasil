@@ -87,7 +87,7 @@ describe("E2E financial fixture safety", () => {
             where: { entity: "UNIT", details: { contains: "E2E-UNIT-001" } },
         })
         expect(client.unit.deleteMany).toHaveBeenCalledWith({
-            where: { code: { startsWith: "E2E-" } },
+            where: { code: "E2E-UNIT-001" },
         })
         expect(client.investor.deleteMany).toHaveBeenCalledWith({
             where: { name: "E2E Investor Unit Flow" },
@@ -133,7 +133,7 @@ describe("E2E financial fixture safety", () => {
             where: { entity: "UNIT", details: { contains: "E2E-UNIT-001" } },
         })
         expect(client.unit.count).toHaveBeenCalledWith({
-            where: { code: { startsWith: "E2E-" } },
+            where: { code: "E2E-UNIT-001" },
         })
         expect(client.investor.count).toHaveBeenCalledWith({
             where: { name: "E2E Investor Unit Flow" },
