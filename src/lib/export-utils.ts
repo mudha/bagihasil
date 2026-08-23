@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
+import { mapInvestorReportPayment, PAID_PROFIT_REPORT_HEADER } from './investor-report-payment'
 
 interface InvestorReportData {
     investor: {
@@ -140,7 +141,7 @@ export async function exportInvestorReportXLSX(investorId: string, investorName:
             { header: 'Margin setelah biaya (Rp)', key: 'netMargin', width: 20 },
             { header: 'Bagi Hasil Pemodal (Rp)', key: 'investorProfit', width: 20 },
             { header: 'Bagi Hasil Pengelola (Rp)', key: 'managerProfit', width: 20 },
-            { header: 'Total Transfer ke Pemodal (Rp)', key: 'totalTransfer', width: 22 },
+            { header: PAID_PROFIT_REPORT_HEADER, key: 'paidProfit', width: 22 },
             { header: 'Status', key: 'status', width: 15 }
         ]
 
@@ -180,10 +181,7 @@ export async function exportInvestorReportXLSX(investorId: string, investorName:
 
         // Add Data
         data.transactions.forEach((tx, index) => {
-            // Calculate total transfer (Initial Capital + Profit) roughly, or just use what we have
-            // Total Transfer usually = Initial Capital + Profit (if capital returned) or just Profit? 
-            // In profit sharing logic, capital is usually returned.
-            const totalTransfer = (tx.initialInvestorCapital || 0) + (tx.investorProfitAmount || 0)
+            const payment = mapInvestorReportPayment(tx)
 
             const row = sheet.addRow({
                 no: index + 1,
@@ -196,12 +194,12 @@ export async function exportInvestorReportXLSX(investorId: string, investorName:
                 sellPrice: tx.sellPrice || 0,
                 investorCost: tx.investorCosts,
                 managerCost: tx.managerCosts,
-                investorCapital: tx.initialInvestorCapital,
+                investorCapital: payment.investorTransactionCapital,
                 managerCapital: tx.initialManagerCapital,
                 netMargin: tx.netMargin || 0,
-                investorProfit: tx.investorProfitAmount || 0,
+                investorProfit: payment.investorProfitAmount,
                 managerProfit: tx.managerProfitAmount || 0,
-                totalTransfer: totalTransfer,
+                paidProfit: payment.paidProfitAmount,
                 status: tx.paymentStatus
             })
 
@@ -1360,7 +1358,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
             // ── Definisi kolom tetap (sebelum & sesudah kolom biaya) ──────
             // FIXED KIRI  : No, Kode, Unit, Polisi, Tgl Beli, Tgl Jual, Harga Beli, Harga Jual, Modal Pemodal, Modal Pengelola
             // DINAMIS     : [costTypes…]  ← kolom biaya per jenis
-            // FIXED KANAN : Total Biaya, Biaya Pemodal, Biaya Pengelola, Margin, BH Pemodal, BH Pengelola, Total Transfer, Status Bayar, Status Tx
+            // FIXED KANAN : Total Biaya, Biaya Pemodal, Biaya Pengelola, Margin, BH Pemodal, BH Pengelola, Bagi Hasil Dibayar, Status Bayar, Status Tx
 
             const FIXED_LEFT  = 10  // kolom 1-10
             const FIXED_RIGHT = 9   // jumlah kolom kanan tetap
@@ -1398,7 +1396,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                 { key: 'margin',          width: 16 },
                 { key: 'bhPemodal',       width: 16 },
                 { key: 'bhPengelola',     width: 16 },
-                { key: 'totalTransfer',   width: 16 },
+                { key: 'paidProfit',      width: 16 },
                 { key: 'statusBayar',     width: 12 },
                 { key: 'statusTx',        width: 10 },
             )
@@ -1462,7 +1460,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                 'Biaya Pemodal (Rp)', 'Biaya Pengelola (Rp)',
                 'Margin Bersih (Rp)',
                 'BH Pemodal (Rp)', 'BH Pengelola (Rp)',
-                'Total Transfer (Rp)', 'Status Bayar', 'Status Transaksi',
+                PAID_PROFIT_REPORT_HEADER, 'Status Bayar', 'Status Transaksi',
             ]
             const headers = [...hdrFixed, ...hdrCosts, ...hdrRight]
 
@@ -1487,7 +1485,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
             let sumNetMargin       = 0
             let sumInvestorProfit  = 0
             let sumManagerProfit   = 0
-            let sumTotalTransfer   = 0
+            let sumPaidProfit      = 0
             // Akumulasi per jenis biaya
             const sumCostByType: Record<string, number> = {}
             costTypes.forEach(t => { sumCostByType[t] = 0 })
@@ -1496,7 +1494,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                 const isEven = idx % 2 === 0
                 const rowBg  = tx.netMargin < 0 ? RED_LOSS : (isEven ? WHITE : GRAY_ROW)
 
-                const totalTransfer = (tx.initialInvestorCapital ?? 0) + (tx.investorProfitAmount ?? 0)
+                const payment = mapInvestorReportPayment(tx)
 
                 sumInvestorCapital += tx.initialInvestorCapital ?? 0
                 sumManagerCapital  += tx.initialManagerCapital  ?? 0
@@ -1506,7 +1504,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                 sumNetMargin       += tx.netMargin ?? 0
                 sumInvestorProfit  += tx.investorProfitAmount ?? 0
                 sumManagerProfit   += tx.managerProfitAmount ?? 0
-                sumTotalTransfer   += totalTransfer
+                sumPaidProfit      += payment.paidProfitAmount
 
                 // Hitung biaya per jenis untuk transaksi ini
                 const costByType: Record<string, number> = {}
@@ -1529,7 +1527,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                     fmtDate(tx.sellDate),
                     tx.buyPrice,
                     tx.sellPrice,
-                    tx.initialInvestorCapital,
+                    payment.investorTransactionCapital,
                     tx.initialManagerCapital,
                 ]
                 // Nilai kolom biaya dinamis
@@ -1540,9 +1538,9 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                     tx.investorCosts,
                     tx.managerCosts,
                     tx.netMargin,
-                    tx.investorProfitAmount,
+                    payment.investorProfitAmount,
                     tx.managerProfitAmount,
-                    totalTransfer,
+                    payment.paidProfitAmount,
                     tx.paymentStatus,
                     tx.status,
                 ]
@@ -1553,7 +1551,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                     cell.value = v as ExcelJS.CellValue
                     const isNumLeft  = i >= 6 && i <= 9          // harga beli-jual, modal
                     const isNumCost  = i >= FIXED_LEFT && i < FIXED_LEFT + costTypes.length
-                    const isNumRight = i >= FIXED_LEFT + costTypes.length && i <= FIXED_LEFT + costTypes.length + 6  // sampai totalTransfer
+                    const isNumRight = i >= FIXED_LEFT + costTypes.length && i <= FIXED_LEFT + costTypes.length + 6  // sampai paidProfit
                     const isNum = isNumLeft || isNumCost || isNumRight
                     const align = isNum ? 'right' : (i < 4 ? 'left' : 'center')
                     applyDataStyle(cell, rowBg, false, align)
@@ -1580,7 +1578,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                     sumNetMargin,
                     sumInvestorProfit,
                     sumManagerProfit,
-                    sumTotalTransfer,
+                    sumPaidProfit,
                     '', '',
                 ]
                 const totAll = [...totLeft, ...totCosts, ...totRight]
