@@ -68,6 +68,8 @@ model Investor {
   bankAccountDetails String?
   marginPercentage   Float    @default(50.0)
   isActive           Boolean  @default(true)
+  managedCapitalBalance          Decimal? @db.Decimal(18, 0)
+  managedCapitalBalanceUpdatedAt DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
