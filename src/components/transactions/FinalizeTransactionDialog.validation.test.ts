@@ -1,23 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { z } from "zod"
-
-// Import the actual sellSchema from FinalizeTransactionDialog
-// We replicate it here to avoid Next.js module resolution issues in vitest
-// This MUST match the schema in FinalizeTransactionDialog.tsx exactly
-const sellSchema = z.object({
-    sellDate: z.string().min(1, "Tanggal jual harus diisi"),
-    sellPrice: z.number().min(0, "Harga laku harus lebih dari 0"),
-    investorSharePercentage: z.number().min(0).max(100),
-    managerSharePercentage: z.number().min(0).max(100),
-    notes: z.string().optional(),
-}).refine(
-    (data) => data.investorSharePercentage + data.managerSharePercentage === 100,
-    {
-        message: "Total nisbah investor dan pengelola harus 100%",
-        path: ["managerSharePercentage"],
-    }
-)
-
+import { sellSchema } from "./finalize-transaction-schema"
 describe("FinalizeTransactionDialog sellSchema — percentage validation", () => {
     const validBase = {
         sellDate: "2026-01-01",
@@ -31,6 +13,9 @@ describe("FinalizeTransactionDialog sellSchema — percentage validation", () =>
             managerSharePercentage: 70,
         })
         expect(result.success).toBe(false)
+        if (!result.success) {
+            expect(result.error.issues[0].message).toBe("Total nisbah investor dan pengelola harus 100%")
+        }
     })
 
     it("rejects 40 + 40 (total 80)", () => {
@@ -76,5 +61,14 @@ describe("FinalizeTransactionDialog sellSchema — percentage validation", () =>
             managerSharePercentage: 66.67,
         })
         expect(result.success).toBe(true)
+    })
+
+    it("rejects NaN percentage", () => {
+        const result = sellSchema.safeParse({
+            ...validBase,
+            investorSharePercentage: NaN,
+            managerSharePercentage: 60,
+        })
+        expect(result.success).toBe(false)
     })
 })

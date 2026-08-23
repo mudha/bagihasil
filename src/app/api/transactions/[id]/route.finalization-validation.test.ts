@@ -86,20 +86,20 @@ describe("transactionUpdateSchema — finalization percentage validation", () =>
         expect(result.success).toBe(true)
     })
 
-    it("accepts single investorSharePercentage (handler computes manager)", () => {
+    it("rejects finalization with only investorSharePercentage", () => {
         const result = transactionUpdateSchema.safeParse({
             ...validBase,
             investorSharePercentage: 40,
         })
-        expect(result.success).toBe(true)
+        expect(result.success).toBe(false)
     })
 
-    it("accepts single managerSharePercentage (handler computes investor)", () => {
+    it("rejects finalization with only managerSharePercentage", () => {
         const result = transactionUpdateSchema.safeParse({
             ...validBase,
             managerSharePercentage: 60,
         })
-        expect(result.success).toBe(true)
+        expect(result.success).toBe(false)
     })
 
     it("rejects NaN percentage", () => {
@@ -107,6 +107,24 @@ describe("transactionUpdateSchema — finalization percentage validation", () =>
             ...validBase,
             investorSharePercentage: NaN,
             managerSharePercentage: 60,
+        })
+        expect(result.success).toBe(false)
+    })
+
+    it("rejects Infinity percentage", () => {
+        const result = transactionUpdateSchema.safeParse({
+            ...validBase,
+            investorSharePercentage: Infinity,
+            managerSharePercentage: 60,
+        })
+        expect(result.success).toBe(false)
+    })
+
+    it("rejects malformed numeric string percentage", () => {
+        const result = transactionUpdateSchema.safeParse({
+            ...validBase,
+            investorSharePercentage: "not-a-number",
+            managerSharePercentage: "60",
         })
         expect(result.success).toBe(false)
     })
