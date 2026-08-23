@@ -183,4 +183,44 @@ describe("PATCH /api/investors/[id]/managed-capital", () => {
         expect(tx.investor.update).toHaveBeenCalledTimes(1)
         expect(tx.activityLog.create).toHaveBeenCalledTimes(1)
     })
+
+    it("retries a serialization conflict and logs the fresh committed before value", async () => {
+        const conflict = Object.assign(new Error("write conflict"), { code: "P2034" })
+        const staleTx = transactionClient()
+        const freshTx = transactionClient()
+        freshTx.investor.findUnique.mockResolvedValueOnce({
+            id: "investor-1",
+            managedCapitalBalance: { toString: () => "100" },
+            managedCapitalBalanceUpdatedAt: new Date("2026-08-24T00:00:00.000Z"),
+        })
+        freshTx.investor.update.mockResolvedValueOnce({
+            id: "investor-1",
+            managedCapitalBalance: { toString: () => "200" },
+            managedCapitalBalanceUpdatedAt: new Date("2026-08-24T00:01:00.000Z"),
+        })
+
+        mocks.prisma.$transaction
+            .mockImplementationOnce(async (callback: (client: typeof staleTx) => unknown) => {
+                await callback(staleTx)
+                throw conflict
+            })
+            .mockImplementationOnce(async (callback: (client: typeof freshTx) => unknown) => callback(freshTx))
+
+        const response = await PATCH(requestWithJson({ action: "set", managedCapitalBalance: "200" }), params())
+
+        expect(response.status).toBe(200)
+        expect(mocks.prisma.$transaction).toHaveBeenCalledTimes(2)
+        expect(mocks.prisma.$transaction).toHaveBeenNthCalledWith(1, expect.any(Function), {
+            isolationLevel: "Serializable",
+        })
+        expect(freshTx.activityLog.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                details: JSON.stringify({
+                    action: "set",
+                    managedCapitalBalanceBefore: "100",
+                    managedCapitalBalanceAfter: "200",
+                }),
+            }),
+        }))
+    })
 })

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/api-auth"
 import { prisma } from "@/lib/prisma"
+import { runSerializableTransaction } from "../../../../../lib/serializable-transaction"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -36,7 +37,7 @@ export async function PATCH(
         const { id } = await params
         const changedAt = new Date()
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await runSerializableTransaction(prisma, async (tx) => {
             const existing = await tx.investor.findUnique({
                 where: { id },
                 select: { id: true, managedCapitalBalance: true },
