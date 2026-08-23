@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Table,
@@ -18,6 +18,16 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -26,7 +36,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Plus, Pencil, Download, FileText, FileSpreadsheet, Sheet } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Pencil, Download, FileText, FileSpreadsheet, Sheet, Wallet, AlertTriangle, CircleDollarSign } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -42,6 +55,13 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { formatRupiahOrNull } from "@/lib/rupiah-format"
+import {
+    buildManagedCapitalSetRequest,
+    getManagedCapitalInputError,
+    type ManagedCapitalSummary,
+    type ManagedCapitalViewState,
+} from "@/lib/managed-capital-ui-contract"
 
 const investorSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
@@ -71,6 +91,331 @@ interface User {
     role: string
 }
 
+/* ---------- Display helpers ---------- */
+
+function formatTimestamp(iso: string | null): string {
+    if (!iso) return ""
+    try {
+        return new Date(iso).toLocaleString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+    } catch {
+        return iso
+    }
+}
+
+/* ---------- Set/Clear Managed Capital Dialog ---------- */
+
+function ManagedCapitalDialog({
+    investor,
+    currentSummary,
+    onUpdate,
+}: {
+    investor: Investor
+    currentSummary: ManagedCapitalSummary | null
+    onUpdate: () => void
+}) {
+    const [isOpen, setIsOpen] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [inputValue, setInputValue] = useState("")
+    const [inputTouched, setInputTouched] = useState(false)
+    const [showClearConfirm, setShowClearConfirm] = useState(false)
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (isOpen) {
+            setInputValue(currentSummary?.managedCapitalBalance ?? "")
+            setInputTouched(false)
+            // focus input on open
+            setTimeout(() => inputRef.current?.focus(), 50)
+        }
+    }, [isOpen, currentSummary?.managedCapitalBalance])
+
+    const inputError = inputTouched ? getManagedCapitalInputError(inputValue) : null
+
+    const handleSet = useCallback(async () => {
+        const requestBody = buildManagedCapitalSetRequest(inputValue)
+        if (!requestBody) {
+            setInputTouched(true)
+            return
+        }
+        setIsSaving(true)
+        try {
+            const res = await fetch(`/api/investors/${investor.id}/managed-capital`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody),
+            })
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                toast.error(err.error || "Gagal menyimpan saldo modal.")
+                return
+            }
+            toast.success("Saldo modal berhasil disimpan.")
+            setIsOpen(false)
+            onUpdate()
+        } catch {
+            toast.error("Terjadi kesalahan sistem.")
+        } finally {
+            setIsSaving(false)
+        }
+    }, [inputValue, investor.id, onUpdate])
+
+    const handleClear = useCallback(async () => {
+        setIsSaving(true)
+        try {
+            const res = await fetch(`/api/investors/${investor.id}/managed-capital`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "clear" }),
+            })
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                toast.error(err.error || "Gagal menghapus saldo modal.")
+                return
+            }
+            toast.success("Saldo modal berhasil dihapus.")
+            setShowClearConfirm(false)
+            setIsOpen(false)
+            onUpdate()
+        } catch {
+            toast.error("Terjadi kesalahan sistem.")
+        } finally {
+            setIsSaving(false)
+        }
+    }, [investor.id, onUpdate])
+
+    return (
+        <>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" aria-label={`Atur saldo modal ${investor.name}`}>
+                        <Wallet className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Modal</span>
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Saldo Modal — {investor.name}</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 pt-2">
+                        {/* Current balance display */}
+                        <div className="rounded-lg border bg-slate-50 p-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Saldo Modal Kelolaan Saat Ini</p>
+                            <p className="text-lg font-bold">
+                                {formatRupiahOrNull(currentSummary?.managedCapitalBalance ?? null)}
+                            </p>
+                            {currentSummary?.managedCapitalBalanceUpdatedAt && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Diperbarui: {formatTimestamp(currentSummary.managedCapitalBalanceUpdatedAt)}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Allocation summary */}
+                        {currentSummary && (
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="rounded border p-2">
+                                    <p className="text-xs text-muted-foreground">Sedang Dialokasikan</p>
+                                    <p className="font-semibold">{formatRupiahOrNull(currentSummary.activeAllocatedInvestorCapital)}</p>
+                                </div>
+                                <div className="rounded border p-2">
+                                    <p className="text-xs text-muted-foreground">Sisa Tersedia</p>
+                                    <p className="font-semibold">{formatRupiahOrNull(currentSummary.availableManagedCapital)}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Input for set */}
+                        <div className="space-y-2">
+                            <Label htmlFor={`capital-input-${investor.id}`}>Saldo Baru (Rp)</Label>
+                            <Input
+                                id={`capital-input-${investor.id}`}
+                                ref={inputRef}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="Contoh: 5000000"
+                                value={inputValue}
+                                onChange={(e) => {
+                                    // Preserve exactly what the user typed; validation never mutates raw input.
+                                    setInputValue(e.target.value)
+                                    setInputTouched(true)
+                                }}
+                                disabled={isSaving}
+                                aria-invalid={Boolean(inputError)}
+                                aria-describedby="capital-input-help capital-input-error"
+                            />
+                            <p id="capital-input-help" className="text-xs text-muted-foreground">
+                                Saldo modal terkini yang sedang dikelola. Gunakan 0 atau 1–18 digit tanpa simbol.
+                            </p>
+                            {inputError && (
+                                <p id="capital-input-error" role="alert" className="text-sm text-destructive">
+                                    {inputError}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowClearConfirm(true)}
+                                disabled={isSaving || currentSummary?.managedCapitalStatus === "UNSET"}
+                            >
+                                Hapus Nilai
+                            </Button>
+                            <Button
+                                size="sm"
+                                onClick={handleSet}
+                                disabled={isSaving || Boolean(inputError) || !inputValue}
+                            >
+                                {isSaving ? "Menyimpan..." : "Simpan"}
+                            </Button>
+                        </div>
+
+                        {/* Warnings */}
+                        {currentSummary?.warnings.map((w, i) => (
+                            <Alert key={i} variant="destructive" className="text-sm">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription>{w.message}</AlertDescription>
+                            </Alert>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Clear Confirmation */}
+            <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Saldo Modal?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Saldo modal kelolaan untuk {investor.name} akan dikosongkan menjadi status &ldquo;Belum diatur&rdquo;.
+                            Transaksi dan data finansial lain tidak terpengaruh.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSaving}>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClear} disabled={isSaving}>
+                            {isSaving ? "Menghapus..." : "Ya, Hapus"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    )
+}
+
+/* ---------- Capital Summary Display Row (Desktop) ---------- */
+
+function CapitalSummaryCell({
+    summary,
+    viewState,
+}: {
+    summary: ManagedCapitalSummary | null
+    viewState: ManagedCapitalViewState
+}) {
+    if (!summary) {
+        const label = viewState.kind === "loading"
+            ? "Memuat..."
+            : viewState.kind === "error"
+                ? "Tidak tersedia"
+                : "Tidak ditemukan"
+        return <TableCell className="text-muted-foreground text-xs italic">{label}</TableCell>
+    }
+    return (
+        <>
+            <TableCell>
+                <div className="text-sm">
+                    <span className="font-semibold">{formatRupiahOrNull(summary.managedCapitalBalance)}</span>
+                    {summary.managedCapitalStatus === "UNSET" && (
+                        <span className="ml-1 text-xs text-muted-foreground">(Belum diatur)</span>
+                    )}
+                </div>
+            </TableCell>
+            <TableCell>
+                <span className="text-sm font-medium">{formatRupiahOrNull(summary.activeAllocatedInvestorCapital)}</span>
+            </TableCell>
+            <TableCell>
+                <div className="text-sm">
+                    <span className="font-medium">{formatRupiahOrNull(summary.availableManagedCapital)}</span>
+                    {summary.warnings.some(w => w.code === "ALLOCATION_EXCEEDS_MANAGED_BALANCE") && (
+                        <Badge variant="destructive" className="ml-1 text-[10px]">⚠ Melebihi</Badge>
+                    )}
+                    {summary.warnings.length > 0 && (
+                        <div className="mt-1 space-y-1" role="alert" aria-label="Peringatan ringkasan modal">
+                            {summary.warnings.map((warning) => (
+                                <p key={warning.code} className="text-xs text-destructive">{warning.message}</p>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </TableCell>
+        </>
+    )
+}
+
+/* ---------- Capital Summary Mobile Card ---------- */
+
+function CapitalSummaryMobile({
+    summary,
+    viewState,
+}: {
+    summary: ManagedCapitalSummary | null
+    viewState: ManagedCapitalViewState
+}) {
+    if (!summary) {
+        const label = viewState.kind === "loading"
+            ? "Memuat ringkasan modal..."
+            : viewState.kind === "error"
+                ? "Ringkasan modal tidak tersedia"
+                : "Ringkasan modal tidak ditemukan"
+        return <div role="status" className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">{label}</div>
+    }
+    return (
+        <div className="rounded-md border border-dashed bg-slate-50/80 p-3 space-y-2 text-sm">
+            <div className="flex items-center gap-1.5 font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                <CircleDollarSign className="h-3.5 w-3.5" /> Modal Kelolaan
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                <div>
+                    <p className="text-xs text-muted-foreground">Saldo Saat Ini</p>
+                    <p className="font-bold text-sm">{formatRupiahOrNull(summary.managedCapitalBalance)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground">Sedang Dialokasikan</p>
+                    <p className="font-semibold text-sm">{formatRupiahOrNull(summary.activeAllocatedInvestorCapital)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground">Sisa Tersedia</p>
+                    <p className="font-semibold text-sm">{formatRupiahOrNull(summary.availableManagedCapital)}</p>
+                </div>
+                {summary.managedCapitalBalanceUpdatedAt && (
+                    <div>
+                        <p className="text-xs text-muted-foreground">Terakhir Diperbarui</p>
+                        <p className="text-xs">{formatTimestamp(summary.managedCapitalBalanceUpdatedAt)}</p>
+                    </div>
+                )}
+            </div>
+            {summary.warnings.map((w, i) => (
+                <Alert key={i} variant="destructive" className="text-xs py-2">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <AlertDescription>{w.message}</AlertDescription>
+                </Alert>
+            ))}
+        </div>
+    )
+}
+
+/* ========== Main Page ========== */
+
 export default function InvestorsPage() {
     const [investors, setInvestors] = useState<Investor[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -78,6 +423,9 @@ export default function InvestorsPage() {
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
     const [isExportingAll, setIsExportingAll] = useState(false)
     const [users, setUsers] = useState<User[]>([])
+    const [capitalViewState, setCapitalViewState] = useState<ManagedCapitalViewState>({ kind: "loading" })
+    const capitalRequestId = useRef(0)
+    const capitalController = useRef<AbortController | null>(null)
     const { data: session } = useSession()
     const isViewer = session?.user?.role === "VIEWER"
 
@@ -107,10 +455,39 @@ export default function InvestorsPage() {
         }
     }
 
+    const fetchCapitalSummaries = useCallback(async () => {
+        const requestId = ++capitalRequestId.current
+        capitalController.current?.abort()
+        const controller = new AbortController()
+        capitalController.current = controller
+        setCapitalViewState({ kind: "loading" })
+        try {
+            const res = await fetch('/api/investors/capital-summary', { signal: controller.signal })
+            if (!res.ok) {
+                if (requestId === capitalRequestId.current) {
+                    setCapitalViewState({ kind: "error", message: "Gagal memuat ringkasan modal." })
+                }
+                return
+            }
+            const data: ManagedCapitalSummary[] = await res.json()
+            if (requestId !== capitalRequestId.current) return
+            const map = new Map<string, ManagedCapitalSummary>()
+            for (const s of data) map.set(s.investorId, s)
+            setCapitalViewState({ kind: "loaded", summaries: map })
+        } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return
+            if (requestId === capitalRequestId.current) {
+                setCapitalViewState({ kind: "error", message: "Gagal memuat ringkasan modal." })
+            }
+        }
+    }, [])
+
     useEffect(() => {
         fetchInvestors()
         fetchUsers()
-    }, [])
+        fetchCapitalSummaries()
+        return () => capitalController.current?.abort()
+    }, [fetchCapitalSummaries, session?.user?.role])
 
     useEffect(() => {
         if (editingInvestor) {
@@ -136,7 +513,6 @@ export default function InvestorsPage() {
 
     async function onSubmit(values: InvestorFormValues) {
         try {
-            // Convert "none" selection to null
             const payload = {
                 ...values,
                 userId: values.userId === "none" ? null : values.userId
@@ -245,7 +621,6 @@ export default function InvestorsPage() {
     const handleToggleActive = async (investor: Investor) => {
         const newStatus = !investor.isActive
         try {
-            // Optimistic update
             setInvestors(prev => prev.map(inv =>
                 inv.id === investor.id ? { ...inv, isActive: newStatus } : inv
             ))
@@ -257,12 +632,10 @@ export default function InvestorsPage() {
             })
 
             if (!res.ok) {
-                // Revert if failed
                 setInvestors(prev => prev.map(inv =>
                     inv.id === investor.id ? { ...inv, isActive: !newStatus } : inv
                 ))
 
-                // Parse and display specific error message
                 let errorMessage = "Gagal mengubah status aktif"
                 try {
                     const errorData = await res.json()
@@ -276,7 +649,6 @@ export default function InvestorsPage() {
                 toast.success(`Investor ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}`)
             }
         } catch (error) {
-            // Revert if error
             setInvestors(prev => prev.map(inv =>
                 inv.id === investor.id ? { ...inv, isActive: !newStatus } : inv
             ))
@@ -429,6 +801,18 @@ export default function InvestorsPage() {
                 </div>
             </div>
 
+            {capitalViewState.kind === "error" && (
+                <Alert variant="destructive" role="alert">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+                        <span>{capitalViewState.message}</span>
+                        <Button type="button" variant="outline" size="sm" onClick={fetchCapitalSummaries}>
+                            Coba Lagi
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {investors.length === 0 ? (
@@ -438,6 +822,9 @@ export default function InvestorsPage() {
                 ) : (
                     investors.map((investor) => {
                         const connectedUser = users.find(u => u.id === investor.userId)
+                        const summary = capitalViewState.kind === "loaded"
+                            ? capitalViewState.summaries.get(investor.id) ?? null
+                            : null
                         return (
                             <div key={investor.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
                                 <div className="flex justify-between items-start">
@@ -481,16 +868,26 @@ export default function InvestorsPage() {
                                     </div>
                                 </div>
 
+                                {/* Capital Summary - Mobile */}
+                                <CapitalSummaryMobile summary={summary} viewState={capitalViewState} />
+
                                 <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
                                     {!isViewer && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="flex-1"
-                                            onClick={() => handleEdit(investor)}
-                                        >
-                                            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
-                                        </Button>
+                                        <>
+                                            <ManagedCapitalDialog
+                                                investor={investor}
+                                                currentSummary={summary}
+                                                onUpdate={fetchCapitalSummaries}
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="flex-1"
+                                                onClick={() => handleEdit(investor)}
+                                            >
+                                                <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                                            </Button>
+                                        </>
                                     )}
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -541,12 +938,28 @@ export default function InvestorsPage() {
                             <TableHead>Status</TableHead>
                             <TableHead>Rekening</TableHead>
                             <TableHead>Terhubung ke Akun</TableHead>
+                            <TableHead className="text-right">
+                                <span className="inline-flex items-center gap-1">
+                                    <CircleDollarSign className="h-3.5 w-3.5" />
+                                    Saldo Modal
+                                </span>
+                            </TableHead>
+                            <TableHead className="text-right">
+                                <span className="inline-flex items-center gap-1">
+                                    <Wallet className="h-3.5 w-3.5" />
+                                    Alokasi Aktif
+                                </span>
+                            </TableHead>
+                            <TableHead className="text-right">Sisa Modal</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {investors.map((investor) => {
                             const connectedUser = users.find(u => u.id === investor.userId)
+                            const summary = capitalViewState.kind === "loaded"
+                            ? capitalViewState.summaries.get(investor.id) ?? null
+                            : null
                             return (
                                 <TableRow key={investor.id}>
                                     <TableCell className="font-medium">{investor.name}</TableCell>
@@ -577,16 +990,24 @@ export default function InvestorsPage() {
                                             <span className="text-muted-foreground italic text-xs">-</span>
                                         )}
                                     </TableCell>
+                                    <CapitalSummaryCell summary={summary} viewState={capitalViewState} />
                                     <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-1">
                                             {!isViewer ? (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleEdit(investor)}
-                                                >
-                                                    <Pencil className="h-4 w-4 mr-2" /> Edit
-                                                </Button>
+                                                <>
+                                                    <ManagedCapitalDialog
+                                                        investor={investor}
+                                                        currentSummary={summary}
+                                                        onUpdate={fetchCapitalSummaries}
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleEdit(investor)}
+                                                    >
+                                                        <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                    </Button>
+                                                </>
                                             ) : (
                                                 <span className="text-xs text-muted-foreground italic">Read-only</span>
                                             )}
@@ -597,7 +1018,7 @@ export default function InvestorsPage() {
                                                         size="sm"
                                                         disabled={exportingInvestor === investor.id}
                                                     >
-                                                        <Download className="h-4 w-4 mr-2" />
+                                                        <Download className="h-4 w-4 mr-1" />
                                                         {exportingInvestor === investor.id ? "Exporting..." : "Ekspor"}
                                                     </Button>
                                                 </DropdownMenuTrigger>
@@ -627,7 +1048,7 @@ export default function InvestorsPage() {
                         })}
                         {investors.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-4">
+                                <TableCell colSpan={10} className="text-center py-4">
                                     Belum ada data pemodal.
                                 </TableCell>
                             </TableRow>
