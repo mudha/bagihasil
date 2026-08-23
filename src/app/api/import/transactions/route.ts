@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/api-auth"
+import { calculateProfitSharing } from "@/lib/profit-sharing"
 
 // Helper function to parse DD-MM-YYYY date format
 function parseDateFromCSV(dateStr: string): Date {
@@ -228,62 +229,39 @@ export async function POST(req: Request) {
 
                 // If transaction is COMPLETED (has sell date and price), create profitSharing record
                 if (transactionStatus === "COMPLETED" && parsedSellDate && sellPrice) {
-                    // Calculate costs by payer
-                    const costsInvestor = costs
-                        .filter(c => c.payer === "INVESTOR")
-                        .reduce((sum, c) => sum + c.amount, 0)
-
-                    const costsManager = costs
-                        .filter(c => c.payer === "MANAGER")
-                        .reduce((sum, c) => sum + c.amount, 0)
-
-                    // Calculate total capital
-                    const baseInvestorCapital = initialInvestorCapital ? parseFloat(initialInvestorCapital) : parseFloat(buyPrice)
-                    const baseManagerCapital = initialManagerCapital ? parseFloat(initialManagerCapital) : 0
-
-                    const totalCapitalInvestor = baseInvestorCapital + costsInvestor
-                    const totalCapitalManager = baseManagerCapital + costsManager
-                    const totalCapital = totalCapitalInvestor + totalCapitalManager
-
-                    const parsedSellPrice = parseFloat(sellPrice)
-                    const netMargin = parsedSellPrice - totalCapital
-
-                    // Default share percentages
-                    // Determine share percentages from investor config
+                    // Use shared calculation — same as active finalization path
                     const investorSharePercentage = unit.investor?.marginPercentage ?? 50
                     const managerSharePercentage = 100 - investorSharePercentage
 
-                    let investorProfitAmount = 0
-                    let managerProfitAmount = 0
-                    let profitStatus = "BREAK_EVEN"
-
-                    if (netMargin > 0) {
-                        profitStatus = "PROFIT"
-                        investorProfitAmount = netMargin * (investorSharePercentage / 100)
-                        managerProfitAmount = netMargin * (managerSharePercentage / 100)
-                    } else if (netMargin < 0) {
-                        profitStatus = "LOSS"
-                    }
+                    const calculation = calculateProfitSharing({
+                        buyPrice: parseFloat(buyPrice),
+                        sellPrice: parseFloat(sellPrice),
+                        initialInvestorCapital: initialInvestorCapital ? parseFloat(initialInvestorCapital) : undefined,
+                        initialManagerCapital: initialManagerCapital ? parseFloat(initialManagerCapital) : undefined,
+                        costs,
+                        investorSharePercentage,
+                        managerSharePercentage,
+                    })
 
                     // Create profitSharing record
                     await prisma.profitSharing.create({
                         data: {
                             transactionId: transaction.id,
-                            totalCapitalInvestor,
-                            totalCapitalManager,
-                            totalCapital,
-                            netMargin,
+                            totalCapitalInvestor: calculation.totalCapitalInvestor,
+                            totalCapitalManager: calculation.totalCapitalManager,
+                            totalCapital: calculation.totalCapital,
+                            netMargin: calculation.netMargin,
                             investorSharePercentage,
                             managerSharePercentage,
-                            investorProfitAmount,
-                            managerProfitAmount,
+                            investorProfitAmount: calculation.investorProfitAmount,
+                            managerProfitAmount: calculation.managerProfitAmount,
                         }
                     })
 
                     // Update transaction profitStatus
                     await prisma.transaction.update({
                         where: { id: transaction.id },
-                        data: { profitStatus }
+                        data: { profitStatus: calculation.profitStatus }
                     })
 
                     // Update unit status to SOLD
