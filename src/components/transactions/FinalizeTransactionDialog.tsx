@@ -35,7 +35,13 @@ const sellSchema = z.object({
     investorSharePercentage: z.number().min(0).max(100),
     managerSharePercentage: z.number().min(0).max(100),
     notes: z.string().optional(),
-})
+}).refine(
+    (data) => data.investorSharePercentage + data.managerSharePercentage === 100,
+    {
+        message: "Total nisbah investor dan pengelola harus 100%",
+        path: ["managerSharePercentage"],
+    }
+)
 
 type SellFormValues = z.infer<typeof sellSchema>
 
