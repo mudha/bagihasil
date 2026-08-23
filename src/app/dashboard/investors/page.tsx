@@ -349,6 +349,13 @@ function CapitalSummaryCell({
                     {summary.warnings.some(w => w.code === "ALLOCATION_EXCEEDS_MANAGED_BALANCE") && (
                         <Badge variant="destructive" className="ml-1 text-[10px]">⚠ Melebihi</Badge>
                     )}
+                    {summary.warnings.length > 0 && (
+                        <div className="mt-1 space-y-1" role="alert" aria-label="Peringatan ringkasan modal">
+                            {summary.warnings.map((warning) => (
+                                <p key={warning.code} className="text-xs text-destructive">{warning.message}</p>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </TableCell>
         </>
