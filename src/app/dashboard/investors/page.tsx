@@ -56,6 +56,12 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { formatRupiahOrNull } from "@/lib/rupiah-format"
+import {
+    buildManagedCapitalSetRequest,
+    getManagedCapitalInputError,
+    type ManagedCapitalSummary,
+    type ManagedCapitalViewState,
+} from "@/lib/managed-capital-ui-contract"
 
 const investorSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
@@ -85,24 +91,7 @@ interface User {
     role: string
 }
 
-interface ManagedCapitalSummary {
-    investorId: string
-    managedCapitalBalance: string | null
-    managedCapitalBalanceUpdatedAt: string | null
-    activeAllocatedInvestorCapital: string
-    availableManagedCapital: string | null
-    managedCapitalStatus: "UNSET" | "SET"
-    warnings: Array<{
-        code: "ALLOCATION_EXCEEDS_MANAGED_BALANCE" | "MULTIPLE_ACTIVE_TRANSACTIONS_PER_UNIT"
-        message: string
-    }>
-}
-
-/* ---------- BigInt-safe rupiah input validation ---------- */
-
-function isValidRupiahInput(raw: string): boolean {
-    return /^\d+$/.test(raw)
-}
+/* ---------- Display helpers ---------- */
 
 function formatTimestamp(iso: string | null): string {
     if (!iso) return ""
@@ -133,20 +122,25 @@ function ManagedCapitalDialog({
     const [isOpen, setIsOpen] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [inputValue, setInputValue] = useState("")
+    const [inputTouched, setInputTouched] = useState(false)
     const [showClearConfirm, setShowClearConfirm] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (isOpen) {
             setInputValue(currentSummary?.managedCapitalBalance ?? "")
+            setInputTouched(false)
             // focus input on open
             setTimeout(() => inputRef.current?.focus(), 50)
         }
     }, [isOpen, currentSummary?.managedCapitalBalance])
 
+    const inputError = inputTouched ? getManagedCapitalInputError(inputValue) : null
+
     const handleSet = useCallback(async () => {
-        if (!isValidRupiahInput(inputValue)) {
-            toast.error("Input harus berupa angka bulat positif tanpa spasi atau simbol.")
+        const requestBody = buildManagedCapitalSetRequest(inputValue)
+        if (!requestBody) {
+            setInputTouched(true)
             return
         }
         setIsSaving(true)
@@ -154,10 +148,7 @@ function ManagedCapitalDialog({
             const res = await fetch(`/api/investors/${investor.id}/managed-capital`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    action: "set",
-                    managedCapitalBalance: inputValue,
-                }),
+                body: JSON.stringify(requestBody),
             })
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
@@ -252,15 +243,22 @@ function ManagedCapitalDialog({
                                 placeholder="Contoh: 5000000"
                                 value={inputValue}
                                 onChange={(e) => {
-                                    const v = e.target.value.replace(/[^\d]/g, "")
-                                    setInputValue(v)
+                                    // Preserve exactly what the user typed; validation never mutates raw input.
+                                    setInputValue(e.target.value)
+                                    setInputTouched(true)
                                 }}
                                 disabled={isSaving}
-                                aria-describedby="capital-input-help"
+                                aria-invalid={Boolean(inputError)}
+                                aria-describedby="capital-input-help capital-input-error"
                             />
                             <p id="capital-input-help" className="text-xs text-muted-foreground">
-                                Saldo modal terkini yang sedang dikelola. Hanya angka bulat tanpa simbol.
+                                Saldo modal terkini yang sedang dikelola. Gunakan 0 atau 1–18 digit tanpa simbol.
                             </p>
+                            {inputError && (
+                                <p id="capital-input-error" role="alert" className="text-sm text-destructive">
+                                    {inputError}
+                                </p>
+                            )}
                         </div>
 
                         {/* Actions */}
@@ -276,7 +274,7 @@ function ManagedCapitalDialog({
                             <Button
                                 size="sm"
                                 onClick={handleSet}
-                                disabled={isSaving || !isValidRupiahInput(inputValue)}
+                                disabled={isSaving || Boolean(inputError) || !inputValue}
                             >
                                 {isSaving ? "Menyimpan..." : "Simpan"}
                             </Button>
@@ -317,8 +315,21 @@ function ManagedCapitalDialog({
 
 /* ---------- Capital Summary Display Row (Desktop) ---------- */
 
-function CapitalSummaryCell({ summary }: { summary: ManagedCapitalSummary | null }) {
-    if (!summary) return <TableCell className="text-muted-foreground text-xs italic">Memuat...</TableCell>
+function CapitalSummaryCell({
+    summary,
+    viewState,
+}: {
+    summary: ManagedCapitalSummary | null
+    viewState: ManagedCapitalViewState
+}) {
+    if (!summary) {
+        const label = viewState.kind === "loading"
+            ? "Memuat..."
+            : viewState.kind === "error"
+                ? "Tidak tersedia"
+                : "Tidak ditemukan"
+        return <TableCell className="text-muted-foreground text-xs italic">{label}</TableCell>
+    }
     return (
         <>
             <TableCell>
@@ -348,10 +359,19 @@ function CapitalSummaryCell({ summary }: { summary: ManagedCapitalSummary | null
 
 function CapitalSummaryMobile({
     summary,
+    viewState,
 }: {
     summary: ManagedCapitalSummary | null
+    viewState: ManagedCapitalViewState
 }) {
-    if (!summary) return null
+    if (!summary) {
+        const label = viewState.kind === "loading"
+            ? "Memuat ringkasan modal..."
+            : viewState.kind === "error"
+                ? "Ringkasan modal tidak tersedia"
+                : "Ringkasan modal tidak ditemukan"
+        return <div role="status" className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">{label}</div>
+    }
     return (
         <div className="rounded-md border border-dashed bg-slate-50/80 p-3 space-y-2 text-sm">
             <div className="flex items-center gap-1.5 font-medium text-xs uppercase tracking-wide text-muted-foreground">
@@ -396,7 +416,9 @@ export default function InvestorsPage() {
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
     const [isExportingAll, setIsExportingAll] = useState(false)
     const [users, setUsers] = useState<User[]>([])
-    const [capitalSummaries, setCapitalSummaries] = useState<Map<string, ManagedCapitalSummary> | null>(null)
+    const [capitalViewState, setCapitalViewState] = useState<ManagedCapitalViewState>({ kind: "loading" })
+    const capitalRequestId = useRef(0)
+    const capitalController = useRef<AbortController | null>(null)
     const { data: session } = useSession()
     const isViewer = session?.user?.role === "VIEWER"
 
@@ -427,20 +449,29 @@ export default function InvestorsPage() {
     }
 
     const fetchCapitalSummaries = useCallback(async () => {
+        const requestId = ++capitalRequestId.current
+        capitalController.current?.abort()
+        const controller = new AbortController()
+        capitalController.current = controller
+        setCapitalViewState({ kind: "loading" })
         try {
-            const res = await fetch('/api/investors/capital-summary')
-            if (res.ok) {
-                const data: ManagedCapitalSummary[] = await res.json()
-                const map = new Map<string, ManagedCapitalSummary>()
-                for (const s of data) {
-                    map.set(s.investorId, s)
+            const res = await fetch('/api/investors/capital-summary', { signal: controller.signal })
+            if (!res.ok) {
+                if (requestId === capitalRequestId.current) {
+                    setCapitalViewState({ kind: "error", message: "Gagal memuat ringkasan modal." })
                 }
-                setCapitalSummaries(map)
-            } else {
-                setCapitalSummaries(new Map())
+                return
             }
-        } catch {
-            setCapitalSummaries(new Map())
+            const data: ManagedCapitalSummary[] = await res.json()
+            if (requestId !== capitalRequestId.current) return
+            const map = new Map<string, ManagedCapitalSummary>()
+            for (const s of data) map.set(s.investorId, s)
+            setCapitalViewState({ kind: "loaded", summaries: map })
+        } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return
+            if (requestId === capitalRequestId.current) {
+                setCapitalViewState({ kind: "error", message: "Gagal memuat ringkasan modal." })
+            }
         }
     }, [])
 
@@ -448,7 +479,8 @@ export default function InvestorsPage() {
         fetchInvestors()
         fetchUsers()
         fetchCapitalSummaries()
-    }, [fetchCapitalSummaries])
+        return () => capitalController.current?.abort()
+    }, [fetchCapitalSummaries, session?.user?.role])
 
     useEffect(() => {
         if (editingInvestor) {
@@ -762,6 +794,18 @@ export default function InvestorsPage() {
                 </div>
             </div>
 
+            {capitalViewState.kind === "error" && (
+                <Alert variant="destructive" role="alert">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+                        <span>{capitalViewState.message}</span>
+                        <Button type="button" variant="outline" size="sm" onClick={fetchCapitalSummaries}>
+                            Coba Lagi
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {investors.length === 0 ? (
@@ -771,7 +815,9 @@ export default function InvestorsPage() {
                 ) : (
                     investors.map((investor) => {
                         const connectedUser = users.find(u => u.id === investor.userId)
-                        const summary = capitalSummaries?.get(investor.id) ?? null
+                        const summary = capitalViewState.kind === "loaded"
+                            ? capitalViewState.summaries.get(investor.id) ?? null
+                            : null
                         return (
                             <div key={investor.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
                                 <div className="flex justify-between items-start">
@@ -816,7 +862,7 @@ export default function InvestorsPage() {
                                 </div>
 
                                 {/* Capital Summary - Mobile */}
-                                <CapitalSummaryMobile summary={summary} />
+                                <CapitalSummaryMobile summary={summary} viewState={capitalViewState} />
 
                                 <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
                                     {!isViewer && (
@@ -904,7 +950,9 @@ export default function InvestorsPage() {
                     <TableBody>
                         {investors.map((investor) => {
                             const connectedUser = users.find(u => u.id === investor.userId)
-                            const summary = capitalSummaries?.get(investor.id) ?? null
+                            const summary = capitalViewState.kind === "loaded"
+                            ? capitalViewState.summaries.get(investor.id) ?? null
+                            : null
                             return (
                                 <TableRow key={investor.id}>
                                     <TableCell className="font-medium">{investor.name}</TableCell>
@@ -935,7 +983,7 @@ export default function InvestorsPage() {
                                             <span className="text-muted-foreground italic text-xs">-</span>
                                         )}
                                     </TableCell>
-                                    <CapitalSummaryCell summary={summary} />
+                                    <CapitalSummaryCell summary={summary} viewState={capitalViewState} />
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
                                             {!isViewer ? (
