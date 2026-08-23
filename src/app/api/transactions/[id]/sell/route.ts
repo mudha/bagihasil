@@ -7,14 +7,20 @@ import { requireAdmin } from "@/lib/api-auth"
  * Kept as 410 Gone to surface any external callers before full removal.
  */
 export async function POST(
-    _req: Request,
-    _ctx: { params: Promise<{ id: string }> }
+    req: Request,
+    ctx: { params: Promise<{ id: string }> }
 ) {
+    void req
+    void ctx
+
     const authResult = await requireAdmin()
     if ("response" in authResult) return authResult.response
 
     return NextResponse.json(
         { error: "Endpoint finalisasi ini sudah tidak digunakan. Gunakan jalur finalisasi terbaru." },
-        { status: 410 }
+        {
+            status: 410,
+            headers: { "Cache-Control": "private, no-store" },
+        }
     )
 }

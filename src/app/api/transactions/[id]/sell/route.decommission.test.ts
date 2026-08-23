@@ -80,6 +80,7 @@ describe("legacy /sell endpoint decommission", () => {
         })
 
         expect(response.status).toBe(410)
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store")
         const body = await response.json()
         expect(body.error).toContain("tidak digunakan")
         expect(mocks.prisma.transaction.findUnique).not.toHaveBeenCalled()
