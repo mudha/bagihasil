@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/api-auth"
+import { calculateProfitSharing } from "@/lib/profit-sharing"
+import { parseImportNumber, validateImportProfitShares } from "./import-validation"
 
 // Helper function to parse DD-MM-YYYY date format
 function parseDateFromCSV(dateStr: string): Date {
@@ -92,6 +94,10 @@ export async function POST(req: Request) {
             try {
                 const parsedBuyDate = parseDateFromCSV(buyDate)
                 const parsedSellDate = sellDate ? parseDateFromCSV(sellDate) : undefined
+                const parsedBuyPrice = parseImportNumber(buyPrice, "buyPrice", { required: true, min: 0 })!
+                const parsedSellPrice = parseImportNumber(sellPrice, "sellPrice", { min: 0 })
+                const parsedInitialInvestorCapital = parseImportNumber(initialInvestorCapital, "initialInvestorCapital", { min: 0 })
+                const parsedInitialManagerCapital = parseImportNumber(initialManagerCapital, "initialManagerCapital", { min: 0 })
 
                 // Determine transaction status
                 let transactionStatus = status || "ON_PROCESS"
@@ -99,17 +105,24 @@ export async function POST(req: Request) {
                     transactionStatus = "COMPLETED"
                 }
 
+                const investorSharePercentage = unit.investor?.marginPercentage ?? 50
+                const managerSharePercentage = 100 - investorSharePercentage
+                if (transactionStatus === "COMPLETED") {
+                    validateImportProfitShares(investorSharePercentage, managerSharePercentage)
+                }
+
+                await prisma.$transaction(async (tx) => {
                 // Create transaction
-                const transaction = await prisma.transaction.create({
+                const transaction = await tx.transaction.create({
                     data: {
                         unitId,
                         transactionCode,
                         buyDate: parsedBuyDate,
-                        buyPrice: parseFloat(buyPrice),
+                        buyPrice: parsedBuyPrice,
                         sellDate: parsedSellDate,
-                        sellPrice: sellPrice ? parseFloat(sellPrice) : undefined,
-                        initialInvestorCapital: initialInvestorCapital ? parseFloat(initialInvestorCapital) : undefined,
-                        initialManagerCapital: initialManagerCapital ? parseFloat(initialManagerCapital) : undefined,
+                        sellPrice: parsedSellPrice,
+                        initialInvestorCapital: parsedInitialInvestorCapital,
+                        initialManagerCapital: parsedInitialManagerCapital,
                         status: transactionStatus
                     }
                 })
@@ -117,100 +130,100 @@ export async function POST(req: Request) {
                 // Create cost records if any costs are provided
                 const costs: Array<{ costType: string, amount: number, payer: string, description: string }> = []
 
-                if (biayaInspector && parseFloat(biayaInspector) > 0) {
+                if (biayaInspector && parseImportNumber(biayaInspector, "biayaInspector", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Inspector",
-                        amount: parseFloat(biayaInspector),
+                        amount: parseImportNumber(biayaInspector, "biayaInspector", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya inspector"
                     })
                 }
 
-                if (biayaTransport && parseFloat(biayaTransport) > 0) {
+                if (biayaTransport && parseImportNumber(biayaTransport, "biayaTransport", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Transport",
-                        amount: parseFloat(biayaTransport),
+                        amount: parseImportNumber(biayaTransport, "biayaTransport", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya transport"
                     })
                 }
 
-                if (biayaMakan && parseFloat(biayaMakan) > 0) {
+                if (biayaMakan && parseImportNumber(biayaMakan, "biayaMakan", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Makan",
-                        amount: parseFloat(biayaMakan),
+                        amount: parseImportNumber(biayaMakan, "biayaMakan", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya makan"
                     })
                 }
 
-                if (biayaTol && parseFloat(biayaTol) > 0) {
+                if (biayaTol && parseImportNumber(biayaTol, "biayaTol", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Tol",
-                        amount: parseFloat(biayaTol),
+                        amount: parseImportNumber(biayaTol, "biayaTol", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya tol"
                     })
                 }
 
-                if (biayaIklan && parseFloat(biayaIklan) > 0) {
+                if (biayaIklan && parseImportNumber(biayaIklan, "biayaIklan", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Iklan",
-                        amount: parseFloat(biayaIklan),
+                        amount: parseImportNumber(biayaIklan, "biayaIklan", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya iklan"
                     })
                 }
 
-                if (biayaPRUnit && parseFloat(biayaPRUnit) > 0) {
+                if (biayaPRUnit && parseImportNumber(biayaPRUnit, "biayaPRUnit", { min: 0 })! > 0) {
                     costs.push({
                         costType: "PR Unit",
-                        amount: parseFloat(biayaPRUnit),
+                        amount: parseImportNumber(biayaPRUnit, "biayaPRUnit", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya PR unit"
                     })
                 }
 
-                if (biayaBensin && parseFloat(biayaBensin) > 0) {
+                if (biayaBensin && parseImportNumber(biayaBensin, "biayaBensin", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Bensin",
-                        amount: parseFloat(biayaBensin),
+                        amount: parseImportNumber(biayaBensin, "biayaBensin", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya bensin"
                     })
                 }
 
-                if (biayaParkir && parseFloat(biayaParkir) > 0) {
+                if (biayaParkir && parseImportNumber(biayaParkir, "biayaParkir", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Parkir",
-                        amount: parseFloat(biayaParkir),
+                        amount: parseImportNumber(biayaParkir, "biayaParkir", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya parkir"
                     })
                 }
 
-                if (biayaMaterai && parseFloat(biayaMaterai) > 0) {
+                if (biayaMaterai && parseImportNumber(biayaMaterai, "biayaMaterai", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Materai",
-                        amount: parseFloat(biayaMaterai),
+                        amount: parseImportNumber(biayaMaterai, "biayaMaterai", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya materai"
                     })
                 }
 
-                if (biayaMakelar && parseFloat(biayaMakelar) > 0) {
+                if (biayaMakelar && parseImportNumber(biayaMakelar, "biayaMakelar", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Makelar",
-                        amount: parseFloat(biayaMakelar),
+                        amount: parseImportNumber(biayaMakelar, "biayaMakelar", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya makelar"
                     })
                 }
 
-                if (biayaLainLainPemodal && parseFloat(biayaLainLainPemodal) > 0) {
+                if (biayaLainLainPemodal && parseImportNumber(biayaLainLainPemodal, "biayaLainLainPemodal", { min: 0 })! > 0) {
                     costs.push({
                         costType: "Lain-lain",
-                        amount: parseFloat(biayaLainLainPemodal),
+                        amount: parseImportNumber(biayaLainLainPemodal, "biayaLainLainPemodal", { min: 0 })!,
                         payer: "INVESTOR",
                         description: "Biaya lain-lain dari pemodal"
                     })
@@ -218,7 +231,7 @@ export async function POST(req: Request) {
 
                 // Create all cost records
                 if (costs.length > 0) {
-                    await prisma.cost.createMany({
+                    await tx.cost.createMany({
                         data: costs.map(cost => ({
                             transactionId: transaction.id,
                             ...cost
@@ -228,71 +241,46 @@ export async function POST(req: Request) {
 
                 // If transaction is COMPLETED (has sell date and price), create profitSharing record
                 if (transactionStatus === "COMPLETED" && parsedSellDate && sellPrice) {
-                    // Calculate costs by payer
-                    const costsInvestor = costs
-                        .filter(c => c.payer === "INVESTOR")
-                        .reduce((sum, c) => sum + c.amount, 0)
-
-                    const costsManager = costs
-                        .filter(c => c.payer === "MANAGER")
-                        .reduce((sum, c) => sum + c.amount, 0)
-
-                    // Calculate total capital
-                    const baseInvestorCapital = initialInvestorCapital ? parseFloat(initialInvestorCapital) : parseFloat(buyPrice)
-                    const baseManagerCapital = initialManagerCapital ? parseFloat(initialManagerCapital) : 0
-
-                    const totalCapitalInvestor = baseInvestorCapital + costsInvestor
-                    const totalCapitalManager = baseManagerCapital + costsManager
-                    const totalCapital = totalCapitalInvestor + totalCapitalManager
-
-                    const parsedSellPrice = parseFloat(sellPrice)
-                    const netMargin = parsedSellPrice - totalCapital
-
-                    // Default share percentages
-                    // Determine share percentages from investor config
-                    const investorSharePercentage = unit.investor?.marginPercentage ?? 50
-                    const managerSharePercentage = 100 - investorSharePercentage
-
-                    let investorProfitAmount = 0
-                    let managerProfitAmount = 0
-                    let profitStatus = "BREAK_EVEN"
-
-                    if (netMargin > 0) {
-                        profitStatus = "PROFIT"
-                        investorProfitAmount = netMargin * (investorSharePercentage / 100)
-                        managerProfitAmount = netMargin * (managerSharePercentage / 100)
-                    } else if (netMargin < 0) {
-                        profitStatus = "LOSS"
-                    }
+                    // Use shared calculation — same as active finalization path
+                    const calculation = calculateProfitSharing({
+                        buyPrice: parsedBuyPrice,
+                        sellPrice: parsedSellPrice!,
+                        initialInvestorCapital: parsedInitialInvestorCapital,
+                        initialManagerCapital: parsedInitialManagerCapital,
+                        costs,
+                        investorSharePercentage,
+                        managerSharePercentage,
+                    })
 
                     // Create profitSharing record
-                    await prisma.profitSharing.create({
+                    await tx.profitSharing.create({
                         data: {
                             transactionId: transaction.id,
-                            totalCapitalInvestor,
-                            totalCapitalManager,
-                            totalCapital,
-                            netMargin,
+                            totalCapitalInvestor: calculation.totalCapitalInvestor,
+                            totalCapitalManager: calculation.totalCapitalManager,
+                            totalCapital: calculation.totalCapital,
+                            netMargin: calculation.netMargin,
                             investorSharePercentage,
                             managerSharePercentage,
-                            investorProfitAmount,
-                            managerProfitAmount,
+                            investorProfitAmount: calculation.investorProfitAmount,
+                            managerProfitAmount: calculation.managerProfitAmount,
                         }
                     })
 
                     // Update transaction profitStatus
-                    await prisma.transaction.update({
+                    await tx.transaction.update({
                         where: { id: transaction.id },
-                        data: { profitStatus }
+                        data: { profitStatus: calculation.profitStatus }
                     })
 
                     // Update unit status to SOLD
-                    await prisma.unit.update({
+                    await tx.unit.update({
                         where: { id: unitId },
                         data: { status: "SOLD" }
                     })
                 }
 
+                })
                 successCount++
             } catch (error: any) {
                 if (error.code === 'P2002') {
