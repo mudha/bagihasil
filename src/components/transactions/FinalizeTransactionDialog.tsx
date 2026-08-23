@@ -26,16 +26,9 @@ import { toast } from "sonner"
 import { DollarSign, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { validateImageFile } from "@/lib/image-utils"
+import { sellSchema } from "./finalize-transaction-schema"
 
 // ... (keep sellSchema and Props same)
-
-const sellSchema = z.object({
-    sellDate: z.string().min(1, "Tanggal jual harus diisi"),
-    sellPrice: z.number().min(0, "Harga laku harus lebih dari 0"),
-    investorSharePercentage: z.number().min(0).max(100),
-    managerSharePercentage: z.number().min(0).max(100),
-    notes: z.string().optional(),
-})
 
 type SellFormValues = z.infer<typeof sellSchema>
 
