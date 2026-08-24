@@ -11,6 +11,8 @@ const manifest = JSON.parse(readFileSync(join(root, "docs/database/postgresql/le
   baselineMigration: string
   legacyMigrations: Array<{ name: string; sha256: string }>
 }
+const prismaPackage = JSON.parse(readFileSync(join(root, "node_modules/prisma/package.json"), "utf8")) as { version: string }
+const prismaClientPackage = JSON.parse(readFileSync(join(root, "node_modules/@prisma/client/package.json"), "utf8")) as { version: string }
 
 function sha256(path: string) {
   return createHash("sha256").update(readFileSync(path)).digest("hex")
@@ -31,6 +33,11 @@ describe("PostgreSQL baseline repository contract", () => {
       expect(sha256(archived)).toBe(entry.sha256)
       expect(foldersUnderActive()).not.toContain(entry.name)
     }
+  })
+
+  it("locks the Prisma CLI and Client to the audited version", () => {
+    expect(prismaPackage.version).toBe("5.22.0")
+    expect(prismaClientPackage.version).toBe("5.22.0")
   })
 
   it("matches the generated baseline evidence checksum", () => {
