@@ -44,7 +44,34 @@ Merge the baseline repository PR first. After the merged exact SHA is observed a
 
 Future schema work is blocked between baseline merge and successful Production metadata adoption. After adoption, ordinary schema changes must use PostgreSQL Prisma migrations and the guarded pre-merge executor.
 
-## Non-negotiable rules
+## Guarded runner contract
+
+The repository-owned runner is implemented in `scripts/production-migration-runner.ts` with pure validation in `src/lib/production-migration-guards.ts`. It is fail-closed and ordinary migrations may execute only the fixed command `node ./node_modules/prisma/build/index.js migrate deploy`.
+
+Before any database write it requires a clean exact reviewed PR head, open/approved/mergeable PR with passing checks, PostgreSQL and pinned Prisma versions, unchanged history, exactly one expected pending additive migration, verified backup/restore evidence, explicit approval bound to PR/head/migration/identity/backup/operation ID, direct non-local Production identity, clean previous metadata, and an acquired local lock. Pooled, Preview, development, test, localhost, and disposable targets are rejected for the Production path. Destructive, data/backfill, and custom SQL paths are rejected as ordinary migrations.
+
+The executor serializes through `flock`, does not retry ambiguous failures, redacts command output, writes an owner-only immutable audit artifact outside the repository, verifies status/schema/metadata postconditions, and never merges or deploys the application. Vercel, Preview, postinstall, and GitHub Actions do not run Production migrations.
+
+Migration classes:
+
+- **Additive/expand:** guarded pre-merge executor, then separate merge approval.
+- **Data backfill:** separate operation with fresh backup/restore, explicit approval, and Sol review.
+- **Destructive/contract:** multi-release expand/compatibility/contract sequence with high-risk approval and Sol review.
+- **Emergency bridge:** emergency-only, reviewed, and reconciled to Prisma history immediately.
+
+If the PR head changes after migration, do not merge. Never blind-retry, manually edit `_prisma_migrations`, or use a migration runner to hide drift.
+
+## Runner interface
+
+From the exact reviewed repository head, prepare an owner-only evidence JSON outside the repository and run preflight without `--execute`:
+
+```text
+npx tsx scripts/production-migration-runner.ts --evidence /secure/path/evidence.json
+```
+
+Only after every guard passes and the evidence contains a fresh, uniquely bound approval may the operator use `--execute`. The evidence must bind the exact PR/head, migration name/checksum, backup identifier/checksum, redacted Production identity fingerprint, and operation ID. The runner rejects generic approvals, pooled/local/Preview/development/test/disposable targets, dirty or changed heads, unexpected metadata, non-additive/custom SQL, and audit paths inside the repository. It invokes only the fixed Prisma `migrate deploy` command under a local `flock`, writes an owner-only audit file outside the repository, redacts URLs/secrets, and stops on ambiguous failure. It never runs `resolve`, merges a PR, or deploys the application.
+
+The disposable integration harness uses only a loopback PostgreSQL target and temporary migration/schema files outside the repository; it is not a Production execution mode and must not be repurposed with a Production URL.
 
 - Never replay legacy SQLite migration SQL.
 - Never manually INSERT, UPDATE, or DELETE `_prisma_migrations`.

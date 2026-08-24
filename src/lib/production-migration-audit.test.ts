@@ -1,0 +1,47 @@
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { describe, expect, it } from "vitest"
+import { executeFixedDeploy, redactAudit, writeAudit } from "../../scripts/production-migration-runner"
+import type { MigrationGuardInput } from "./production-migration-guards"
+
+describe("production migration audit safety", () => {
+  it("redacts URLs and secret-like fields", () => {
+    const output = JSON.stringify(redactAudit({ url: "postgresql://user:secret@host/db", token: "abc", nested: { password: "pw" } }))
+    expect(output).not.toContain("postgresql://")
+    expect(output).not.toContain("secret")
+    expect(output).not.toContain("abc")
+    expect(output).not.toContain("pw")
+  })
+
+  it("writes owner-only immutable audit artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bagihasil-audit-"))
+    const path = join(dir, "audit.json")
+    try {
+      writeAudit(path, { operationId: "op-123456", url: "postgresql://secret@host/db" })
+      expect(statSync(path).mode & 0o777).toBe(0o600)
+      expect(readFileSync(path, "utf8")).not.toContain("postgresql://")
+      expect(() => writeAudit(path, { operationId: "op-123456" })).toThrow()
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
+  it("executes only the fixed Prisma deploy command and writes a redacted audit", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bagihasil-runner-"))
+    const input = {
+      workingTreeClean: true, localHead: "head", expectedHead: "head", remoteHead: "head", prOpen: true, expectedPr: 68, prApproved: true, mergeable: true, checksPass: true,
+      provider: "postgresql", prismaVersion: "5.22.0", clientVersion: "5.22.0", historyUnchanged: true,
+      pendingMigrations: [{ name: "20260901000000_add_note", checksum: "sum" }], expectedMigration: { name: "20260901000000_add_note", checksum: "sum" },
+      backup: { identifier: "backup.gpg", checksum: "backupsum", restoreVerified: true }, productionFlag: true,
+      approval: { operationId: "op-runner-1", pr: 68, head: "head", migrationName: "20260901000000_add_note", migrationChecksum: "sum", identityFingerprint: "prod", backupIdentifier: "backup.gpg", backupChecksum: "backupsum", issuedAt: "2026-08-24T00:00:00Z" },
+      target: { scheme: "postgresql", isDirect: true, isProduction: true, isDisposable: false, isLocal: false, isPreview: false, isDevelopment: false, isTest: false, identityFingerprint: "prod" },
+      metadata: { failed: 0, rolledBack: 0, unexpected: 0, previousMigration: "20260824000000_postgresql_baseline" }, lockAvailable: true, sqlKind: "additive" as const, customSql: false, auditPathOwnerOnly: true,
+      databaseUrl: "postgresql://hidden", auditPath: join(dir, "audit.json"), audit: { url: "postgresql://hidden" },
+    } satisfies MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown }
+    const calls: string[][] = []
+    const result = executeFixedDeploy(input, { lockPath: join(dir, "lock"), spawn: (command, args) => { calls.push([command, ...args]); return { status: 0, stdout: "No pending migrations to apply.", stderr: "" } } })
+    expect(result.code).toBe(0)
+    expect(calls[0]).toEqual(["flock", "-n", join(dir, "lock"), "--", "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"])
+    expect(readFileSync(join(dir, "audit.json"), "utf8")).not.toContain("postgresql://")
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
