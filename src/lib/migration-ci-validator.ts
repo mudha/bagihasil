@@ -18,7 +18,7 @@ export function validateHistory(base: MigrationFile[], head: MigrationFile[], ex
 export function classifyMigrationSql(sql: string): { accepted: boolean; reason: string } {
   const clean = sql.replace(/--[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "").trim()
   const ddlForForbiddenScan = clean.replace(/\bON\s+(?:UPDATE|DELETE)\b/gi, "REFERENTIAL_ACTION")
-  if (!clean || /\b(?:INSERT|UPDATE|DELETE|DROP|TRUNCATE|DO|COPY|ALTER\s+TYPE)\b/i.test(ddlForForbiddenScan)) return { accepted: false, reason: "data, destructive, or procedural SQL" }
+  if (!clean || /\b(?:INSERT|UPDATE|DELETE|DROP|TRUNCATE|DO|COPY|ALTER\s+TYPE|DATETIME|PRAGMA|AUTOINCREMENT)\b/i.test(ddlForForbiddenScan) || /\bprovider\s*=\s*["']sqlite["']/i.test(ddlForForbiddenScan)) return { accepted: false, reason: "data, destructive, procedural, or SQLite SQL" }
   const statements = clean.split(";").map((x) => x.trim()).filter(Boolean)
   if (!statements.length) return { accepted: false, reason: "empty SQL" }
   const allowed = statements.every((statement) => /^(?:ALTER\s+TABLE\s+"?[A-Za-z_][\w$]*"?\s+ADD\s+(?:COLUMN\s+"?[A-Za-z_][\w$]*"?\s+[^;]+|CONSTRAINT\s+"?[A-Za-z_][\w$]*"?\s+FOREIGN\s+KEY\s*\([^)]*\)\s+REFERENCES\s+[^;]+)|CREATE\s+(?:UNIQUE\s+)?INDEX\s+"?[A-Za-z_][\w$]*"?\s+ON\s+|CREATE\s+TABLE\s+"?[A-Za-z_][\w$]*"?\s*\()/i.test(statement))

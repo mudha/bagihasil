@@ -2,25 +2,49 @@ name: PostgreSQL migration CI
 
 on:
   pull_request:
-    paths:
-      - "prisma/schema.prisma"
-      - "prisma/migrations/**"
-      - "scripts/ci-postgres-migrations.ts"
-      - "src/lib/migration-ci-validator.ts"
-      - "src/lib/migration-ci-validator.test.ts"
-      - ".github/workflows/postgresql-migrations.yml"
-      - "package.json"
-      - "package-lock.json"
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: postgresql-migration-ci-${{ github.event.pull_request.number }}
+  group: postgresql-migration-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  disposable-postgresql:
+  detect:
+    name: Detect migration changes
+    runs-on: ubuntu-24.04
+    outputs:
+      required: ${{ steps.diff.outputs.required }}
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Detect exact migration-relevant diff
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$BASE_SHA" = "$(git rev-parse "$BASE_SHA")"
+          test "$HEAD_SHA" = "$(git rev-parse "$HEAD_SHA")"
+          if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
+            echo 'required=true' >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -Eq '^(prisma/schema\.prisma|prisma/migrations/|scripts/ci-postgres-migrations\.ts|src/lib/migration-ci-validator(\.test)?\.ts|\.github/workflows/postgresql-migrations\.yml|package(-lock)?\.json$)'; then
+            echo 'required=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'required=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  migration:
+    name: PostgreSQL Disposable Migration
+    needs: detect
+    if: needs.detect.outputs.required == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -40,29 +64,46 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
       DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci
-      GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
       PRISMA_HIDE_UPDATE_MESSAGE: "true"
     steps:
-      - name: Checkout pull request
+      - name: Checkout pull request or main
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup Node 22.22.2
         uses: actions/setup-node@v4
         with:
           node-version: 22.22.2
           cache: npm
-
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts
-
       - name: Generate Prisma client
         run: node ./node_modules/prisma/build/index.js generate
-
       - name: Run validator tests
         run: node ./node_modules/.bin/vitest run src/lib/migration-ci-validator.test.ts --reporter=dot
-
       - name: Run disposable base-head migration verification
         run: node ./node_modules/.bin/tsx scripts/ci-postgres-migrations.ts
+
+  gate:
+    name: PostgreSQL Migration Gate
+    needs: [detect, migration]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require migration result when detector says required
+        env:
+          REQUIRED: ${{ needs.detect.outputs.required }}
+          MIGRATION_RESULT: ${{ needs.migration.result }}
+        run: |
+          set -euo pipefail
+          if [ "$REQUIRED" = "true" ] && [ "$MIGRATION_RESULT" != "success" ]; then
+            echo "PostgreSQL disposable migration job result: $MIGRATION_RESULT"
+            exit 1
+          fi
+          if [ "$REQUIRED" != "true" ] && [ "$MIGRATION_RESULT" != "skipped" ]; then
+            echo "Unexpected migration result: $MIGRATION_RESULT"
+            exit 1
+          fi
+          echo "PostgreSQL Migration Gate: PASS"
