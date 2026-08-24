@@ -8,15 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatRupiahOrNull } from "@/lib/rupiah-format"
 import {
     formatManagedCapitalTimestamp,
+    getManagedCapitalSummaryFromResponse,
     getSelfManagedCapitalUnavailableLabel,
-    isManagedCapitalSummary,
-    type ManagedCapitalSummaryResponse,
 } from "@/lib/managed-capital-self-ui"
+import type { ManagedCapitalSummary } from "@/lib/managed-capital-ui-contract"
 
 type SelfViewState =
     | { kind: "loading" }
     | { kind: "error"; message: string }
-    | { kind: "loaded"; summary: ManagedCapitalSummaryResponse }
+    | { kind: "loaded"; summary: ManagedCapitalSummary }
     | { kind: "missing" }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -54,11 +54,12 @@ export function ManagedCapitalSelfCard() {
                 return
             }
             const data: unknown = await response.json()
-            if (!isManagedCapitalSummary(data)) {
+            const summary = getManagedCapitalSummaryFromResponse(data)
+            if (!summary) {
                 setState({ kind: "missing" })
                 return
             }
-            setState({ kind: "loaded", summary: data })
+            setState({ kind: "loaded", summary })
         } catch (error) {
             if (error instanceof DOMException && error.name === "AbortError") return
             if (id === requestId.current) setState({ kind: "error", message: getSelfManagedCapitalUnavailableLabel("error") })
