@@ -3,7 +3,9 @@ name: PostgreSQL migration CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "ci/**"
 
 permissions:
   contents: read
@@ -27,10 +29,12 @@ jobs:
       - name: Detect exact migration-relevant diff
         id: diff
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then BASE_SHA="$(git merge-base origin/main "$HEAD_SHA")"; fi
+          test -n "$BASE_SHA"
           test "$BASE_SHA" = "$(git rev-parse "$BASE_SHA")"
           test "$HEAD_SHA" = "$(git rev-parse "$HEAD_SHA")"
           if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
@@ -64,7 +68,10 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
       DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci
-      GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      GITHUB_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_BEFORE_SHA: ${{ github.event.before }}
+      GITHUB_HEAD_SHA: ${{ github.sha }}
       PRISMA_HIDE_UPDATE_MESSAGE: "true"
     steps:
       - name: Checkout pull request or main

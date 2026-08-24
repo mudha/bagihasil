@@ -5,14 +5,17 @@ import { join, resolve } from "node:path"
 import { classifyMigrationSql, validateHistory, validateMigrationName, type MigrationFile } from "../src/lib/migration-ci-validator"
 
 const root = process.cwd()
-const base = process.env.GITHUB_BASE_SHA
+const baseInput = process.env.GITHUB_BASE_SHA
+const head = process.env.GITHUB_HEAD_SHA || process.env.GITHUB_SHA
 const dbUrl = process.env.DATABASE_URL
-if (!base || !/^[0-9a-f]{40}$/.test(base)) throw new Error("CI requires an exact immutable base SHA")
+if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("CI requires an exact immutable head SHA")
 if (!dbUrl || !/^postgresql:\/\/ci:ci@127\.0\.0\.1:5432\/ci$/.test(dbUrl) || process.env.DIRECT_URL !== dbUrl) throw new Error("CI requires the fixed disposable PostgreSQL URL")
 const run = (command: string, args: string[], env = process.env) => {
   try { return execFileSync(command, args, { cwd: root, env: { PATH: env.PATH, NODE_ENV: "test", DATABASE_URL: env.DATABASE_URL, DIRECT_URL: env.DIRECT_URL }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }) }
   catch { throw new Error(`CI authoritative command failed: ${command}`) }
 }
+const base = baseInput === "0000000000000000000000000000000000000000" || !baseInput ? run("git", ["merge-base", "origin/main", head]) : baseInput
+if (!/^[0-9a-f]{40}$/.test(base)) throw new Error("CI requires an exact immutable base SHA")
 const sha = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex")
 const shaAt = (ref: string, path: string) => createHash("sha256").update(execFileSync("git", ["show", `${ref}:${path}`])).digest("hex")
 const files = (ref: string): MigrationFile[] => {
@@ -20,11 +23,11 @@ const files = (ref: string): MigrationFile[] => {
   return names.map((path) => ({ path, sha256: shaAt(ref, path) }))
 }
 const baseFiles = files(base)
-const headFiles = files("HEAD")
+const headFiles = files(head)
 const historyFailures = validateHistory(baseFiles, headFiles, "")
 if (historyFailures.length) throw new Error(`BLOCKED: ${historyFailures.join("; ")}`)
-const changed = run("git", ["diff", "--name-status", `${base}...HEAD`, "--", "prisma/migrations"]).trim()
-if (run("git", ["diff", "--name-only", `${base}...HEAD`, "--", "prisma/migrations/migration_lock.toml"]).trim()) throw new Error("BLOCKED: migration lock changed")
+const changed = run("git", ["diff", "--name-status", `${base}...${head}`, "--", "prisma/migrations"]).trim()
+if (run("git", ["diff", "--name-only", `${base}...${head}`, "--", "prisma/migrations/migration_lock.toml"]).trim()) throw new Error("BLOCKED: migration lock changed")
 const additions = changed ? changed.split("\n").filter((x) => x.startsWith("A\t") && x.endsWith("/migration.sql")) : []
 for (const line of additions) {
   const path = line.slice(2)
