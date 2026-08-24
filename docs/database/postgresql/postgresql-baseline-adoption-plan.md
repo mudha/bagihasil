@@ -1,49 +1,58 @@
 # PostgreSQL baseline adoption plan
 
-## Why this is separate
+## Scope
 
-The application datasource is PostgreSQL, but the repository's historical Prisma migration metadata declares SQLite and contains only an old SQLite migration. `prisma migrate deploy` must not be used against Production until that history is reconciled.
+This plan describes the repository baseline and the later Production metadata adoption. The baseline PR changes migration history layout only. It does not access Production, create `_prisma_migrations` in Production, or run a schema migration there.
 
-The payment idempotency change was therefore applied through a guarded PostgreSQL SQL runner. This document describes the next safe step; it is not an instruction to alter Production now.
+## Canonical layout
 
-## Current evidence
+- Active provider: PostgreSQL.
+- Active migration source: `prisma/migrations/`.
+- Active migrations: one current-state baseline, `20260824000000_postgresql_baseline`.
+- Legacy SQLite/bridge-era migrations: documentation-only under `docs/database/postgresql/legacy-migrations/`.
+- Do not replay or copy archived SQLite SQL into the active directory.
 
-- Production schema was introspected read-only after the idempotency migration.
-- Production contains 13 application models.
-- `PaymentHistory.idempotencyKey` and `PaymentHistory.idempotencyFingerprint` are present.
-- The repository still contains `prisma/migrations/migration_lock.toml` with `provider = "sqlite"`.
-- No historical SQLite migration may be replayed against PostgreSQL.
+## Baseline contract
 
-## Required future procedure
+The baseline is generated from the exact current `schema.prisma` with locked Prisma `5.22.0` using `migrate diff --from-empty --to-schema-datamodel`. It must be PostgreSQL-only, deterministic, data-free, and preserve current types, nullability, defaults, indexes, foreign keys, and referential actions. Legacy financial `Float` fields are not converted as baseline cleanup.
 
-1. Take a fresh encrypted Production backup and verify checksum.
-2. Restore the backup into a disposable PostgreSQL database.
-3. Generate a PostgreSQL schema snapshot from the disposable restore.
-4. Compare the snapshot against `prisma/schema.prisma` and resolve every difference.
-5. On a branch, create an official PostgreSQL baseline migration from the approved snapshot. Do not create it by replaying the SQLite migration.
-6. Mark the baseline as applied only in a disposable clone first, using the exact Prisma version used by the application.
-7. Run `prisma migrate status` and `prisma generate` against the disposable clone.
-8. Test a second disposable database created from the baseline plus a no-op follow-up migration.
-9. Obtain owner/DBA approval for the baseline SQL, migration table strategy, rollback/forward-fix policy, and deployment window.
-10. Only then apply the approved metadata adoption procedure to Production. This may require Prisma's baseline-resolution workflow and must be performed by an operator who can verify the resulting `_prisma_migrations` state.
+The committed SQL checksum and lineage are recorded in `postgresql-baseline-manifest.md`. Semantic manual edits are prohibited.
 
-## Non-negotiable guards
+## Disposable rehearsal before Production adoption
 
-- Never run `prisma migrate deploy`, `prisma db push`, seed, cleanup, or browser E2E write against Production during baseline work.
-- Never change `migration_lock.toml` alone and claim the history is repaired.
-- Never mark a migration applied without verifying the actual schema and checksum.
-- Never delete or rewrite existing Production data to make a migration fit.
-- Keep the current guarded SQL runner as the rollback/forward-fix path until the official baseline is proven.
+1. Restore the verified encrypted backup to a disposable PostgreSQL database.
+2. Reconstruct the post-PR#63 schema only on disposable using the exact reviewed bridge SQL.
+3. Verify schema ↔ Prisma diff is empty and capture private fingerprints.
+4. From the exact baseline repository head, run only on disposable:
 
-## Definition of done
+   ```text
+   prisma migrate resolve --applied 20260824000000_postgresql_baseline
+   prisma migrate status
+   prisma migrate deploy
+   ```
 
-The baseline task is complete only when:
+5. Require one successful expected metadata record, exact name/checksum, no failed/rolled-back record, clean status, and a strict no-op deploy.
+6. On a second empty disposable database, run `prisma migrate deploy` twice and require one baseline record and no-op second deploy.
+7. Confirm schema and data fingerprints are unchanged on the existing-schema clone.
+8. Cleanup must leave zero disposable databases, roles, plaintext, and temporary SQL files.
 
-- the repository declares PostgreSQL consistently;
-- migration history is PostgreSQL and has an approved baseline;
-- a disposable clone passes `prisma migrate status` with no drift;
-- a new disposable database can be built from baseline plus follow-up migration;
-- Production backup, restore, rollback/forward-fix, owner approval, and monitoring are documented;
-- a read-only Production verification confirms the expected `_prisma_migrations` state and unchanged financial totals.
+No Production operation is authorized by this plan.
 
-Until then, PostgreSQL schema changes remain explicit reviewed SQL changes, not automatic Prisma deployments.
+## Production adoption sequencing
+
+Merge the baseline repository PR first. After the merged exact SHA is observed and runtime remains healthy, obtain separate explicit user approval. Only then perform the Production metadata adoption described in `production-baseline-adoption-runbook.md`.
+
+Future schema work is blocked between baseline merge and successful Production metadata adoption. After adoption, ordinary schema changes must use PostgreSQL Prisma migrations and the guarded pre-merge executor.
+
+## Non-negotiable rules
+
+- Never replay legacy SQLite migration SQL.
+- Never manually INSERT, UPDATE, or DELETE `_prisma_migrations`.
+- Never use `db push` for Production.
+- Never run Production migration from a Vercel build or Preview deployment.
+- Never mark the baseline applied without an exact schema diff, checksum, backup/restore evidence, and explicit approval.
+- Never drop application tables for recovery; use application rollback or a reviewed forward fix.
+
+## Future pipeline direction
+
+For the current small-team setup, use a guarded pre-merge Production migration executor with exact SHA/checksum, backup readiness, database identity guards, one-executor locking, Prisma advisory locking, bounded timeouts, postconditions, audit artifact, and Vercel deployment observation. Manual SQL bridges become emergency-only.
