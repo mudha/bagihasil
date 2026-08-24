@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InvestmentsTable } from "@/components/investor/InvestmentsTable"
 import { PaymentsTable } from "@/components/investor/PaymentsTable"
+import { ManagedCapitalSelfCard } from "@/components/investor/ManagedCapitalSelfCard"
 import { CheckCircle, DollarSign, Package, Sparkles, TrendingUp, Wallet } from "lucide-react"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
@@ -168,6 +169,8 @@ export function InvestorTabs({
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-5">
+                <ManagedCapitalSelfCard />
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <StatCard title="Total Akumulasi" value={formatCompactCurrency(stats.totalInvested)} helper="Total riwayat modal" icon={DollarSign} />
                     <StatCard title="Modal Diputar" value={formatCurrency(stats.activeCapital)} helper="Modal sedang aktif" icon={Wallet} tone="teal" />
