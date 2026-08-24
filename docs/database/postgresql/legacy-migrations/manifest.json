@@ -1,0 +1,26 @@
+{
+  "status": "non-executable-archive",
+  "formerProvider": "sqlite",
+  "activeProvider": "postgresql",
+  "baselineMigration": "20260824000000_postgresql_baseline",
+  "sourceMainSha": "bd37dc16248618f353b606a7ae31cecce0fa6c91",
+  "prismaVersion": "5.22.0",
+  "backupEvidence": {
+    "identifier": "bagihasil-production-20260823T143905Z.dump.gpg",
+    "sha256": "d6ebeac77dd448089bb10521906b1b89832e596975b9ef5c07dc3ce9c895f5c7",
+    "timeline": "Backup preceded PR #63 managed-capital bridge by approximately 21 minutes."
+  },
+  "legacyMigrations": [
+    {
+      "name": "20251206065421_add_proof_models",
+      "reasonArchived": "SQLite-oriented SQL; must never be replayed to PostgreSQL",
+      "sha256": "55652fd822a6ed41b7c2345460f855a7dcca8da35708b377b8e11d784bf8f73b"
+    },
+    {
+      "name": "20260823000000_add_investor_managed_capital",
+      "reasonArchived": "Applied through guarded SQL bridge and incorporated into current-state baseline",
+      "sha256": "fbb3bf03abc575bead9ba47b20a02d4463dd9651c6936f0fac50e881628b5a4f"
+    }
+  ],
+  "nonExecutableStatement": "These files are documentation-only and must not be restored to the active Prisma migrations directory."
+}
