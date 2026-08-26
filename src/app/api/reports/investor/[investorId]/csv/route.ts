@@ -3,18 +3,24 @@ import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { canAccessInvestor, forbidden, requireAuth } from '@/lib/api-auth'
 
+const privateHeaders = { 'Cache-Control': 'private, no-store' }
+const privateResponse = (response: Response) => {
+    response.headers.set('Cache-Control', privateHeaders['Cache-Control'])
+    return response
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ investorId: string }> }
 ) {
     const authResult = await requireAuth()
-    if ("response" in authResult) return authResult.response
+    if ("response" in authResult) return privateResponse(authResult.response!)
 
     try {
         const { investorId } = await params
 
         if (!(await canAccessInvestor(authResult.session, investorId))) {
-            return forbidden()
+            return privateResponse(forbidden())
         }
 
         // Fetch investor details
@@ -41,7 +47,7 @@ export async function GET(
         if (!investor) {
             return NextResponse.json(
                 { error: 'Investor tidak ditemukan' },
-                { status: 404 }
+                { status: 404, headers: privateHeaders }
             )
         }
 
@@ -131,6 +137,7 @@ export async function GET(
 
         return new NextResponse(csv, {
             headers: {
+                ...privateHeaders,
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="${fileName}"`,
             },
@@ -139,7 +146,7 @@ export async function GET(
         console.error('Error generating CSV report:', error)
         return NextResponse.json(
             { error: 'Gagal menghasilkan laporan CSV' },
-            { status: 500 }
+            { status: 500, headers: privateHeaders }
         )
     }
 }
