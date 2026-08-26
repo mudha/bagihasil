@@ -92,6 +92,13 @@ describe("GET investor CSV report", () => {
         expect(mocks.findUnique).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: "investor-1" },
         }))
+        const query = mocks.findUnique.mock.calls[0][0]
+        expect(query.include.units.include.transactions).not.toHaveProperty("where")
+        expect(query.include.units.include.transactions.include).toEqual(expect.objectContaining({
+            costs: true,
+            profitSharing: true,
+            paymentHistories: true,
+        }))
     })
 
     it("denies unauthenticated access before querying investor financial data", async () => {
