@@ -24,9 +24,6 @@ export async function GET(
                 units: {
                     include: {
                         transactions: {
-                            where: {
-                                status: 'COMPLETED'
-                            },
                             include: {
                                 costs: true,
                                 profitSharing: true,
@@ -56,22 +53,19 @@ export async function GET(
                 unitPlateNumber: unit.plateNumber
             }))
         )
+        const completedTransactions = allTransactions.filter((tx: any) => tx.status === 'COMPLETED')
+        const activeTransactions = allTransactions.filter((tx: any) => tx.status === 'ON_PROCESS')
 
         // Calculate summary
-        const totalCompletedTransactions = allTransactions.length
-        const totalProfit = allTransactions.reduce(
+        const totalCompletedTransactions = completedTransactions.length
+        const totalProfit = completedTransactions.reduce(
             (sum: number, tx: any) => sum + (tx.profitSharing?.investorProfitAmount || 0),
             0
         )
-        const totalCapitalDeployed = investor.units.reduce((sum: number, unit: any) => {
-            const activeTransactions = unit.transactions.filter(
-                (tx: any) => tx.status === 'ON_PROCESS'
-            )
-            return sum + activeTransactions.reduce(
-                (txSum: number, tx: any) => txSum + (tx.initialInvestorCapital || tx.buyPrice),
-                0
-            )
-        }, 0)
+        const totalCapitalDeployed = activeTransactions.reduce(
+            (sum: number, tx: any) => sum + (tx.initialInvestorCapital ?? tx.buyPrice),
+            0
+        )
 
         const activeUnitsCount = investor.units.filter((unit: any) =>
             unit.status === 'AVAILABLE' || unit.transactions.some((tx: any) => tx.status === 'ON_PROCESS')
@@ -103,7 +97,7 @@ export async function GET(
         csv += `=== DETAIL TRANSAKSI ===\\n`
         csv += `Kode,Unit,Plat Nomor,Tanggal Beli,Tanggal Jual,Harga Beli,Harga Jual,Modal Investor,Modal Manager,Total Biaya,Biaya Investor,Biaya Manager,Margin Bersih,Profit Investor,Profit Manager,Status Bayar,Total Terbayar\\n`
 
-        allTransactions.forEach((tx: any) => {
+        completedTransactions.forEach((tx: any) => {
             const totalCosts = tx.costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
             const investorCosts = tx.costs
                 .filter((cost: any) => cost.payer === 'INVESTOR')
@@ -120,8 +114,8 @@ export async function GET(
             csv += `"${tx.sellDate ? format(new Date(tx.sellDate), 'dd MMM yyyy') : '-'}",`
             csv += `"${formatCurrency(tx.buyPrice)}",`
             csv += `"${formatCurrency(tx.sellPrice || 0)}",`
-            csv += `"${formatCurrency(tx.initialInvestorCapital || tx.buyPrice)}",`
-            csv += `"${formatCurrency(tx.initialManagerCapital || 0)}",`
+            csv += `"${formatCurrency(tx.initialInvestorCapital ?? tx.buyPrice)}",`
+            csv += `"${formatCurrency(tx.initialManagerCapital ?? 0)}",`
             csv += `"${formatCurrency(totalCosts)}",`
             csv += `"${formatCurrency(investorCosts)}",`
             csv += `"${formatCurrency(managerCosts)}",`
