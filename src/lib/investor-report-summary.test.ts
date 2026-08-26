@@ -31,6 +31,11 @@ const activeTxZeroCapital = {
     paymentHistories: [],
 }
 
+const activeTxWithAbnormalProfit = {
+    ...activeTx,
+    profitSharing: { investorProfitAmount: 999_000_000 },
+}
+
 const completedTxNullCapital = {
     status: "COMPLETED",
     buyPrice: 120_000_000,
@@ -57,7 +62,7 @@ describe("computeInvestorReportSummary", () => {
     })
 
     it("does not count active transactions in completed count or profit", () => {
-        const summary = computeInvestorReportSummary(units([activeTx]))
+        const summary = computeInvestorReportSummary(units([activeTx, activeTxWithAbnormalProfit]))
 
         expect(summary.totalCompletedTransactions).toBe(0)
         expect(summary.totalProfit).toBe(0)
