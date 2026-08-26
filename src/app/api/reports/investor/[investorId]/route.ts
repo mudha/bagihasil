@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { canAccessInvestor, forbidden, requireAuth } from '@/lib/api-auth'
+import { computeInvestorReportSummary } from '../../../../../lib/investor-report-summary'
 
 const privateHeaders = { 'Cache-Control': 'private, no-store' }
 const privateResponse = (response: Response) => {
@@ -23,7 +24,6 @@ export async function GET(
             return privateResponse(forbidden())
         }
 
-        // Fetch investor details
         const investor = await prisma.investor.findUnique({
             where: { id: investorId },
             include: {
@@ -51,7 +51,6 @@ export async function GET(
             )
         }
 
-        // Aggregate all completed transactions
         const allTransactions = investor.units.flatMap((unit: any) =>
             unit.transactions.map((tx: any) => ({
                 ...tx,
@@ -60,48 +59,25 @@ export async function GET(
             }))
         )
 
-        // Calculate summary statistics
-        const totalCompletedTransactions = allTransactions.filter((tx: any) => tx.status === 'COMPLETED').length
-        const totalProfit = allTransactions.reduce(
-            (sum: number, tx: any) => sum + (tx.profitSharing?.investorProfitAmount || 0),
-            0
-        )
-        const totalCapitalDeployed = investor.units.reduce((sum: number, unit: any) => {
-            const activeTransactions = unit.transactions.filter(
-                (tx: any) => tx.status === 'ON_PROCESS'
-            )
-            return sum + activeTransactions.reduce(
-                (txSum: number, tx: any) => txSum + (tx.initialInvestorCapital || tx.buyPrice),
-                0
-            )
-        }, 0)
+        const summary = computeInvestorReportSummary(investor.units)
 
-        const activeUnitsCount = investor.units.filter((unit: any) =>
-            unit.status === 'AVAILABLE' || unit.transactions.some((tx: any) => tx.status === 'ON_PROCESS')
-        ).length
-
-        // Calculate monthly profit
         const monthlyProfitMap = new Map<string, number>()
 
         allTransactions.forEach((tx: any) => {
             if (tx.status === 'COMPLETED' && tx.profitSharing?.investorProfitAmount) {
-                // Use sellDate for profit timing, fallback to buyDate, fallback to now
                 const date = tx.sellDate ? new Date(tx.sellDate) : (tx.buyDate ? new Date(tx.buyDate) : new Date())
-                const key = format(date, 'yyyy-MM') // Sortable format
-
+                const key = format(date, 'yyyy-MM')
                 const current = monthlyProfitMap.get(key) || 0
                 monthlyProfitMap.set(key, current + tx.profitSharing.investorProfitAmount)
             }
         })
 
-        // Fill in missing months if needed, or just return observed months
-        // For now, let's return last 12 months or just the observed months sorted
         const monthlyProfit = Array.from(monthlyProfitMap.entries())
             .map(([key, value]) => {
                 const [year, month] = key.split('-').map(Number)
                 return {
                     year,
-                    month, // 1-12
+                    month,
                     amount: value,
                     label: format(new Date(year, month - 1), 'MMM yyyy')
                 }
@@ -111,7 +87,6 @@ export async function GET(
                 return a.month - b.month
             })
 
-        // Prepare report data
         const reportData = {
             investor: {
                 id: investor.id,
@@ -121,12 +96,12 @@ export async function GET(
                 notes: investor.notes || '-'
             },
             summary: {
-                totalActiveUnits: activeUnitsCount,
-                totalCompletedTransactions,
-                totalCapitalDeployed,
-                totalProfit
+                totalActiveUnits: summary.activeUnitsCount,
+                totalCompletedTransactions: summary.totalCompletedTransactions,
+                totalCapitalDeployed: summary.totalCapitalDeployed,
+                totalProfit: summary.totalProfit
             },
-            monthlyProfit, // Add this
+            monthlyProfit,
             transactions: allTransactions.map((tx: any) => ({
                 id: tx.id,
                 transactionCode: tx.transactionCode,

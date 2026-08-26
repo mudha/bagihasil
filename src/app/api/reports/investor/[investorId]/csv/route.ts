@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { canAccessInvestor, forbidden, requireAuth } from '@/lib/api-auth'
+import { computeInvestorReportSummary } from '../../../../../../lib/investor-report-summary'
 
 const privateHeaders = { 'Cache-Control': 'private, no-store' }
 const privateResponse = (response: Response) => {
@@ -38,7 +39,6 @@ export async function GET(
             return privateResponse(forbidden())
         }
 
-        // Fetch investor details
         const investor = await prisma.investor.findUnique({
             where: { id: investorId },
             include: {
@@ -66,7 +66,6 @@ export async function GET(
             )
         }
 
-        // Aggregate transactions
         const allTransactions = investor.units.flatMap((unit: any) =>
             unit.transactions.map((tx: any) => ({
                 ...tx,
@@ -75,22 +74,8 @@ export async function GET(
             }))
         )
         const completedTransactions = allTransactions.filter((tx: any) => tx.status === 'COMPLETED')
-        const activeTransactions = allTransactions.filter((tx: any) => tx.status === 'ON_PROCESS')
 
-        // Calculate summary
-        const totalCompletedTransactions = completedTransactions.length
-        const totalProfit = completedTransactions.reduce(
-            (sum: number, tx: any) => sum + (tx.profitSharing?.investorProfitAmount || 0),
-            0
-        )
-        const totalCapitalDeployed = activeTransactions.reduce(
-            (sum: number, tx: any) => sum + (tx.initialInvestorCapital ?? tx.buyPrice),
-            0
-        )
-
-        const activeUnitsCount = investor.units.filter((unit: any) =>
-            unit.status === 'AVAILABLE' || unit.transactions.some((tx: any) => tx.status === 'ON_PROCESS')
-        ).length
+        const summary = computeInvestorReportSummary(investor.units)
 
         const formatCurrency = (value: number) => {
             return new Intl.NumberFormat('id-ID', {
@@ -110,10 +95,10 @@ export async function GET(
 
         csv += `=== RINGKASAN ===\n`
         csv += `Metrik,Nilai\n`
-        csv += `Total Unit Aktif,${csvCell(activeUnitsCount)}\n`
-        csv += `Total Transaksi Selesai,${csvCell(totalCompletedTransactions)}\n`
-        csv += `Total Modal Tertanam,${csvCell(formatCurrency(totalCapitalDeployed))}\n`
-        csv += `Total Profit,${csvCell(formatCurrency(totalProfit))}\n\n`
+        csv += `Total Unit Aktif,${csvCell(summary.activeUnitsCount)}\n`
+        csv += `Total Transaksi Selesai,${csvCell(summary.totalCompletedTransactions)}\n`
+        csv += `Total Modal Tertanam,${csvCell(formatCurrency(summary.totalCapitalDeployed))}\n`
+        csv += `Total Profit,${csvCell(formatCurrency(summary.totalProfit))}\n\n`
 
         csv += `=== DETAIL TRANSAKSI ===\n`
         csv += `Kode,Unit,Plat Nomor,Tanggal Beli,Tanggal Jual,Harga Beli,Harga Jual,Modal Investor,Modal Manager,Total Biaya,Biaya Investor,Biaya Manager,Margin Bersih,Profit Investor,Profit Manager,Status Bayar,Total Terbayar\n`
@@ -147,7 +132,6 @@ export async function GET(
             csv += `${csvCell(formatCurrency(totalPaid))}\n`
         })
 
-        // Return CSV file
         const fileName = `Laporan_${investor.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`
 
         return new NextResponse(csv, {
