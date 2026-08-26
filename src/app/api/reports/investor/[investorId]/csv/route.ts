@@ -9,6 +9,14 @@ const privateResponse = (response: Response) => {
     return response
 }
 
+function csvCell(value: unknown): string {
+    const text = value === null || value === undefined ? '' : String(value)
+    if (/[\u000d\u0022\u002c\u000a]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ investorId: string }> }
@@ -86,22 +94,22 @@ export async function GET(
         }
 
         // Generate CSV content
-        let csv = `Laporan Pemodal: ${investor.name}\\n`
-        csv += `Tanggal Laporan: ${format(new Date(), 'dd MMM yyyy HH:mm')}\\n\\n`
+        let csv = `Laporan Pemodal: ${csvCell(investor.name)}\n`
+        csv += `Tanggal Laporan: ${format(new Date(), 'dd MMM yyyy HH:mm')}\n\n`
 
-        csv += `=== INFORMASI PEMODAL ===\\n`
-        csv += `Nama,Kontak,Rekening,Catatan\\n`
-        csv += `"${investor.name}","${investor.contactInfo || '-'}","${investor.bankAccountDetails || '-'}","${investor.notes || '-'}"\\n\\n`
+        csv += `=== INFORMASI PEMODAL ===\n`
+        csv += `Nama,Kontak,Rekening,Catatan\n`
+        csv += `${csvCell(investor.name)},${csvCell(investor.contactInfo || '-')},${csvCell(investor.bankAccountDetails || '-')},${csvCell(investor.notes || '-')}\n\n`
 
-        csv += `=== RINGKASAN ===\\n`
-        csv += `Metrik,Nilai\\n`
-        csv += `Total Unit Aktif,${activeUnitsCount}\\n`
-        csv += `Total Transaksi Selesai,${totalCompletedTransactions}\\n`
-        csv += `Total Modal Tertanam,${formatCurrency(totalCapitalDeployed)}\\n`
-        csv += `Total Profit,${formatCurrency(totalProfit)}\\n\\n`
+        csv += `=== RINGKASAN ===\n`
+        csv += `Metrik,Nilai\n`
+        csv += `Total Unit Aktif,${csvCell(activeUnitsCount)}\n`
+        csv += `Total Transaksi Selesai,${csvCell(totalCompletedTransactions)}\n`
+        csv += `Total Modal Tertanam,${csvCell(formatCurrency(totalCapitalDeployed))}\n`
+        csv += `Total Profit,${csvCell(formatCurrency(totalProfit))}\n\n`
 
-        csv += `=== DETAIL TRANSAKSI ===\\n`
-        csv += `Kode,Unit,Plat Nomor,Tanggal Beli,Tanggal Jual,Harga Beli,Harga Jual,Modal Investor,Modal Manager,Total Biaya,Biaya Investor,Biaya Manager,Margin Bersih,Profit Investor,Profit Manager,Status Bayar,Total Terbayar\\n`
+        csv += `=== DETAIL TRANSAKSI ===\n`
+        csv += `Kode,Unit,Plat Nomor,Tanggal Beli,Tanggal Jual,Harga Beli,Harga Jual,Modal Investor,Modal Manager,Total Biaya,Biaya Investor,Biaya Manager,Margin Bersih,Profit Investor,Profit Manager,Status Bayar,Total Terbayar\n`
 
         completedTransactions.forEach((tx: any) => {
             const totalCosts = tx.costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
@@ -113,27 +121,27 @@ export async function GET(
                 .reduce((sum: number, cost: any) => sum + cost.amount, 0)
             const totalPaid = tx.paymentHistories.reduce((sum: number, ph: any) => sum + ph.amount, 0)
 
-            csv += `"${tx.transactionCode}",`
-            csv += `"${tx.unitName}",`
-            csv += `"${tx.unitPlateNumber}",`
-            csv += `"${format(new Date(tx.buyDate), 'dd MMM yyyy')}",`
-            csv += `"${tx.sellDate ? format(new Date(tx.sellDate), 'dd MMM yyyy') : '-'}",`
-            csv += `"${formatCurrency(tx.buyPrice)}",`
-            csv += `"${formatCurrency(tx.sellPrice || 0)}",`
-            csv += `"${formatCurrency(tx.initialInvestorCapital ?? tx.buyPrice)}",`
-            csv += `"${formatCurrency(tx.initialManagerCapital ?? 0)}",`
-            csv += `"${formatCurrency(totalCosts)}",`
-            csv += `"${formatCurrency(investorCosts)}",`
-            csv += `"${formatCurrency(managerCosts)}",`
-            csv += `"${formatCurrency(tx.profitSharing?.netMargin || 0)}",`
-            csv += `"${formatCurrency(tx.profitSharing?.investorProfitAmount || 0)}",`
-            csv += `"${formatCurrency(tx.profitSharing?.managerProfitAmount || 0)}",`
-            csv += `"${tx.paymentStatus}",`
-            csv += `"${formatCurrency(totalPaid)}"\\n`
+            csv += `${csvCell(tx.transactionCode)},`
+            csv += `${csvCell(tx.unitName)},`
+            csv += `${csvCell(tx.unitPlateNumber)},`
+            csv += `${csvCell(format(new Date(tx.buyDate), 'dd MMM yyyy'))},`
+            csv += `${csvCell(tx.sellDate ? format(new Date(tx.sellDate), 'dd MMM yyyy') : '-')},`
+            csv += `${csvCell(formatCurrency(tx.buyPrice))},`
+            csv += `${csvCell(formatCurrency(tx.sellPrice || 0))},`
+            csv += `${csvCell(formatCurrency(tx.initialInvestorCapital ?? tx.buyPrice))},`
+            csv += `${csvCell(formatCurrency(tx.initialManagerCapital ?? 0))},`
+            csv += `${csvCell(formatCurrency(totalCosts))},`
+            csv += `${csvCell(formatCurrency(investorCosts))},`
+            csv += `${csvCell(formatCurrency(managerCosts))},`
+            csv += `${csvCell(formatCurrency(tx.profitSharing?.netMargin || 0))},`
+            csv += `${csvCell(formatCurrency(tx.profitSharing?.investorProfitAmount || 0))},`
+            csv += `${csvCell(formatCurrency(tx.profitSharing?.managerProfitAmount || 0))},`
+            csv += `${csvCell(tx.paymentStatus)},`
+            csv += `${csvCell(formatCurrency(totalPaid))}\n`
         })
 
         // Return CSV file
-        const fileName = `Laporan_${investor.name.replace(/\\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`
+        const fileName = `Laporan_${csvCell(investor.name).replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`
 
         return new NextResponse(csv, {
             headers: {
