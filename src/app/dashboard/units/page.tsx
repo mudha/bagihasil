@@ -33,7 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench, Sparkles } from "lucide-react"
+import { Plus, MoreHorizontal, Eye, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench, Sparkles } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -1607,6 +1607,14 @@ function UnitsPageContent() {
                                 </div>
                             </div>
 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700"
+                                onClick={() => setViewingUnit(unit)}
+                            >
+                                <Eye className="mr-1.5 h-4 w-4" /> Detail
+                            </Button>
                             {!isViewer && (
                                  <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
                                     <DropdownMenu>
