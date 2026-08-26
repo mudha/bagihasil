@@ -25,10 +25,10 @@ function requestAndParams() {
 function investorWithEscapingNeeds() {
     return {
         id: "investor-1",
-        name: "Investor, One",
-        contactInfo: "Has \"Quote\"",
-        bankAccountDetails: null,
-        notes: "Notes\nNew Line",
+        name: "=1+1, One",
+        contactInfo: "+1+1",
+        bankAccountDetails: "-1+1",
+        notes: "@SUM(1,1)\r\nNext",
         units: [
             {
                 name: "Unit \"X\"",
@@ -47,9 +47,9 @@ function investorWithEscapingNeeds() {
                         initialManagerCapital: 200_000,
                         costs: [],
                         profitSharing: {
-                            netMargin: 100_000,
-                            investorProfitAmount: 40_000,
-                            managerProfitAmount: 60_000,
+                            netMargin: -1_000,
+                            investorProfitAmount: 0,
+                            managerProfitAmount: 0,
                         },
                         paymentHistories: [
                             { amount: 40_000, paymentDate: new Date("2026-07-11T00:00:00.000Z"), method: "TRANSFER", notes: null },
@@ -79,21 +79,24 @@ describe("GET investor CSV escaping", () => {
         // Header row exists
         expect(csv).toContain("Nama,Kontak,Rekening,Catatan")
 
-        // Comma in name: value must be double-quoted
-        expect(csv).toContain('"Investor, One"')
+        // Formula-like name is apostrophe-prefixed, then structurally quoted.
+        expect(csv).toContain('"\'=1+1, One"')
 
-        // Double quote in contact: internal quotes doubled
-        expect(csv).toContain('"Has ""Quote""')
+        // Formula-like text fields are neutralized without changing the payload.
+        expect(csv).toContain("'+1+1")
+        expect(csv).toContain("'-1+1")
 
-        // Newline in notes: the note value is wrapped in double-quotes,
-        // followed by a newline (inside the quotes), then the closing quote
-        expect(csv).toContain('"Notes\nNew Line"')
+        // CRLF remains inside the quoted, apostrophe-prefixed field.
+        expect(csv).toContain("\"'@SUM(1,1)\r\nNext\"")
 
         // Comma in transaction code: must be quoted
         expect(csv).toContain('"TX-1,COMMA"')
 
         // Double quote in unit name
         expect(csv).toContain('"Unit ""X""')
+
+        // Computed negative numeric amount remains unprefixed.
+        expect(csv).toContain("-Rp 1.000")
 
         // Detail section header
         expect(csv).toContain('Kode,Unit,Plat Nomor,Tanggal Beli,Tanggal Jual,Harga Beli,Harga Jual,Modal Investor,Modal Manager,Total Biaya,Biaya Investor,Biaya Manager,Margin Bersih,Profit Investor,Profit Manager,Status Bayar,Total Terbayar')

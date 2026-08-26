@@ -17,6 +17,13 @@ function csvCell(value: unknown): string {
     return text
 }
 
+function csvTextCell(value: unknown, fallback = ''): string {
+    if (value === null || value === undefined || value === '') return csvCell(fallback)
+    const text = String(value)
+    const safeText = /^[=+\-@\t\r\n＝＋－＠]/.test(text) ? `'${text}` : text
+    return csvCell(safeText)
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ investorId: string }> }
@@ -94,12 +101,12 @@ export async function GET(
         }
 
         // Generate CSV content
-        let csv = `Laporan Pemodal: ${csvCell(investor.name)}\n`
+        let csv = `Laporan Pemodal: ${csvTextCell(investor.name)}\n`
         csv += `Tanggal Laporan: ${format(new Date(), 'dd MMM yyyy HH:mm')}\n\n`
 
         csv += `=== INFORMASI PEMODAL ===\n`
         csv += `Nama,Kontak,Rekening,Catatan\n`
-        csv += `${csvCell(investor.name)},${csvCell(investor.contactInfo || '-')},${csvCell(investor.bankAccountDetails || '-')},${csvCell(investor.notes || '-')}\n\n`
+        csv += `${csvTextCell(investor.name)},${csvTextCell(investor.contactInfo, '-')},${csvTextCell(investor.bankAccountDetails, '-')},${csvTextCell(investor.notes, '-')}\n\n`
 
         csv += `=== RINGKASAN ===\n`
         csv += `Metrik,Nilai\n`
@@ -121,9 +128,9 @@ export async function GET(
                 .reduce((sum: number, cost: any) => sum + cost.amount, 0)
             const totalPaid = tx.paymentHistories.reduce((sum: number, ph: any) => sum + ph.amount, 0)
 
-            csv += `${csvCell(tx.transactionCode)},`
-            csv += `${csvCell(tx.unitName)},`
-            csv += `${csvCell(tx.unitPlateNumber)},`
+            csv += `${csvTextCell(tx.transactionCode)},`
+            csv += `${csvTextCell(tx.unitName)},`
+            csv += `${csvTextCell(tx.unitPlateNumber)},`
             csv += `${csvCell(format(new Date(tx.buyDate), 'dd MMM yyyy'))},`
             csv += `${csvCell(tx.sellDate ? format(new Date(tx.sellDate), 'dd MMM yyyy') : '-')},`
             csv += `${csvCell(formatCurrency(tx.buyPrice))},`
@@ -136,12 +143,12 @@ export async function GET(
             csv += `${csvCell(formatCurrency(tx.profitSharing?.netMargin || 0))},`
             csv += `${csvCell(formatCurrency(tx.profitSharing?.investorProfitAmount || 0))},`
             csv += `${csvCell(formatCurrency(tx.profitSharing?.managerProfitAmount || 0))},`
-            csv += `${csvCell(tx.paymentStatus)},`
+            csv += `${csvTextCell(tx.paymentStatus)},`
             csv += `${csvCell(formatCurrency(totalPaid))}\n`
         })
 
         // Return CSV file
-        const fileName = `Laporan_${csvCell(investor.name).replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`
+        const fileName = `Laporan_${investor.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`
 
         return new NextResponse(csv, {
             headers: {
