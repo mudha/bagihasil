@@ -62,6 +62,7 @@ import {
     type ManagedCapitalSummary,
     type ManagedCapitalViewState,
 } from "@/lib/managed-capital-ui-contract"
+import { parseManagedCapitalSummaryPayload } from "../../../lib/managed-capital-response"
 
 const investorSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
@@ -469,7 +470,8 @@ export default function InvestorsPage() {
                 }
                 return
             }
-            const data: ManagedCapitalSummary[] = await res.json()
+            const payload: unknown = await res.json()
+            const data = parseManagedCapitalSummaryPayload(payload)
             if (requestId !== capitalRequestId.current) return
             const map = new Map<string, ManagedCapitalSummary>()
             for (const s of data) map.set(s.investorId, s)
