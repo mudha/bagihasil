@@ -3,29 +3,20 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Plus, Shield, User as UserIcon, Wallet, Pencil, Trash2 } from "lucide-react"
+import { OperationalPageHeader } from "@/components/mudha/OperationalPageHeader"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { ErrorState } from "@/components/mudha/ErrorState"
+import { EmptyState } from "@/components/mudha/EmptyState"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -33,14 +24,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
 const userSchema = z.object({
@@ -62,46 +47,57 @@ interface User {
     lastLoginAt: string | null
     lastLoginCity: string | null
     createdAt: string
-    investor?: {
-        name: string
-    }
+    investor?: { name: string }
 }
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [isAccessDenied, setIsAccessDenied] = useState(false)
+    const [retryNonce, setRetryNonce] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
     const [editingUser, setEditingUser] = useState<User | null>(null)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const { data: session, status: sessionStatus } = useSession()
-
     const isAdmin = session?.user?.role === "ADMIN"
 
     const form = useForm<UserFormValues>({
         resolver: zodResolver(userSchema),
-        defaultValues: {
-            name: "",
-            username: "",
-            email: "",
-            password: "",
-            role: "VIEWER",
-        },
+        defaultValues: { name: "", username: "", email: "", password: "", role: "VIEWER" },
     })
 
     const fetchUsers = async () => {
+        setUsers([])
+        setError(null)
+        setIsAccessDenied(false)
+        setIsLoading(true)
         try {
-            const res = await fetch('/api/users')
-            if (res.ok) {
-                const data = await res.json()
-                setUsers(data)
+            const res = await fetch("/api/users")
+            if (res.status === 401 || res.status === 403) {
+                setIsAccessDenied(true)
+                setError("Akses tidak tersedia")
+                return
             }
-        } catch {
-            console.error("Failed to fetch users")
+            if (!res.ok) {
+                throw new Error("Gagal memuat data user")
+            }
+            const data = await res.json()
+            if (!Array.isArray(data)) {
+                throw new Error("Gagal memuat data user")
+            }
+            setUsers(data)
+        } catch (err) {
+            if (!isAccessDenied) {
+                console.error("Failed to fetch users", err)
+                setError("Gagal memuat data user. Silakan coba lagi.")
+            }
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    useEffect(() => {
-        fetchUsers()
-    }, [])
+    useEffect(() => { fetchUsers() }, [retryNonce])
 
     useEffect(() => {
         if (editingUser) {
@@ -109,17 +105,11 @@ export default function UsersPage() {
                 name: editingUser.name,
                 username: editingUser.username || "",
                 email: editingUser.email || "",
-                password: "", // Leave blank unless changing
+                password: "",
                 role: editingUser.role,
             })
         } else {
-            form.reset({
-                name: "",
-                username: "",
-                email: "",
-                password: "",
-                role: "VIEWER",
-            })
+            form.reset({ name: "", username: "", email: "", password: "", role: "VIEWER" })
         }
     }, [editingUser, form])
 
@@ -129,27 +119,18 @@ export default function UsersPage() {
                 toast.error("Password minimal 6 karakter untuk user baru")
                 return
             }
-
             if (editingUser && values.password && values.password.length < 6) {
                 toast.error("Password minimal 6 karakter jika ingin mengganti")
                 return
             }
-
-            const url = editingUser ? `/api/users/${editingUser.id}` : '/api/users'
-            const method = editingUser ? 'PUT' : 'POST'
-
+            const url = editingUser ? `/api/users/${editingUser.id}` : "/api/users"
+            const method = editingUser ? "PUT" : "POST"
             const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
+                method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
             })
-
             if (res.ok) {
                 toast.success(editingUser ? "User berhasil diupdate" : "User berhasil ditambahkan")
-                setIsOpen(false)
-                setEditingUser(null)
-                form.reset()
-                fetchUsers()
+                setIsOpen(false); setEditingUser(null); form.reset(); fetchUsers()
             } else {
                 const errorData = await res.json()
                 toast.error(errorData.error || "Gagal menyimpan user")
@@ -162,241 +143,181 @@ export default function UsersPage() {
     const handleDelete = async () => {
         if (!deleteId) return
         try {
-            const res = await fetch(`/api/users/${deleteId}`, {
-                method: 'DELETE',
-            })
-
+            const res = await fetch(`/api/users/${deleteId}`, { method: "DELETE" })
             if (res.ok) {
-                toast.success("User berhasil dihapus")
-                fetchUsers()
+                toast.success("User berhasil dihapus"); fetchUsers()
             } else {
                 const errorData = await res.json()
                 toast.error(errorData.error || "Gagal menghapus user")
             }
         } catch {
             toast.error("Terjadi kesalahan sistem")
-        } finally {
-            setDeleteId(null)
-        }
+        } finally { setDeleteId(null) }
     }
 
     const getRoleBadge = (role: string) => {
         switch (role) {
-            case "ADMIN":
-                return <Badge variant="destructive"><Shield className="w-3 h-3 mr-1" /> Admin</Badge>
-            case "INVESTOR":
-                return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600"><Wallet className="w-3 h-3 mr-1" /> Investor</Badge>
-            default:
-                return <Badge variant="secondary"><UserIcon className="w-3 h-3 mr-1" /> Viewer</Badge>
+            case "ADMIN": return <Badge variant="destructive"><Shield className="w-3 h-3 mr-1" /> Admin</Badge>
+            case "INVESTOR": return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600"><Wallet className="w-3 h-3 mr-1" /> Investor</Badge>
+            default: return <Badge variant="secondary"><UserIcon className="w-3 h-3 mr-1" /> Viewer</Badge>
         }
     }
 
     const formatLastLogin = (lastLoginAt: string | null) => {
         if (!lastLoginAt) return null
-
-        return new Intl.DateTimeFormat('id-ID', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-            timeZone: 'Asia/Jakarta',
-        }).format(new Date(lastLoginAt))
+        return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(lastLoginAt))
     }
 
-    const handleEditClick = (user: User) => {
-        setEditingUser(user)
-        setIsOpen(true)
-    }
+    const handleEditClick = (user: User) => { setEditingUser(user); setIsOpen(true) }
+    const handleCloseDialog = (open: boolean) => { setIsOpen(open); if (!open) { setEditingUser(null); form.reset() } }
 
-    const handleCloseDialog = (open: boolean) => {
-        setIsOpen(open)
-        if (!open) {
-            setEditingUser(null)
-            form.reset()
-        }
-    }
+    // ── view-state branches ──
 
     if (sessionStatus === "loading") {
-        return <div className="p-8 text-center">Memuat...</div>
-    }
-
-    if (!isAdmin) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-                <Shield className="w-16 h-16 text-destructive" />
-                <h2 className="text-2xl font-bold">Akses Ditolak</h2>
-                <p className="text-muted-foreground">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
-                <Button onClick={() => window.location.href = "/dashboard"}>Kembali ke Dashboard</Button>
+            <div className="space-y-4">
+                <OperationalPageHeader title="Kelola User" description="Tambah dan atur hak akses pengguna aplikasi." />
+                <LoadingState variant="table" label="Memuat sesi…" />
             </div>
         )
     }
 
+    if (!isAdmin) {
+        return (
+            <div className="space-y-4">
+                <OperationalPageHeader title="Kelola User" description="Tambah dan atur hak akses pengguna aplikasi." />
+                <ErrorState title="Akses Ditolak" description="Anda tidak memiliki izin untuk mengakses halaman ini." />
+            </div>
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                <OperationalPageHeader
+                    title="Kelola User"
+                    description="Tambah dan atur hak akses pengguna aplikasi."
+                    primaryAction={<Button disabled><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>}
+                />
+                <LoadingState variant="table" label="Memuat data user…" />
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="space-y-4">
+                <OperationalPageHeader
+                    title="Kelola User"
+                    description="Tambah dan atur hak akses pengguna aplikasi."
+                    primaryAction={<Button disabled><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>}
+                />
+                <ErrorState
+                    title={isAccessDenied ? "Akses tidak tersedia" : "Gagal memuat data user"}
+                    description={isAccessDenied ? undefined : error}
+                    onRetry={isAccessDenied ? undefined : () => setRetryNonce((n) => n + 1)}
+                />
+            </div>
+        )
+    }
+
+    // ── loaded with data ──
+
     return (
         <div className="space-y-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Kelola User</h2>
-                    <p className="text-muted-foreground">Tambah dan atur hak akses pengguna aplikasi.</p>
-                </div>
-                <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Tambah User
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{editingUser ? "Edit User" : "Tambah User Baru"}</DialogTitle>
-                        </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Nama Lengkap</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="John Doe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="username"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Username</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="johndoe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="email"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email (Opsional)</FormLabel>
-                                            <FormControl>
-                                                <Input type="email" placeholder="john@example.com" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password {editingUser && "(Kosongkan jika tidak ingin ganti)"}</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="******" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="role"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Hak Akses (Role)</FormLabel>
+            <OperationalPageHeader
+                title="Kelola User"
+                description="Tambah dan atur hak akses pengguna aplikasi."
+                primaryAction={
+                    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
+                        <DialogTrigger asChild>
+                            <Button><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader><DialogTitle>{editingUser ? "Edit User" : "Tambah User Baru"}</DialogTitle></DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <FormField control={form.control} name="name" render={({ field }) => (
+                                        <FormItem><FormLabel>Nama Lengkap</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="username" render={({ field }) => (
+                                        <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="johndoe" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="email" render={({ field }) => (
+                                        <FormItem><FormLabel>Email (Opsional)</FormLabel><FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="password" render={({ field }) => (
+                                        <FormItem><FormLabel>Password {editingUser && "(Kosongkan jika tidak ingin ganti)"}</FormLabel><FormControl><Input type="password" placeholder="******" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="role" render={({ field }) => (
+                                        <FormItem><FormLabel>Hak Akses (Role)</FormLabel>
                                             <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Pilih Role" />
-                                                    </SelectTrigger>
-                                                </FormControl>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     <SelectItem value="VIEWER">Viewer (Lihat Saja)</SelectItem>
                                                     <SelectItem value="INVESTOR">Investor</SelectItem>
                                                     <SelectItem value="ADMIN">Admin (Akses Penuh)</SelectItem>
                                                 </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" className="w-full">
-                                    {editingUser ? "Update User" : "Simpan User"}
-                                </Button>
-                            </form>
-                        </Form>
-                    </DialogContent>
-                </Dialog>
-            </div>
+                                            </Select><FormMessage /></FormItem>
+                                    )} />
+                                    <Button type="submit" className="w-full">{editingUser ? "Update User" : "Simpan User"}</Button>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                }
+            />
 
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {users.length === 0 ? (
-                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
-                        Belum ada data user.
-                    </div>
+                    <EmptyState title="Belum ada data user" description="User baru akan muncul di sini setelah ditambahkan." />
                 ) : (
                     users.map((user) => (
-                        <div key={user.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
+                        <div key={user.id} className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4 shadow-[var(--mudha-shadow-xs)] space-y-3">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <div className="font-semibold text-base">{user.name}</div>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="font-mono text-xs text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{user.username || "-"}</span>
+                                        <span className="font-mono text-xs text-[var(--mudha-text-muted)] bg-[var(--mudha-surface-subtle)] px-1.5 py-0.5 rounded">{user.username || "-"}</span>
                                         {getRoleBadge(user.role)}
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="text-sm border-t pt-3 mt-2 grid grid-cols-1 gap-2">
+                            <div className="text-sm border-t border-[var(--mudha-border-subtle)] pt-3 mt-2 grid grid-cols-1 gap-2">
                                 <div>
-                                    <span className="block text-xs text-muted-foreground mb-0.5">Email</span>
-                                    <span className="font-medium text-foreground">{user.email || "-"}</span>
+                                    <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Email</span>
+                                    <span className="font-medium text-[var(--mudha-text)]">{user.email || "-"}</span>
                                 </div>
                                 <div>
-                                    <span className="block text-xs text-muted-foreground mb-0.5">Terhubung ke Investor</span>
+                                    <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Terhubung ke Investor</span>
                                     {user.investor ? (
                                         <span className="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded text-xs">{user.investor.name}</span>
                                     ) : (
-                                        <span className="text-muted-foreground italic text-xs text-slate-400">-</span>
+                                        <span className="text-[var(--mudha-text-muted)] italic text-xs">-</span>
                                     )}
                                 </div>
                                 <div>
-                                    <span className="block text-xs text-muted-foreground mb-0.5">Login Terakhir</span>
+                                    <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Login Terakhir</span>
                                     {user.lastLoginAt ? (
                                         <div className="space-y-0.5">
-                                            <span className="block font-medium text-foreground">{formatLastLogin(user.lastLoginAt)} WIB</span>
-                                            <span className="block text-xs text-muted-foreground">
-                                                {user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}
-                                            </span>
+                                            <span className="block font-medium text-[var(--mudha-text)]">{formatLastLogin(user.lastLoginAt)} WIB</span>
+                                            <span className="block text-xs text-[var(--mudha-text-muted)]">{user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}</span>
                                         </div>
                                     ) : (
-                                        <span className="text-xs italic text-muted-foreground">Belum pernah tercatat</span>
+                                        <span className="text-xs italic text-[var(--mudha-text-muted)]">Belum pernah tercatat</span>
                                     )}
                                 </div>
                                 <div>
-                                    <span className="block text-xs text-muted-foreground mb-0.5">Dibuat Pada</span>
-                                    <span className="text-muted-foreground">{new Date(user.createdAt).toLocaleDateString('id-ID')}</span>
+                                    <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Dibuat Pada</span>
+                                    <span className="text-[var(--mudha-text-muted)]">{new Date(user.createdAt).toLocaleDateString("id-ID")}</span>
                                 </div>
                             </div>
-
-                            <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1"
-                                    onClick={() => handleEditClick(user)}
-                                >
+                            <div className="flex items-center justify-end gap-2 border-t border-[var(--mudha-border-subtle)] pt-3 mt-2">
+                                <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditClick(user)}>
                                     <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                                 </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                    onClick={() => setDeleteId(user.id)}
-                                >
+                                <Button variant="outline" size="sm" className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => setDeleteId(user.id)}>
                                     <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus
                                 </Button>
                             </div>
@@ -406,7 +327,7 @@ export default function UsersPage() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden rounded-md border lg:block">
+            <div className="hidden rounded-md border border-[var(--mudha-border-default)] lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -421,65 +342,49 @@ export default function UsersPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {users.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell className="font-medium">{user.name}</TableCell>
-                                <TableCell className="font-mono text-sm">{user.username || "-"}</TableCell>
-                                <TableCell>{user.email || "-"}</TableCell>
-                                <TableCell>{getRoleBadge(user.role)}</TableCell>
-                                <TableCell>
-                                    {user.investor ? (
-                                        <span className="text-emerald-600 font-medium">Pemodal: {user.investor.name}</span>
-                                    ) : (
-                                        <span className="text-muted-foreground italic text-xs">-</span>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {user.lastLoginAt ? (
-                                        <div className="space-y-0.5">
-                                            <div className="whitespace-nowrap text-sm font-medium">
-                                                {formatLastLogin(user.lastLoginAt)} WIB
-                                            </div>
-                                            <div className="whitespace-nowrap text-xs text-muted-foreground">
-                                                {user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <span className="whitespace-nowrap text-xs italic text-muted-foreground">
-                                            Belum pernah tercatat
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">
-                                    {new Date(user.createdAt).toLocaleDateString('id-ID')}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleEditClick(user)}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-red-500 hover:text-red-600"
-                                            onClick={() => setDeleteId(user.id)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {users.length === 0 && (
+                        {users.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+                                <TableCell colSpan={8} className="text-center py-4 text-[var(--mudha-text-muted)]">
                                     Belum ada data user.
                                 </TableCell>
                             </TableRow>
+                        ) : (
+                            users.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell className="font-mono text-sm">{user.username || "-"}</TableCell>
+                                    <TableCell>{user.email || "-"}</TableCell>
+                                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                                    <TableCell>
+                                        {user.investor ? (
+                                            <span className="text-emerald-600 font-medium">Pemodal: {user.investor.name}</span>
+                                        ) : (
+                                            <span className="text-[var(--mudha-text-muted)] italic text-xs">-</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {user.lastLoginAt ? (
+                                            <div className="space-y-0.5">
+                                                <div className="whitespace-nowrap text-sm font-medium">{formatLastLogin(user.lastLoginAt)} WIB</div>
+                                                <div className="whitespace-nowrap text-xs text-[var(--mudha-text-muted)]">{user.lastLoginCity ? `${user.lastLoginCity} · perkiraan IP` : "Lokasi tidak diketahui"}</div>
+                                            </div>
+                                        ) : (
+                                            <span className="whitespace-nowrap text-xs italic text-[var(--mudha-text-muted)]">Belum pernah tercatat</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-[var(--mudha-text-muted)]">{new Date(user.createdAt).toLocaleDateString("id-ID")}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(user)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteId(user.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
                         )}
                     </TableBody>
                 </Table>
@@ -495,10 +400,7 @@ export default function UsersPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-red-500 hover:bg-red-600"
-                        >
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
                             Hapus
                         </AlertDialogAction>
                     </AlertDialogFooter>
