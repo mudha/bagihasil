@@ -38,8 +38,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Pencil, Download, FileText, FileSpreadsheet, Sheet, Wallet, AlertTriangle, CircleDollarSign } from "lucide-react"
+import { AlertTriangle, Download, FileText, FileSpreadsheet, Plus, Pencil, Sheet, Wallet, CircleDollarSign } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -63,6 +62,14 @@ import {
     type ManagedCapitalViewState,
 } from "@/lib/managed-capital-ui-contract"
 import { parseManagedCapitalSummaryPayload } from "../../../lib/managed-capital-response"
+
+/* Mudha Operational Foundation */
+import { OperationalPageHeader } from "@/components/mudha/OperationalPageHeader"
+import { SummaryMetric } from "@/components/mudha/SummaryMetric"
+import { StatusBadge } from "@/components/mudha/StatusBadge"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { EmptyState } from "@/components/mudha/EmptyState"
+import { ErrorState } from "@/components/mudha/ErrorState"
 
 const investorSchema = z.object({
     name: z.string().min(1, "Nama wajib diisi"),
@@ -131,7 +138,6 @@ function ManagedCapitalDialog({
         if (isOpen) {
             setInputValue(currentSummary?.managedCapitalBalance ?? "")
             setInputTouched(false)
-            // focus input on open
             setTimeout(() => inputRef.current?.focus(), 50)
         }
     }, [isOpen, currentSummary?.managedCapitalBalance])
@@ -205,7 +211,6 @@ function ManagedCapitalDialog({
                     </DialogHeader>
 
                     <div className="space-y-4 pt-2">
-                        {/* Current balance display */}
                         <div className="rounded-lg border bg-slate-50 p-3">
                             <p className="text-xs font-medium text-muted-foreground mb-1">Saldo Modal Kelolaan Saat Ini</p>
                             <p className="text-lg font-bold">
@@ -218,7 +223,6 @@ function ManagedCapitalDialog({
                             )}
                         </div>
 
-                        {/* Allocation summary */}
                         {currentSummary && (
                             <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div className="rounded border p-2">
@@ -232,7 +236,6 @@ function ManagedCapitalDialog({
                             </div>
                         )}
 
-                        {/* Input for set */}
                         <div className="space-y-2">
                             <Label htmlFor={`capital-input-${investor.id}`}>Saldo Baru (Rp)</Label>
                             <Input
@@ -244,7 +247,6 @@ function ManagedCapitalDialog({
                                 placeholder="Contoh: 5000000"
                                 value={inputValue}
                                 onChange={(e) => {
-                                    // Preserve exactly what the user typed; validation never mutates raw input.
                                     setInputValue(e.target.value)
                                     setInputTouched(true)
                                 }}
@@ -262,7 +264,6 @@ function ManagedCapitalDialog({
                             )}
                         </div>
 
-                        {/* Actions */}
                         <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
                             <Button
                                 variant="outline"
@@ -281,7 +282,6 @@ function ManagedCapitalDialog({
                             </Button>
                         </div>
 
-                        {/* Warnings */}
                         {currentSummary?.warnings.map((w, i) => (
                             <Alert key={i} variant="destructive" className="text-sm">
                                 <AlertTriangle className="h-4 w-4" />
@@ -292,7 +292,6 @@ function ManagedCapitalDialog({
                 </DialogContent>
             </Dialog>
 
-            {/* Clear Confirmation */}
             <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -348,7 +347,7 @@ function CapitalSummaryCell({
                 <div className="text-sm">
                     <span className="font-medium">{formatRupiahOrNull(summary.availableManagedCapital)}</span>
                     {summary.warnings.some(w => w.code === "ALLOCATION_EXCEEDS_MANAGED_BALANCE") && (
-                        <Badge variant="destructive" className="ml-1 text-[10px]">⚠ Melebihi</Badge>
+                        <span className="ml-1 inline-flex items-center rounded-full border border-[var(--mudha-status-danger-border)] bg-[var(--mudha-status-danger-bg)] px-1.5 py-0 text-[10px] font-medium text-[var(--mudha-status-danger-text)]">⚠ Melebihi</span>
                     )}
                     {summary.warnings.length > 0 && (
                         <div className="mt-1 space-y-1" role="alert" aria-label="Peringatan ringkasan modal">
@@ -378,10 +377,10 @@ function CapitalSummaryMobile({
             : viewState.kind === "error"
                 ? "Ringkasan modal tidak tersedia"
                 : "Ringkasan modal tidak ditemukan"
-        return <div role="status" className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">{label}</div>
+        return <div role="status" className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">{label}</div>
     }
     return (
-        <div className="rounded-md border border-dashed bg-slate-50/80 p-3 space-y-2 text-sm">
+        <div className="rounded-lg border border-[var(--mudha-border-subtle)] bg-[var(--mudha-surface-subtle)] p-3 space-y-2 text-sm">
             <div className="flex items-center gap-1.5 font-medium text-xs uppercase tracking-wide text-muted-foreground">
                 <CircleDollarSign className="h-3.5 w-3.5" /> Modal Kelolaan
             </div>
@@ -419,6 +418,8 @@ function CapitalSummaryMobile({
 
 export default function InvestorsPage() {
     const [investors, setInvestors] = useState<Investor[]>([])
+    const [investorsLoading, setInvestorsLoading] = useState(true)
+    const [investorsError, setInvestorsError] = useState<string | null>(null)
     const [isOpen, setIsOpen] = useState(false)
     const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
@@ -442,19 +443,32 @@ export default function InvestorsPage() {
         },
     })
 
-    const fetchInvestors = async () => {
-        const res = await fetch('/api/investors')
-        const data = await res.json()
-        setInvestors(data)
-    }
-
-    const fetchUsers = async () => {
-        const res = await fetch('/api/users')
-        if (res.ok) {
+    const fetchInvestors = useCallback(async () => {
+        setInvestorsLoading(true)
+        setInvestorsError(null)
+        try {
+            const res = await fetch('/api/investors')
+            if (!res.ok) throw new Error("Gagal memuat data pemodal")
             const data = await res.json()
-            setUsers(data.filter((u: any) => u.role === "INVESTOR"))
+            setInvestors(data)
+        } catch {
+            setInvestorsError("Gagal memuat data pemodal. Silakan coba lagi.")
+        } finally {
+            setInvestorsLoading(false)
         }
-    }
+    }, [])
+
+    const fetchUsers = useCallback(async () => {
+        try {
+            const res = await fetch('/api/users')
+            if (res.ok) {
+                const data = await res.json()
+                setUsers(data.filter((u: any) => u.role === "INVESTOR"))
+            }
+        } catch {
+            // silent — users are supplementary
+        }
+    }, [])
 
     const fetchCapitalSummaries = useCallback(async () => {
         const requestId = ++capitalRequestId.current
@@ -659,11 +673,145 @@ export default function InvestorsPage() {
         }
     }
 
+    const activeCount = investors.filter(i => i.isActive).length
+
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Data Pemodal</h2>
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto lg:justify-end">
+        <div className="space-y-6 lg:space-y-8">
+            {/* ── Operational Header ── */}
+            <OperationalPageHeader
+                title="Data Pemodal"
+                description="Kelola profil, nisbah, rekening, serta modal yang sedang dikelola."
+                primaryAction={
+                    !isViewer ? (
+                        <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" /> Tambah Pemodal
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        {editingInvestor ? "Edit Pemodal" : "Tambah Pemodal Baru"}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Nama Lengkap</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="John Doe" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="contactInfo"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Kontak (HP/Email)</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="08123456789" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="marginPercentage"
+                                            render={({ field }) => {
+                                                const managerShare = 100 - (Number(field.value) || 0)
+                                                return (
+                                                    <FormItem>
+                                                        <FormLabel>Persentase Margin Pemodal (%)</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="50"
+                                                                {...field}
+                                                                onChange={(e) => field.onChange(Number(e.target.value))}
+                                                            />
+                                                        </FormControl>
+                                                        <div className="text-sm text-muted-foreground mt-1 flex justify-between">
+                                                            <span>Pemodal: {field.value || 0}%</span>
+                                                            <span className="font-semibold text-blue-600">Pengelola: {managerShare}%</span>
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )
+                                            }}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="bankAccountDetails"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Info Rekening</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="BCA 1234567890 a.n John Doe" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="notes"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Catatan</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Catatan tambahan..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="userId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Hubungkan ke Akun Login</FormLabel>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        value={field.value || "none"}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Pilih Akun User" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="none">Belum dihubungkan</SelectItem>
+                                                            {users.map((user) => (
+                                                                <SelectItem key={user.id} value={user.id}>
+                                                                    {user.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit" className="w-full">
+                                            {editingInvestor ? "Update" : "Simpan"}
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    ) : undefined
+                }
+                secondaryActions={
                     <Button
                         variant="outline"
                         onClick={handleExportAll}
@@ -672,138 +820,19 @@ export default function InvestorsPage() {
                         <Sheet className="mr-2 h-4 w-4" />
                         {isExportingAll ? 'Mengekspor...' : 'Ekspor Semua (Excel)'}
                     </Button>
-                {!isViewer && (
-                    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" /> Tambah Pemodal
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>
-                                    {editingInvestor ? "Edit Pemodal" : "Tambah Pemodal Baru"}
-                                </DialogTitle>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Nama Lengkap</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="John Doe" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="contactInfo"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Kontak (HP/Email)</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="08123456789" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="marginPercentage"
-                                        render={({ field }) => {
-                                            const managerShare = 100 - (Number(field.value) || 0)
-                                            return (
-                                                <FormItem>
-                                                    <FormLabel>Persentase Margin Pemodal (%)</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="50"
-                                                            {...field}
-                                                            onChange={(e) => field.onChange(Number(e.target.value))}
-                                                        />
-                                                    </FormControl>
-                                                    <div className="text-sm text-muted-foreground mt-1 flex justify-between">
-                                                        <span>Pemodal: {field.value || 0}%</span>
-                                                        <span className="font-semibold text-blue-600">Pengelola: {managerShare}%</span>
-                                                    </div>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )
-                                        }}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="bankAccountDetails"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Info Rekening</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="BCA 1234567890 a.n John Doe" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="notes"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Catatan</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Catatan tambahan..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="userId"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Hubungkan ke Akun Login</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value || "none"}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Pilih Akun User" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="none">Belum dihubungkan</SelectItem>
-                                                        {users.map((user) => (
-                                                            <SelectItem key={user.id} value={user.id}>
-                                                                {user.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" className="w-full">
-                                        {editingInvestor ? "Update" : "Simpan"}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                )}
-                </div>
-            </div>
+                }
+                metadata={
+                    !investorsLoading && !investorsError ? (
+                        <div className="flex gap-3">
+                            <SummaryMetric label="Total Pemodal" value={investors.length} tone="neutral" />
+                            <SummaryMetric label="Pemodal Aktif" value={activeCount} tone="success" />
+                        </div>
+                    ) : undefined
+                }
+            />
 
-            {capitalViewState.kind === "error" && (
+            {/* ── Capital summary error (does not block investor list) ── */}
+            {capitalViewState.kind === "error" && !investorsLoading && (
                 <Alert variant="destructive" role="alert">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
@@ -815,53 +844,80 @@ export default function InvestorsPage() {
                 </Alert>
             )}
 
-            {/* Mobile Card View */}
-            <div className="grid grid-cols-1 gap-4 lg:hidden">
-                {investors.length === 0 ? (
-                    <div className="text-center p-8 border rounded-md text-muted-foreground bg-slate-50">
-                        Belum ada data pemodal.
-                    </div>
-                ) : (
-                    investors.map((investor) => {
+            {/* ── Loading ── */}
+            {investorsLoading && (
+                <LoadingState variant="table" label="Memuat data pemodal…" />
+            )}
+
+            {/* ── Error ── */}
+            {!investorsLoading && investorsError && (
+                <ErrorState
+                    title="Gagal memuat data pemodal"
+                    description={investorsError}
+                    onRetry={fetchInvestors}
+                />
+            )}
+
+            {/* ── Empty ── */}
+            {!investorsLoading && !investorsError && investors.length === 0 && (
+                <EmptyState
+                    title="Belum ada data pemodal"
+                    description="Tambahkan pemodal pertama untuk mulai mengelola modal."
+                    primaryAction={
+                        !isViewer ? (
+                            <Button onClick={() => setIsOpen(true)}>
+                                <Plus className="mr-2 h-4 w-4" /> Tambah Pemodal
+                            </Button>
+                        ) : undefined
+                    }
+                />
+            )}
+
+            {/* ── Mobile Card View ── */}
+            {!investorsLoading && !investorsError && investors.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 lg:hidden">
+                    {investors.map((investor) => {
                         const connectedUser = users.find(u => u.id === investor.userId)
                         const summary = capitalViewState.kind === "loaded"
                             ? capitalViewState.summaries.get(investor.id) ?? null
                             : null
                         return (
-                            <div key={investor.id} className="border rounded-lg p-4 space-y-3 bg-white dark:bg-slate-950 shadow-sm">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <div className="font-semibold text-base">{investor.name}</div>
-                                        <div className="text-sm text-muted-foreground">{investor.contactInfo || "-"}</div>
+                            <div key={investor.id} className="rounded-lg border border-[var(--mudha-border)] bg-[var(--mudha-surface)] p-4 space-y-3 shadow-[var(--mudha-shadow-xs)]">
+                                <div className="flex justify-between items-start gap-3">
+                                    <div className="min-w-0">
+                                        <div className="font-semibold text-base text-[var(--mudha-text)]">{investor.name}</div>
+                                        <div className="text-sm text-[var(--mudha-text-secondary)]">{investor.contactInfo || "-"}</div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1">
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
                                         <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded-sm font-medium ${investor.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                {investor.isActive ? 'Aktif' : 'Nonaktif'}
-                                            </span>
+                                            <StatusBadge
+                                                label={investor.isActive ? "Aktif" : "Nonaktif"}
+                                                tone={investor.isActive ? "success" : "neutral"}
+                                            />
                                             {!isViewer && (
                                                 <Switch
                                                     checked={investor.isActive}
                                                     onCheckedChange={() => handleToggleActive(investor)}
                                                     className="scale-75"
+                                                    aria-label={`${investor.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${investor.name}`}
                                                 />
                                             )}
                                         </div>
-                                        <div className="font-bold text-lg text-emerald-600">
+                                        <div className="font-bold text-lg text-[var(--mudha-green-700)]">
                                             {investor.marginPercentage}%
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="text-sm border-t pt-3 mt-2 grid grid-cols-1 gap-2">
+                                <div className="text-sm border-t border-[var(--mudha-border-subtle)] pt-3 mt-2 grid grid-cols-1 gap-2">
                                     <div>
-                                        <span className="block text-xs text-muted-foreground mb-0.5">Info Rekening</span>
-                                        <span className="font-medium text-foreground">{investor.bankAccountDetails || "-"}</span>
+                                        <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Info Rekening</span>
+                                        <span className="font-medium text-[var(--mudha-text)]">{investor.bankAccountDetails || "-"}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-xs text-muted-foreground mb-0.5">Akun Terhubung</span>
+                                        <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Akun Terhubung</span>
                                         {connectedUser ? (
-                                            <span className="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                                            <span className="text-[var(--mudha-green-700)] font-medium bg-[var(--mudha-green-50)] px-2 py-0.5 rounded text-xs">
                                                 {connectedUser.name}
                                             </span>
                                         ) : (
@@ -870,10 +926,9 @@ export default function InvestorsPage() {
                                     </div>
                                 </div>
 
-                                {/* Capital Summary - Mobile */}
                                 <CapitalSummaryMobile summary={summary} viewState={capitalViewState} />
 
-                                <div className="flex items-center justify-end gap-2 border-t pt-3 mt-2">
+                                <div className="flex items-center justify-end gap-2 border-t border-[var(--mudha-border-subtle)] pt-3 mt-2">
                                     {!isViewer && (
                                         <>
                                             <ManagedCapitalDialog
@@ -884,7 +939,7 @@ export default function InvestorsPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="flex-1"
+                                                className="flex-1 min-h-[44px]"
                                                 onClick={() => handleEdit(investor)}
                                             >
                                                 <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
@@ -896,7 +951,7 @@ export default function InvestorsPage() {
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                className="flex-1"
+                                                className="flex-1 min-h-[44px]"
                                                 disabled={exportingInvestor === investor.id}
                                             >
                                                 <Download className="h-3.5 w-3.5 mr-2" />
@@ -925,139 +980,133 @@ export default function InvestorsPage() {
                                 </div>
                             </div>
                         )
-                    })
-                )}
-            </div>
+                    })}
+                </div>
+            )}
 
-            {/* Desktop Table View */}
-            <div className="hidden rounded-md border lg:block">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nama</TableHead>
-                            <TableHead>Kontak</TableHead>
-                            <TableHead>Margin (%)</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Rekening</TableHead>
-                            <TableHead>Terhubung ke Akun</TableHead>
-                            <TableHead className="text-right">
-                                <span className="inline-flex items-center gap-1">
-                                    <CircleDollarSign className="h-3.5 w-3.5" />
-                                    Saldo Modal
-                                </span>
-                            </TableHead>
-                            <TableHead className="text-right">
-                                <span className="inline-flex items-center gap-1">
-                                    <Wallet className="h-3.5 w-3.5" />
-                                    Alokasi Aktif
-                                </span>
-                            </TableHead>
-                            <TableHead className="text-right">Sisa Modal</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {investors.map((investor) => {
-                            const connectedUser = users.find(u => u.id === investor.userId)
-                            const summary = capitalViewState.kind === "loaded"
-                            ? capitalViewState.summaries.get(investor.id) ?? null
-                            : null
-                            return (
-                                <TableRow key={investor.id}>
-                                    <TableCell className="font-medium">{investor.name}</TableCell>
-                                    <TableCell>{investor.contactInfo}</TableCell>
-                                    <TableCell>{investor.marginPercentage}%</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            {!isViewer ? (
-                                                <Switch
-                                                    checked={investor.isActive}
-                                                    onCheckedChange={() => handleToggleActive(investor)}
-                                                />
-                                            ) : (
-                                                <span className={`text-xs px-2 py-1 rounded-full ${investor.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                                    {investor.isActive ? 'Aktif' : 'Nonaktif'}
-                                                </span>
-                                            )}
-                                            <span className="text-xs text-muted-foreground w-14">
-                                                {investor.isActive ? 'Aktif' : 'Nonaktif'}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{investor.bankAccountDetails}</TableCell>
-                                    <TableCell>
-                                        {connectedUser ? (
-                                            <span className="text-emerald-600 font-medium">{connectedUser.name}</span>
-                                        ) : (
-                                            <span className="text-muted-foreground italic text-xs">-</span>
-                                        )}
-                                    </TableCell>
-                                    <CapitalSummaryCell summary={summary} viewState={capitalViewState} />
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            {!isViewer ? (
-                                                <>
-                                                    <ManagedCapitalDialog
-                                                        investor={investor}
-                                                        currentSummary={summary}
-                                                        onUpdate={fetchCapitalSummaries}
-                                                    />
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleEdit(investor)}
-                                                    >
-                                                        <Pencil className="h-4 w-4 mr-1" /> Edit
-                                                    </Button>
-                                                </>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground italic">Read-only</span>
-                                            )}
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={exportingInvestor === investor.id}
-                                                    >
-                                                        <Download className="h-4 w-4 mr-1" />
-                                                        {exportingInvestor === investor.id ? "Exporting..." : "Ekspor"}
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Format Laporan</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleExportXLSX(investor.id, investor.name)}
-                                                        disabled={exportingInvestor === investor.id}
-                                                    >
-                                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
-                                                        <span>Ekspor Excel (XLSX)</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleExportPDF(investor.id, investor.name)}
-                                                        disabled={exportingInvestor === investor.id}
-                                                    >
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        <span>Ekspor PDF</span>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                        {investors.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={10} className="text-center py-4">
-                                    Belum ada data pemodal.
-                                </TableCell>
+            {/* ── Desktop Table View ── */}
+            {!investorsLoading && !investorsError && investors.length > 0 && (
+                <div className="overflow-x-auto rounded-lg border border-[var(--mudha-border)] bg-[var(--mudha-surface)] shadow-[var(--mudha-shadow-xs)] hidden lg:block">
+                    <Table className="min-w-[1100px]">
+                        <TableHeader>
+                            <TableRow className="hover:bg-[var(--mudha-surface-subtle)]">
+                                <TableHead>Nama</TableHead>
+                                <TableHead>Kontak</TableHead>
+                                <TableHead>Margin (%)</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Rekening</TableHead>
+                                <TableHead>Terhubung ke Akun</TableHead>
+                                <TableHead className="text-right">
+                                    <span className="inline-flex items-center gap-1">
+                                        <CircleDollarSign className="h-3.5 w-3.5" />
+                                        Saldo Modal
+                                    </span>
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    <span className="inline-flex items-center gap-1">
+                                        <Wallet className="h-3.5 w-3.5" />
+                                        Alokasi Aktif
+                                    </span>
+                                </TableHead>
+                                <TableHead className="text-right">Sisa Modal</TableHead>
+                                <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div >
-        </div >
+                        </TableHeader>
+                        <TableBody>
+                            {investors.map((investor) => {
+                                const connectedUser = users.find(u => u.id === investor.userId)
+                                const summary = capitalViewState.kind === "loaded"
+                                    ? capitalViewState.summaries.get(investor.id) ?? null
+                                    : null
+                                return (
+                                    <TableRow key={investor.id}>
+                                        <TableCell className="font-medium">{investor.name}</TableCell>
+                                        <TableCell>{investor.contactInfo}</TableCell>
+                                        <TableCell>{investor.marginPercentage}%</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {!isViewer ? (
+                                                    <Switch
+                                                        checked={investor.isActive}
+                                                        onCheckedChange={() => handleToggleActive(investor)}
+                                                        aria-label={`${investor.isActive ? 'Nonaktifkan' : 'Aktifkan'} ${investor.name}`}
+                                                    />
+                                                ) : (
+                                                    <StatusBadge
+                                                        label={investor.isActive ? "Aktif" : "Nonaktif"}
+                                                        tone={investor.isActive ? "success" : "neutral"}
+                                                    />
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{investor.bankAccountDetails}</TableCell>
+                                        <TableCell>
+                                            {connectedUser ? (
+                                                <span className="text-[var(--mudha-green-700)] font-medium">{connectedUser.name}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground italic text-xs">-</span>
+                                            )}
+                                        </TableCell>
+                                        <CapitalSummaryCell summary={summary} viewState={capitalViewState} />
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                {!isViewer ? (
+                                                    <>
+                                                        <ManagedCapitalDialog
+                                                            investor={investor}
+                                                            currentSummary={summary}
+                                                            onUpdate={fetchCapitalSummaries}
+                                                        />
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleEdit(investor)}
+                                                        >
+                                                            <Pencil className="h-4 w-4 mr-1" /> Edit
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground italic">Read-only</span>
+                                                )}
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={exportingInvestor === investor.id}
+                                                        >
+                                                            <Download className="h-4 w-4 mr-1" />
+                                                            {exportingInvestor === investor.id ? "Exporting..." : "Ekspor"}
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Format Laporan</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleExportXLSX(investor.id, investor.name)}
+                                                            disabled={exportingInvestor === investor.id}
+                                                        >
+                                                            <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                                            <span>Ekspor Excel (XLSX)</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleExportPDF(investor.id, investor.name)}
+                                                            disabled={exportingInvestor === investor.id}
+                                                        >
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            <span>Ekspor PDF</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+        </div>
     )
 }
