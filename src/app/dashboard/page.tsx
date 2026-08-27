@@ -21,7 +21,6 @@ import {
     Landmark,
     PiggyBank,
     ReceiptText,
-    Sparkles,
     TrendingUp,
     Wallet,
 } from "lucide-react"
@@ -41,6 +40,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { ErrorState } from "@/components/mudha/ErrorState"
 
 
 interface InvestorStat {
@@ -119,28 +120,28 @@ function MetricCard({
     tone?: "teal" | "lime" | "sky" | "amber"
     titleFull?: string
 }) {
-    const toneClass = {
-        teal: "from-teal-500 to-cyan-500 shadow-teal-500/20",
-        lime: "from-lime-400 to-emerald-500 shadow-lime-500/20",
-        sky: "from-sky-400 to-teal-500 shadow-sky-500/20",
-        amber: "from-amber-400 to-orange-500 shadow-amber-500/20",
+    const toneIcon = {
+        teal: "text-[var(--mudha-primary-700)]",
+        lime: "text-[var(--mudha-primary-700)]",
+        sky: "text-[var(--mudha-info-text)]",
+        amber: "text-[var(--mudha-status-warning-text)]",
     }[tone]
 
     const content = (
-        <Card className="group h-full rounded-lg border-teal-900/10 bg-white/90 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-950/5">
-            <CardContent className="flex h-full flex-col gap-4 p-4 sm:p-5">
+        <Card className="group h-full rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)] transition hover:shadow-[var(--mudha-shadow-sm)]">
+            <CardContent className="flex h-full flex-col gap-3 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
-                    <div className={`grid size-10 place-items-center rounded-lg bg-gradient-to-br ${toneClass} shadow-lg`}>
-                        <Icon className="size-5 text-white" />
+                    <div className={`grid size-9 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)]`}>
+                        <Icon className={`size-4 ${toneIcon}`} />
                     </div>
-                    {href && <ArrowUpRight className="size-4 text-teal-700 opacity-0 transition group-hover:opacity-100" />}
+                    {href && <ArrowUpRight className="size-4 text-[var(--mudha-text-muted)] opacity-0 transition group-hover:opacity-100" />}
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{title}</p>
-                    <p className="mt-2 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl" title={titleFull}>
+                    <p className="text-xs font-medium text-[var(--mudha-text-muted)]">{title}</p>
+                    <p className="mt-1 truncate text-xl font-bold tracking-tight text-[var(--mudha-text-main)] sm:text-2xl" title={titleFull}>
                         {value}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">{helper}</p>
+                    <p className="mt-0.5 text-xs text-[var(--mudha-text-muted)]">{helper}</p>
                 </div>
             </CardContent>
         </Card>
@@ -183,10 +184,10 @@ function MeasuredChartBox({ className, children }: { className: string; children
 
 function ChartPanel({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
     return (
-        <Card className="min-w-0 rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+        <Card className="min-w-0 rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
             <CardHeader className="pb-2">
-                <CardTitle className="text-base font-black tracking-tight text-slate-950">{title}</CardTitle>
-                <p className="text-xs text-slate-500">{subtitle}</p>
+                <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">{title}</CardTitle>
+                <p className="text-xs text-[var(--mudha-text-muted)]">{subtitle}</p>
             </CardHeader>
             <CardContent className="px-2 pb-4 sm:px-4">
                 <MeasuredChartBox className="h-[240px] min-h-[240px] w-full min-w-0 sm:h-[320px] sm:min-h-[320px]">
@@ -204,6 +205,7 @@ export default function DashboardPage() {
     const [exportingReport, setExportingReport] = useState(false)
     const [monthsRange, setMonthsRange] = useState<string>("6")
     const [calendarMode, setCalendarMode] = useState<"gregorian" | "hijri">("gregorian")
+    const [retryNonce, setRetryNonce] = useState(0)
 
     useEffect(() => {
         const controller = new AbortController()
@@ -214,6 +216,8 @@ export default function DashboardPage() {
         }, 15_000)
 
         const fetchStats = async () => {
+            setStats(null)
+            setError(null)
             try {
                 let url = `/api/dashboard?months=${monthsRange}`
                 if (selectedInvestorId && selectedInvestorId !== "all") {
@@ -263,15 +267,13 @@ export default function DashboardPage() {
             window.clearTimeout(timeoutId)
             controller.abort()
         }
-    }, [selectedInvestorId, monthsRange])
+    }, [selectedInvestorId, monthsRange, retryNonce])
 
-    if (error) return <div className="p-8 text-center text-red-500">{error}</div>
+    if (error && !stats) return <div className="space-y-4 pb-20"><ErrorState title="Gagal memuat dashboard" description={error} onRetry={() => setRetryNonce((value) => value + 1)} /></div>
     if (!stats) {
         return (
-            <div className="grid min-h-[60vh] place-items-center">
-                <div className="rounded-lg border border-teal-900/10 bg-white px-5 py-4 text-sm font-semibold text-teal-800 shadow-sm">
-                    Memuat dashboard...
-                </div>
+            <div className="space-y-4 pb-20">
+                <LoadingState variant="page" label="Memuat dashboard..." />
             </div>
         )
     }
@@ -364,22 +366,16 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-5 lg:space-y-7">
-            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
-                <div className="absolute -right-16 -top-20 size-64 rounded-full bg-teal-300/20 blur-3xl" />
-                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
+            <section className="rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
                 <div className="relative grid gap-5 p-5 sm:p-6 xl:grid-cols-[1.35fr_0.65fr] xl:p-8">
-                    <div className="space-y-5">
-                        <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
-                            <Sparkles className="size-3" />
-                            Dashboard baru
-                        </Badge>
-                        <div className="space-y-3">
-                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-100/75">{heroLabel}</p>
-                            <h1 className="max-w-2xl text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                                Profit sharing lebih jelas, cepat, dan rapi.
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100/70">{heroLabel}</p>
+                            <h1 className="max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl">
+                                Dashboard
                             </h1>
-                            <p className="max-w-xl text-sm leading-6 text-teal-50/75 sm:text-base">
-                                Pantau modal aktif, margin, unit terjual, dan performa pemodal dari satu layar yang lebih ringan dibaca.
+                            <p className="max-w-xl text-sm leading-6 text-teal-50/70 sm:text-base">
+                                Pantau modal aktif, margin, unit terjual, dan performa pemodal.
                             </p>
                         </div>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -387,46 +383,46 @@ export default function DashboardPage() {
                                 <Link
                                     key={action.href}
                                     href={action.href}
-                                    className="group flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white hover:text-teal-950"
+                                    className="group flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm font-medium text-white transition hover:bg-white hover:text-teal-950"
                                 >
-                                    <action.icon className="size-4 text-lime-200 transition group-hover:text-teal-600" />
+                                    <action.icon className="size-4 text-teal-200 transition group-hover:text-teal-600" />
                                     {action.label}
                                 </Link>
                             ))}
                         </div>
                     </div>
 
-                    <div className="grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
+                    <div className="grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/70">Total Margin</p>
-                                <p className="mt-2 text-3xl font-black tracking-tight">{formatCurrencyShort(stats.totalMargin)}</p>
+                                <p className="text-xs text-teal-100/70">Total Margin</p>
+                                <p className="mt-1 text-2xl font-bold tracking-tight">{formatCurrencyShort(stats.totalMargin)}</p>
                             </div>
-                            <div className="grid size-12 place-items-center rounded-lg bg-white text-teal-700">
-                                <TrendingUp className="size-6" />
+                            <div className="grid size-10 place-items-center rounded-lg bg-white text-teal-700">
+                                <TrendingUp className="size-5" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
                             <div>
                                 <p className="text-xs text-teal-100/65">Unit aktif</p>
-                                <p className="mt-1 text-xl font-black">{stats.activeUnits}</p>
+                                <p className="mt-1 text-lg font-bold">{stats.activeUnits}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-teal-100/65">Terjual</p>
-                                <p className="mt-1 text-xl font-black">{stats.completedTransactions}</p>
+                                <p className="mt-1 text-lg font-bold">{stats.completedTransactions}</p>
                             </div>
                             <div className="col-span-2">
                                 <p className="text-xs text-teal-100/65">Top pemodal</p>
-                                <p className="mt-1 truncate text-sm font-bold">{bestInvestor?.name || "Belum ada data"}</p>
+                                <p className="mt-1 truncate text-sm font-medium">{bestInvestor?.name || "Belum ada data"}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section className="grid gap-3 rounded-lg border border-teal-900/10 bg-white/80 p-3 shadow-sm backdrop-blur sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
+            <section className="grid gap-3 rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-3 shadow-[var(--mudha-shadow-xs)] sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                    <SelectTrigger className="h-11 w-full rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)]">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -440,14 +436,14 @@ export default function DashboardPage() {
                 </Select>
 
                 <Tabs value={calendarMode} onValueChange={(val) => setCalendarMode(val as "gregorian" | "hijri")} className="w-full lg:w-[190px]">
-                    <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg bg-teal-50">
+                    <TabsList className="grid h-11 w-full grid-cols-2 rounded-lg bg-[var(--mudha-surface-subtle)]">
                         <TabsTrigger value="gregorian" className="rounded-lg">Masehi</TabsTrigger>
                         <TabsTrigger value="hijri" className="rounded-lg">Hijri</TabsTrigger>
                     </TabsList>
                 </Tabs>
 
                 <Select value={monthsRange} onValueChange={setMonthsRange}>
-                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[170px]">
+                    <SelectTrigger className="h-11 w-full rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] lg:w-[170px]">
                         <SelectValue placeholder="Rentang Waktu" />
                     </SelectTrigger>
                     <SelectContent>
@@ -463,10 +459,10 @@ export default function DashboardPage() {
                             <Button
                                 variant="outline"
                                 disabled={exportingReport}
-                                className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-auto"
+                                className="h-11 w-full rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] lg:w-auto"
                             >
                                 <Download className="h-4 w-4" />
-                                {exportingReport ? "Exporting..." : "Ekspor"}
+                                {exportingReport ? "Mengekspor…" : "Ekspor"}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -607,9 +603,9 @@ export default function DashboardPage() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-7">
-                <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm lg:col-span-4">
+                <Card className="rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)] lg:col-span-4">
                     <CardHeader>
-                        <CardTitle className="text-base font-black text-slate-950">Aktivitas Terbaru</CardTitle>
+                        <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">Aktivitas Terbaru</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
@@ -620,7 +616,7 @@ export default function DashboardPage() {
                                     className="group flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3 transition hover:border-teal-200 hover:bg-teal-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 sm:flex-row sm:items-center"
                                 >
                                     <div className="flex min-w-0 flex-1 items-start gap-3">
-                                        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700 transition group-hover:bg-teal-600 group-hover:text-white">
+                                        <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)] text-[var(--mudha-primary-700)] transition group-hover:bg-[var(--mudha-primary-700)] group-hover:text-white">
                                             <ReceiptText className="size-5" />
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -648,16 +644,16 @@ export default function DashboardPage() {
                 </Card>
 
                 <div className="grid gap-4 lg:col-span-3">
-                    <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+                    <Card className="rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                         <CardHeader>
-                            <CardTitle className="text-base font-black text-slate-950">Performa Pemodal</CardTitle>
-                            <p className="text-xs text-slate-500">Ranking berdasarkan bagi hasil 30 hari terakhir.</p>
+                            <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">Performa Pemodal</CardTitle>
+                            <p className="text-xs text-[var(--mudha-text-muted)]">Ranking berdasarkan bagi hasil 30 hari terakhir.</p>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-3">
                                 {stats.investorStats?.slice(0, 5).map((investor, index) => (
                                     <div key={investor.id} className="flex items-center gap-3">
-                                        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-teal-50 text-xs font-black text-teal-700">
+                                        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)] text-xs font-bold text-[var(--mudha-primary-700)]">
                                             {index + 1}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -676,9 +672,9 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-lg border-teal-900/10 bg-white/90 shadow-sm">
+                    <Card className="rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                         <CardHeader>
-                            <CardTitle className="text-base font-black text-slate-950">Status Unit</CardTitle>
+                            <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">Status Unit</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid min-w-0 grid-cols-[120px_1fr] items-center gap-3">
