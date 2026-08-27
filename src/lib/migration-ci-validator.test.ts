@@ -33,6 +33,7 @@ describe("disposable migration CI validator", () => {
     expect(workflow).toContain('HEAD_SHA: ${{ github.event_name == \'pull_request\' && github.event.pull_request.head.sha || github.sha }}')
     expect(workflow).toContain('BASE_SHA: ${{ github.event_name == \'pull_request\' && github.event.pull_request.base.sha || github.event.before }}')
     expect(workflow).toContain('BASE_SHA="$(git merge-base origin/main "$HEAD_SHA")"')
+    expect(workflow).toContain('GITHUB_HEAD_SHA: ${{ github.event_name == \'pull_request\' && github.event.pull_request.head.sha || github.sha }}')
   })
 
   it("fails closed for invalid or unavailable git objects before diff", () => {
