@@ -24,6 +24,8 @@ describe("Transaction detail Mudha operational alignment", () => {
   it("has explicit loading/error/loaded view-state branches", () => {
     expect(source).toContain("isLoading")
     expect(source).toContain("setError")
+    expect(source).toContain("notFound")
+    expect(source).toContain("accessDenied")
     expect(source).toContain("setIsLoading")
     expect(source).toContain("LoadingState")
     expect(source).toContain("ErrorState")
@@ -37,6 +39,11 @@ describe("Transaction detail Mudha operational alignment", () => {
   it("validates fetch response and localizes error messages", () => {
     expect(source).toContain("if (!res.ok)")
     expect(source).toContain("Gagal memuat data transaksi")
+    expect(source).toContain("res.status === 404")
+    expect(source).toContain("setNotFound(true)")
+    expect(source).toContain("res.status === 401 || res.status === 403")
+    expect(source).toContain("setAccessDenied(true)")
+    expect(source).toContain("setTransaction(null)")
     expect(source).toContain("setIsLoading(true)")
     expect(source).toContain("setError(null)")
     expect(source).toContain("finally")

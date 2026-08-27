@@ -69,6 +69,8 @@ export default function TransactionDetailPage() {
     const [transaction, setTransaction] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [notFound, setNotFound] = useState(false)
+    const [accessDenied, setAccessDenied] = useState(false)
     const [isCostOpen, setIsCostOpen] = useState(false)
     const [editingCost, setEditingCost] = useState<any>(null)
 
@@ -100,8 +102,19 @@ export default function TransactionDetailPage() {
         if (!params.id) return
         setIsLoading(true)
         setError(null)
+        setNotFound(false)
+        setAccessDenied(false)
+        setTransaction(null)
         try {
             const res = await fetch(`/api/transactions/${params.id}`)
+            if (res.status === 404) {
+                setNotFound(true)
+                return
+            }
+            if (res.status === 401 || res.status === 403) {
+                setAccessDenied(true)
+                return
+            }
             if (!res.ok) throw new Error("Gagal memuat data transaksi")
             const data = await res.json()
             setTransaction(data)
@@ -157,6 +170,28 @@ export default function TransactionDetailPage() {
         )
     }
 
+    if (notFound && !transaction) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Data tidak ditemukan"
+                    description="Transaksi yang Anda cari tidak tersedia."
+                />
+            </div>
+        )
+    }
+
+    if (accessDenied && !transaction) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Akses tidak tersedia"
+                    description="Data transaksi tidak dapat ditampilkan untuk sesi ini."
+                />
+            </div>
+        )
+    }
+
     if (error && !transaction) {
         return (
             <div className="space-y-4 pb-20">
@@ -169,16 +204,7 @@ export default function TransactionDetailPage() {
         )
     }
 
-    if (!transaction) {
-        return (
-            <div className="space-y-4 pb-20">
-                <ErrorState
-                    title="Data tidak ditemukan"
-                    description="Transaksi yang Anda cari tidak tersedia."
-                />
-            </div>
-        )
-    }
+    if (!transaction) return null
 
     const costsInvestor = transaction.costs
         .filter((c: any) => c.payer === "INVESTOR")
