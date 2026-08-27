@@ -425,6 +425,8 @@ export default function InvestorsPage() {
     const [exportingInvestor, setExportingInvestor] = useState<string | null>(null)
     const [isExportingAll, setIsExportingAll] = useState(false)
     const [users, setUsers] = useState<User[]>([])
+    const [usersLoading, setUsersLoading] = useState(true)
+    const [usersError, setUsersError] = useState<string | null>(null)
     const [capitalViewState, setCapitalViewState] = useState<ManagedCapitalViewState>({ kind: "loading" })
     const capitalRequestId = useRef(0)
     const capitalController = useRef<AbortController | null>(null)
@@ -459,14 +461,17 @@ export default function InvestorsPage() {
     }, [])
 
     const fetchUsers = useCallback(async () => {
+        setUsersLoading(true)
+        setUsersError(null)
         try {
             const res = await fetch('/api/users')
-            if (res.ok) {
-                const data = await res.json()
-                setUsers(data.filter((u: any) => u.role === "INVESTOR"))
-            }
+            if (!res.ok) throw new Error("Gagal memuat akun")
+            const data = await res.json()
+            setUsers(data.filter((u: any) => u.role === "INVESTOR"))
         } catch {
-            // silent — users are supplementary
+            setUsersError("Akun terhubung tidak tersedia.")
+        } finally {
+            setUsersLoading(false)
         }
     }, [])
 
@@ -916,7 +921,11 @@ export default function InvestorsPage() {
                                     </div>
                                     <div>
                                         <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Akun Terhubung</span>
-                                        {connectedUser ? (
+                                        {usersLoading ? (
+                                            <span className="text-muted-foreground italic text-xs">Memuat akun...</span>
+                                        ) : usersError ? (
+                                            <span className="text-muted-foreground italic text-xs">{usersError}</span>
+                                        ) : connectedUser ? (
                                             <span className="text-[var(--mudha-green-700)] font-medium bg-[var(--mudha-green-50)] px-2 py-0.5 rounded text-xs">
                                                 {connectedUser.name}
                                             </span>
@@ -1041,7 +1050,11 @@ export default function InvestorsPage() {
                                         </TableCell>
                                         <TableCell>{investor.bankAccountDetails}</TableCell>
                                         <TableCell>
-                                            {connectedUser ? (
+                                            {usersLoading ? (
+                                                <span className="text-muted-foreground italic text-xs">Memuat akun...</span>
+                                            ) : usersError ? (
+                                                <span className="text-muted-foreground italic text-xs">{usersError}</span>
+                                            ) : connectedUser ? (
                                                 <span className="text-[var(--mudha-green-700)] font-medium">{connectedUser.name}</span>
                                             ) : (
                                                 <span className="text-muted-foreground italic text-xs">-</span>

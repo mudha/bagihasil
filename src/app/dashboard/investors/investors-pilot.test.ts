@@ -55,6 +55,20 @@ describe("Investors page — Mudha Operational pilot", () => {
     expect(page).toContain("!investorsLoading && !investorsError && investors.length > 0")
   })
 
+  it("tracks users loading and failure separately from investor list", () => {
+    expect(page).toContain("usersLoading")
+    expect(page).toContain("usersError")
+    expect(page).toContain("Memuat akun...")
+    expect(page).toContain("Akun terhubung tidak tersedia.")
+    expect(page).toContain("Akun Terhubung")
+  })
+
+  it("does not state that an account is unconnected while users data is unavailable", () => {
+    expect(page).toContain("usersLoading ? (")
+    expect(page).toContain("usersError ? (")
+    expect(page).toContain("connectedUser ? (")
+  })
+
   // ── StatusBadge ──
   it("uses StatusBadge for active/inactive labels", () => {
     expect(page).toContain('import { StatusBadge } from')
