@@ -7,18 +7,28 @@ const mobileBlock = unitsPage.match(
 )?.[1] ?? ""
 
 describe("unit list mobile detail affordance", () => {
-    it("places one semantic Detail button before the separate Aksi control", () => {
-        expect(mobileBlock).toContain("<Eye className=\"mr-1.5 h-4 w-4\" /> Detail")
-        expect(mobileBlock.match(/<Eye className=/g)).toHaveLength(1)
-        expect(mobileBlock.indexOf("onClick={() => setViewingUnit(unit)}")).toBeGreaterThan(-1)
-        expect(mobileBlock.indexOf("onClick={() => setViewingUnit(unit)}")).toBeLessThan(
-            mobileBlock.indexOf("<DropdownMenu>", mobileBlock.indexOf("onClick={() => setViewingUnit(unit)}")),
-        )
+    it("delegates mobile card rendering to UnitCardMobile with required props", () => {
+        expect(mobileBlock).toContain("<UnitCardMobile")
+        expect(mobileBlock).toContain("key={unit.id}")
+        expect(mobileBlock).toContain("unit={unit}")
+        expect(mobileBlock).toContain("duplicateInfo={getDuplicateInfo(units, unit)}")
+        expect(mobileBlock).toContain("isViewer={isViewer}")
+        expect(mobileBlock).toContain("investorTone={investorTone}")
+        expect(mobileBlock).toContain("onDetail=")
+        expect(mobileBlock).toContain("onEdit=")
+        expect(mobileBlock).toContain("onDelete=")
     })
 
-    it("keeps Detail and Aksi as separate controls without a unit route link", () => {
-        expect(mobileBlock).toContain("<Button")
-        expect(mobileBlock).toContain("{!isViewer && (")
+    it("does not contain inline Detail/Aksi JSX in the mobile block", () => {
+        expect(mobileBlock).not.toContain("<Eye className=\"mr-1.5 h-4 w-4\" /> Detail")
+        expect(mobileBlock).not.toContain("<Button")
+        expect(mobileBlock).not.toContain("<DropdownMenu>")
+        expect(mobileBlock).not.toContain("{!isViewer && (")
+    })
+
+    it("retains the empty state and no route link", () => {
+        expect(mobileBlock).toContain("Tidak ada unit yang cocok.")
+        expect(mobileBlock).toContain("Belum ada data unit.")
         expect(mobileBlock).not.toMatch(/Link href={`\/dashboard\/units\/\$\{/)
         expect(unitsPage).not.toContain("src/app/dashboard/units/[id]")
     })
