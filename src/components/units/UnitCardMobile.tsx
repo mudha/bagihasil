@@ -15,7 +15,18 @@ import { cn } from "@/lib/utils"
 import { getInvestorInitials } from "@/lib/investor-initials"
 import { getTaxStatus } from "@/lib/unit-tax-status"
 import { format, isPast, isWithinInterval, addDays } from "date-fns"
-import type { Unit } from "@/app/dashboard/units/page"
+export interface UnitCardUnit {
+    id: string
+    name: string
+    plateNumber: string
+    code: string
+    status: "AVAILABLE" | "SOLD" | "MAINTENANCE"
+    investor: {
+        name: string
+    }
+    imageUrl?: string | null
+    taxDueDate?: string | Date | null
+}
 
 export interface InvestorTone {
     accent: string
@@ -32,7 +43,7 @@ export interface DuplicateInfo {
 }
 
 export interface UnitCardMobileProps {
-    unit: Unit
+    unit: UnitCardUnit
     duplicateInfo: DuplicateInfo
     isViewer: boolean
     investorTone: InvestorTone

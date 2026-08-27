@@ -45,7 +45,7 @@ describe("UnitCardMobile — component contract", () => {
 
     it("defines a typed props interface", () => {
         expect(componentSource).toContain("export interface UnitCardMobileProps")
-        expect(componentSource).toContain("unit: Unit")
+        expect(componentSource).toContain("unit: UnitCardUnit")
         expect(componentSource).toContain("duplicateInfo: DuplicateInfo")
         expect(componentSource).toContain("isViewer: boolean")
         expect(componentSource).toContain("investorTone: InvestorTone")
@@ -56,6 +56,8 @@ describe("UnitCardMobile — component contract", () => {
 
     it("imports getTaxStatus from the shared helper", () => {
         expect(componentSource).toContain('import { getTaxStatus } from "@/lib/unit-tax-status"')
+        expect(componentSource).not.toContain("@/app/dashboard/units/page")
+        expect(componentSource).not.toContain("getDuplicateInfo")
     })
 
     it("renders the Eye Detail button before the Aksi DropdownMenu", () => {

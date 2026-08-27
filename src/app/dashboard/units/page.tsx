@@ -94,7 +94,7 @@ const unitSchema = z.object({
     chassisNumber: z.string().optional().nullable(),
 })
 
-export interface Unit {
+interface Unit {
     id: string
     name: string
     plateNumber: string
