@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+
 import {
     Table,
     TableBody,
@@ -33,7 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Eye, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -902,18 +902,11 @@ function UnitsPageContent() {
                 description="Kelola stok aktif, unit terjual, pajak, foto kendaraan, dan data STNK."
             />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <SummaryMetric label="Total" value={unitSummary.total} icon={<Car className="h-4 w-4" />} tone="neutral" loading={unitsLoading} />
-                <SummaryMetric label="Aktif" value={unitSummary.available} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={unitsLoading} />
-                <SummaryMetric label="Terjual" value={unitSummary.sold} icon={<Car className="h-4 w-4" />} tone="info" loading={unitsLoading} />
-                <SummaryMetric label="Servis" value={unitSummary.maintenance} icon={<Wrench className="h-4 w-4" />} tone="warning" loading={unitsLoading} />
+                <SummaryMetric label="Total" value={unitSummary.total} icon={<Car className="h-4 w-4" />} tone="neutral" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Aktif" value={unitSummary.available} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Terjual" value={unitSummary.sold} icon={<Car className="h-4 w-4" />} tone="info" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Servis" value={unitSummary.maintenance} icon={<Wrench className="h-4 w-4" />} tone="warning" loading={unitsLoading || !!unitsError} />
             </div>
-
-            {unitsLoading ? (
-                <LoadingState variant="table" label="Memuat data unit..." />
-            ) : unitsError ? (
-                <ErrorState title="Gagal memuat data unit" description={unitsError} onRetry={fetchUnits} />
-            ) : (
-            <>
 
             {!isViewer && (
                 <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
@@ -1406,6 +1399,12 @@ function UnitsPageContent() {
                 </Select>
             </div>
 
+            {unitsLoading ? (
+                <LoadingState variant="table" label="Memuat data unit..." />
+            ) : unitsError ? (
+                <ErrorState title="Gagal memuat data unit" description={unitsError} onRetry={fetchUnits} />
+            ) : (
+            <>
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedUnits.length === 0 ? (

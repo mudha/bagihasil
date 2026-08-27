@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+
 import {
     Table,
     TableBody,
@@ -762,18 +762,11 @@ function TransactionsPageContent() {
                 description="Pantau transaksi berjalan, status bayar, nilai beli, dan laporan selesai."
             />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <SummaryMetric label="Total" value={transactionSummary.total} icon={<ReceiptText className="h-4 w-4" />} tone="neutral" loading={txLoading} />
-                <SummaryMetric label="Berjalan" value={transactionSummary.active} icon={<TrendingUp className="h-4 w-4" />} tone="info" loading={txLoading} />
-                <SummaryMetric label="Selesai" value={transactionSummary.completed} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={txLoading} />
-                <SummaryMetric label="Nilai beli" value={formatCurrencyShort(transactionSummary.buyValue)} icon={<Wallet className="h-4 w-4" />} tone="warning" loading={txLoading} />
+                <SummaryMetric label="Total" value={transactionSummary.total} icon={<ReceiptText className="h-4 w-4" />} tone="neutral" loading={txLoading || !!txError} />
+                <SummaryMetric label="Berjalan" value={transactionSummary.active} icon={<TrendingUp className="h-4 w-4" />} tone="info" loading={txLoading || !!txError} />
+                <SummaryMetric label="Selesai" value={transactionSummary.completed} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={txLoading || !!txError} />
+                <SummaryMetric label="Nilai beli" value={formatCurrencyShort(transactionSummary.buyValue)} icon={<Wallet className="h-4 w-4" />} tone="warning" loading={txLoading || !!txError} />
             </div>
-
-            {txLoading ? (
-                <LoadingState variant="table" label="Memuat data transaksi..." />
-            ) : txError ? (
-                <ErrorState title="Gagal memuat data transaksi" description={txError} onRetry={fetchTransactions} />
-            ) : (
-            <>
 
             <div className="rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur">
                 <div className="grid w-full grid-cols-2 gap-2 [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
@@ -1154,6 +1147,12 @@ function TransactionsPageContent() {
                     </Select>
             </div>
 
+            {txLoading ? (
+                <LoadingState variant="table" label="Memuat data transaksi..." />
+            ) : txError ? (
+                <ErrorState title="Gagal memuat data transaksi" description={txError} onRetry={fetchTransactions} />
+            ) : (
+            <>
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedTransactions.length === 0 ? (
