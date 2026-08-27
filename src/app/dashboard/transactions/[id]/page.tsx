@@ -26,7 +26,6 @@ import {
     ImageIcon,
     Pencil,
     Plus,
-    ReceiptText,
     Trash2,
     TrendingUp,
     Upload,
@@ -40,30 +39,39 @@ import { AddPaymentDialog } from "@/components/transactions/AddPaymentDialog"
 import { AddCostDialog } from "@/components/transactions/AddCostDialog"
 import { FinalizeTransactionDialog } from "@/components/transactions/FinalizeTransactionDialog"
 import { EditTransactionDetailsDialog } from "@/components/transactions/EditTransactionDetailsDialog"
-
 import { ManageCostProofsDialog } from "@/components/transactions/ManageCostProofsDialog"
 import { UpdateTransactionProofDialog } from "@/components/transactions/UpdateTransactionProofDialog"
 import { exportTransactionReportPDF } from "@/lib/export-utils"
 import { UpdateUnitImageDialog } from "@/components/units/UpdateUnitImageDialog"
 import { EditProfitSharingDialog } from "@/components/transactions/EditProfitSharingDialog"
 import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
+import { StatusBadge, type StatusBadgeTone } from "@/components/mudha/StatusBadge"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { ErrorState } from "@/components/mudha/ErrorState"
 
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0)
 
-const getStatusTone = (status: string) => {
-    if (status === 'COMPLETED') return "border-lime-200 bg-lime-100 text-lime-900"
-    if (status === 'ON_PROCESS') return "border-amber-200 bg-amber-100 text-amber-900"
-    return "border-slate-200 bg-white text-slate-800"
+const getStatusBadgeTone = (status: string): StatusBadgeTone => {
+    if (status === 'COMPLETED') return "success"
+    if (status === 'ON_PROCESS') return "warning"
+    return "neutral"
+}
+
+const getStatusLabel = (status: string) => {
+    if (status === 'COMPLETED') return "Selesai"
+    if (status === 'ON_PROCESS') return "Berjalan"
+    return status.replaceAll("_", " ")
 }
 
 export default function TransactionDetailPage() {
     const params = useParams()
     const [transaction, setTransaction] = useState<any>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [isCostOpen, setIsCostOpen] = useState(false)
     const [editingCost, setEditingCost] = useState<any>(null)
 
-    // New states
     const [proofCost, setProofCost] = useState<any>(null)
     const [isProofCostOpen, setIsProofCostOpen] = useState(false)
     const [proofType, setProofType] = useState<'BUY' | 'SELL' | null>(null)
@@ -90,13 +98,17 @@ export default function TransactionDetailPage() {
 
     const fetchTransaction = useCallback(async () => {
         if (!params.id) return
+        setIsLoading(true)
+        setError(null)
         try {
             const res = await fetch(`/api/transactions/${params.id}`)
-            if (!res.ok) throw new Error("Failed to fetch")
+            if (!res.ok) throw new Error("Gagal memuat data transaksi")
             const data = await res.json()
             setTransaction(data)
-        } catch (error) {
-            console.error("Error fetching transaction:", error)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Terjadi kesalahan saat memuat data")
+        } finally {
+            setIsLoading(false)
         }
     }, [params.id])
 
@@ -137,15 +149,33 @@ export default function TransactionDetailPage() {
         }
     }
 
+    if (isLoading && !transaction) {
+        return (
+            <div className="space-y-4 pb-20">
+                <LoadingState variant="page" label="Memuat detail transaksi..." />
+            </div>
+        )
+    }
+
+    if (error && !transaction) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Gagal memuat detail transaksi"
+                    description={error}
+                    onRetry={fetchTransaction}
+                />
+            </div>
+        )
+    }
+
     if (!transaction) {
         return (
             <div className="space-y-4 pb-20">
-                <div className="h-56 animate-pulse rounded-lg bg-teal-900/10" />
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {[1, 2, 3, 4].map((item) => (
-                        <div key={item} className="h-32 animate-pulse rounded-lg bg-slate-100" />
-                    ))}
-                </div>
+                <ErrorState
+                    title="Data tidak ditemukan"
+                    description="Transaksi yang Anda cari tidak tersedia."
+                />
             </div>
         )
     }
@@ -167,192 +197,167 @@ export default function TransactionDetailPage() {
 
     return (
         <div className="space-y-5 pb-24 lg:space-y-7">
-            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
-                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-cyan-300/20 blur-3xl" />
-                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                <div className="relative grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch xl:p-8">
-                    <div className="min-w-0 space-y-5">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Link href="/dashboard/transactions">
-                                <Button variant="outline" size="icon" className="size-10 shrink-0 rounded-lg border-white/20 bg-white/10 text-white hover:bg-white hover:text-teal-950">
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <Badge className="min-h-9 gap-1.5 border-white/15 bg-white/10 px-3 text-white hover:bg-white/15">
-                                <ReceiptText className="size-3.5" />
-                                Detail transaksi
-                            </Badge>
-                            <Badge className={`min-h-9 border px-3 font-black ${getStatusTone(transaction.status)}`}>
-                                {transaction.status.replaceAll("_", " ")}
-                            </Badge>
+            <section className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4 shadow-[var(--mudha-shadow-xs)] sm:p-6 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6 xl:p-8">
+                <div className="min-w-0 space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link href="/dashboard/transactions">
+                            <Button variant="outline" size="icon" className="size-10 shrink-0">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                        <StatusBadge
+                            label={getStatusLabel(transaction.status)}
+                            tone={getStatusBadgeTone(transaction.status)}
+                        />
+                    </div>
+
+                    <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <h1 className="min-w-0 max-w-full text-2xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-3xl">
+                                {transaction.transactionCode}
+                            </h1>
+                            <EditTransactionDetailsDialog
+                                transaction={transaction}
+                                onSuccess={fetchTransaction}
+                                triggerLabel=""
+                                triggerClassName="size-9 shrink-0 rounded-lg border p-0"
+                            />
                         </div>
-
-                        <div className="min-w-0">
-                            <div className="mb-2 flex flex-wrap items-start gap-2">
-                                <h1 className="min-w-0 max-w-full text-2xl font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere] sm:text-4xl lg:text-5xl">
-                                    {transaction.transactionCode}
-                                </h1>
-                                <EditTransactionDetailsDialog
-                                    transaction={transaction}
-                                    onSuccess={fetchTransaction}
-                                    triggerLabel=""
-                                    triggerClassName="size-9 shrink-0 rounded-lg border-white/20 bg-white/10 p-0 text-white hover:bg-white hover:text-teal-950"
-                                />
-                            </div>
-                            <p className="max-w-2xl text-sm leading-relaxed text-teal-50/80 sm:text-base">
-                                Ringkasan transaksi unit, modal, dokumen, dan biaya operasional dalam satu tampilan yang lebih mudah dibaca.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-lg border border-white/10 bg-white/10 p-3 backdrop-blur">
-                                <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-lime-100">
-                                    <Car className="size-4" />
-                                    Unit kendaraan
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <button
-                                        type="button"
-                                        className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-lg border border-white/20 bg-white/10 text-white transition hover:bg-white/15"
-                                        onClick={() => transaction.unit.imageUrl && setViewPaymentProof(transaction.unit.imageUrl)}
-                                        title="Lihat Foto Unit"
-                                    >
-                                        {transaction.unit.imageUrl ? (
-                                            <div className="relative h-full w-full">
-                                                <Image
-                                                    src={transaction.unit.imageUrl}
-                                                    alt="Unit"
-                                                    fill
-                                                    className="object-cover"
-                                                    style={{ top: 0, left: 0 }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <ImageIcon className="size-5 text-teal-50/70" />
-                                        )}
-                                    </button>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                                            <span className="rounded-full bg-lime-200/20 px-2 py-1 font-mono text-[11px] font-black text-lime-100 [overflow-wrap:anywhere]">
-                                                {transaction.unit.code}
-                                            </span>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="size-8 shrink-0 rounded-lg p-0 text-white hover:bg-white/10"
-                                                onClick={() => setIsUnitImageOpen(true)}
-                                                title="Update Foto Unit"
-                                            >
-                                                <Camera className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                        <p className="text-base font-black leading-snug text-white [overflow-wrap:anywhere]">
-                                            {transaction.unit.name}
-                                        </p>
-                                        <p className="mt-1 text-sm leading-relaxed text-teal-50/75 [overflow-wrap:anywhere]">
-                                            {transaction.unit.plateNumber}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="rounded-lg border border-white/10 bg-white/10 p-3 backdrop-blur">
-                                <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-lime-100">
-                                    <Calendar className="size-4" />
-                                    Tanggal transaksi
-                                </div>
-                                <p className="text-base font-black leading-snug text-white [overflow-wrap:anywhere]">
-                                    {formatHijriFull(new Date(transaction.buyDate))}
-                                </p>
-                                <p className="mt-1 text-sm text-teal-50/75">
-                                    Tanggal beli unit
-                                </p>
-                            </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-[var(--mudha-text-secondary)]">
+                            <span className="flex items-center gap-1.5">
+                                <Car className="size-4 text-[var(--mudha-primary-700)]" />
+                                {transaction.unit.name}
+                            </span>
+                            <span className="text-[var(--mudha-text-muted)]">·</span>
+                            <span className="flex items-center gap-1.5">
+                                <Calendar className="size-4 text-[var(--mudha-text-muted)]" />
+                                {formatHijriFull(new Date(transaction.buyDate))}
+                            </span>
                         </div>
                     </div>
 
-                    <div className="flex min-w-0 flex-col justify-between gap-3 rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur">
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-teal-50/70">Total modal</p>
-                            <p className="mt-2 text-3xl font-black leading-tight text-white [overflow-wrap:anywhere] sm:text-4xl">
-                                {formatCurrency(totalCapital)}
-                            </p>
-                            <p className="mt-2 text-sm leading-relaxed text-teal-50/75">
-                                Gabungan modal pemodal dan pengelola, termasuk biaya operasional yang sudah tercatat.
-                            </p>
-                        </div>
-                        <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-1">
-                            {transaction.status === 'COMPLETED' && (
-                                <Button
-                                    variant="outline"
-                                    onClick={handleExportPDF}
-                                    disabled={isExporting}
-                                    className="min-h-11 rounded-lg border-white/20 bg-white text-teal-950 hover:bg-lime-100"
-                                >
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    {isExporting ? "Exporting..." : "Laporan PDF"}
-                                </Button>
-                            )}
-                            {transaction.status !== 'COMPLETED' && (
-                                <div className="rounded-lg border border-amber-200/30 bg-amber-100/15 p-3 text-sm font-semibold leading-relaxed text-amber-50">
-                                    Transaksi masih berjalan. Lengkapi biaya dan bukti sebelum finalisasi.
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            className="size-12 shrink-0 overflow-hidden rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-subtle)] transition hover:bg-[var(--mudha-brand-soft)]"
+                            onClick={() => transaction.unit.imageUrl && setViewPaymentProof(transaction.unit.imageUrl)}
+                            title="Lihat Foto Unit"
+                        >
+                            {transaction.unit.imageUrl ? (
+                                <div className="relative h-full w-full">
+                                    <Image
+                                        src={transaction.unit.imageUrl}
+                                        alt="Unit"
+                                        fill
+                                        className="object-cover"
+                                        style={{ top: 0, left: 0 }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="grid size-full place-items-center">
+                                    <ImageIcon className="size-5 text-[var(--mudha-text-muted)]" />
                                 </div>
                             )}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-[var(--mudha-border-brand)] bg-[var(--mudha-brand-soft)] px-2 py-0.5 font-mono text-[11px] font-bold text-[var(--mudha-primary-900)] [overflow-wrap:anywhere]">
+                                    {transaction.unit.code}
+                                </span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="size-8 shrink-0 rounded-lg p-0"
+                                    onClick={() => setIsUnitImageOpen(true)}
+                                    title="Update Foto Unit"
+                                >
+                                    <Camera className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="mt-1 text-sm text-[var(--mudha-text-secondary)] [overflow-wrap:anywhere]">
+                                {transaction.unit.plateNumber}
+                            </p>
                         </div>
+                    </div>
+                </div>
+
+                <div className="mt-4 flex min-w-0 flex-col justify-between gap-3 rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-subtle)] p-4 lg:mt-0">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)]">Total modal</p>
+                        <p className="mt-2 text-2xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-3xl">
+                            {formatCurrency(totalCapital)}
+                        </p>
+                    </div>
+                    <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-1">
+                        {transaction.status === 'COMPLETED' && (
+                            <Button
+                                variant="outline"
+                                onClick={handleExportPDF}
+                                disabled={isExporting}
+                                className="min-h-11 rounded-lg"
+                            >
+                                <FileText className="mr-2 h-4 w-4" />
+                                {isExporting ? "Mengekspor…" : "Laporan PDF"}
+                            </Button>
+                        )}
+                        {transaction.status !== 'COMPLETED' && (
+                            <div className="rounded-lg border border-[var(--mudha-status-warning-border)] bg-[var(--mudha-status-warning-bg)] p-3 text-sm font-medium leading-relaxed text-[var(--mudha-status-warning-text)]">
+                                Transaksi masih berjalan. Lengkapi biaya dan bukti sebelum finalisasi.
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-                <Card className="overflow-hidden rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="overflow-hidden rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><Wallet className="size-4 text-teal-600" /> Modal dari Pemodal</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)] sm:text-sm"><Wallet className="size-4 text-[var(--mudha-primary-700)]" /> Modal dari Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
+                        <div className="text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-2xl">
                             {formatCurrency(baseInvestorCapital)}
                         </div>
-                        <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--mudha-text-muted)]">
                             {transaction.initialInvestorCapital ? "Modal awal custom" : "Harga Beli Unit"}
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="overflow-hidden rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="overflow-hidden rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><TrendingUp className="size-4 text-sky-600" /> Total Modal Pemodal</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)] sm:text-sm"><TrendingUp className="size-4 text-[var(--mudha-primary-600)]" /> Total Modal Pemodal</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
+                        <div className="text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-2xl">
                             {formatCurrency(totalCapitalInvestor)}
                         </div>
-                        <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--mudha-text-muted)]">
                             Beli + Biaya ({formatCurrency(costsInvestor)})
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="overflow-hidden rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="overflow-hidden rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:text-sm"><Users className="size-4 text-amber-600" /> Total Modal Pengelola</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)] sm:text-sm"><Users className="size-4 text-[var(--mudha-status-warning-text)]" /> Total Modal Pengelola</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
+                        <div className="text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-2xl">
                             {formatCurrency(totalCapitalManager)}
                         </div>
-                        <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--mudha-text-muted)]">
                             Modal ({formatCurrency(baseManagerCapital)}) + Biaya ({formatCurrency(costsManager)})
                         </p>
                     </CardContent>
                 </Card>
-                <Card className="overflow-hidden rounded-lg border-lime-200 bg-lime-50 shadow-sm">
+                <Card className="overflow-hidden rounded-lg border border-[var(--mudha-border-brand)] bg-[var(--mudha-brand-soft)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-lime-800 sm:text-sm"><DollarSign className="size-4 text-lime-600" /> Total Modal Keseluruhan</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mudha-primary-900)] sm:text-sm"><DollarSign className="size-4 text-[var(--mudha-primary-700)]" /> Total Modal Keseluruhan</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
+                        <div className="text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere] sm:text-2xl">
                             {formatCurrency(totalCapital)}
                         </div>
-                        <p className="mt-2 text-xs leading-relaxed text-lime-800/70">
+                        <p className="mt-2 text-xs leading-relaxed text-[var(--mudha-text-secondary)]">
                             Pemodal + Pengelola
                         </p>
                     </CardContent>
@@ -362,11 +367,11 @@ export default function TransactionDetailPage() {
 
 
             {transaction.status === 'COMPLETED' && transaction.profitSharing && (
-                <Card className="overflow-hidden rounded-lg border-lime-200 bg-gradient-to-br from-lime-50 to-white shadow-sm">
+                <Card className="overflow-hidden rounded-lg border-[var(--mudha-border-brand)] bg-[var(--mudha-brand-soft)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                         <div>
-                            <CardTitle className="text-lg font-black text-lime-950">Hasil Penjualan</CardTitle>
-                            <p className="mt-1 text-sm leading-relaxed text-lime-800/70">Ringkasan margin dan pembagian profit transaksi selesai.</p>
+                            <CardTitle className="text-lg font-bold text-[var(--mudha-text-main)]">Hasil Penjualan</CardTitle>
+                            <p className="mt-1 text-sm leading-relaxed text-[var(--mudha-text-secondary)]">Ringkasan margin dan pembagian profit transaksi selesai.</p>
                         </div>
                         <EditProfitSharingDialog
                             transactionId={transaction.id}
@@ -376,27 +381,27 @@ export default function TransactionDetailPage() {
                         />
                     </CardHeader>
                     <CardContent className="grid gap-3 p-4 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0 lg:grid-cols-4">
-                        <div className="rounded-lg border border-lime-200 bg-white p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-lime-800">Harga Jual</p>
-                            <p className="mt-2 text-xl font-black leading-tight text-lime-950 [overflow-wrap:anywhere]">
+                        <div className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)]">Harga Jual</p>
+                            <p className="mt-2 text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere]">
                                 {formatCurrency(transaction.sellPrice)}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-lime-200 bg-white p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-lime-800">Margin Bersih</p>
-                            <p className="mt-2 text-xl font-black leading-tight text-lime-950 [overflow-wrap:anywhere]">
+                        <div className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)]">Margin Bersih</p>
+                            <p className="mt-2 text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere]">
                                 {formatCurrency(transaction.profitSharing.netMargin)}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-lime-200 bg-white p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-lime-800">Profit Pemodal ({transaction.profitSharing.investorSharePercentage}%)</p>
-                            <p className="mt-2 text-xl font-black leading-tight text-lime-950 [overflow-wrap:anywhere]">
+                        <div className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)]">Profit Pemodal ({transaction.profitSharing.investorSharePercentage}%)</p>
+                            <p className="mt-2 text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere]">
                                 {formatCurrency(transaction.profitSharing.investorProfitAmount)}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-lime-200 bg-white p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-lime-800">Profit Pengelola ({transaction.profitSharing.managerSharePercentage}%)</p>
-                            <p className="mt-2 text-xl font-black leading-tight text-lime-950 [overflow-wrap:anywhere]">
+                        <div className="rounded-lg border border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--mudha-text-muted)]">Profit Pengelola ({transaction.profitSharing.managerSharePercentage}%)</p>
+                            <p className="mt-2 text-xl font-bold leading-tight text-[var(--mudha-text-main)] [overflow-wrap:anywhere]">
                                 {formatCurrency(transaction.profitSharing.managerProfitAmount)}
                             </p>
                         </div>
