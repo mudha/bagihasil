@@ -30,7 +30,8 @@ describe("Dashboard operational alignment", () => {
   it("replaces error display with Mudha ErrorState with retry", () => {
     expect(source).toContain("ErrorState")
     expect(source).toContain("onRetry=")
-    expect(source).toContain("fetchStats")
+    expect(source).toContain("retryNonce")
+    expect(source).toContain("setRetryNonce")
   })
 
   it("MetricCard uses Mudha surface tokens, no gradient icon tiles", () => {

@@ -205,6 +205,7 @@ export default function DashboardPage() {
     const [exportingReport, setExportingReport] = useState(false)
     const [monthsRange, setMonthsRange] = useState<string>("6")
     const [calendarMode, setCalendarMode] = useState<"gregorian" | "hijri">("gregorian")
+    const [retryNonce, setRetryNonce] = useState(0)
 
     useEffect(() => {
         const controller = new AbortController()
@@ -215,6 +216,8 @@ export default function DashboardPage() {
         }, 15_000)
 
         const fetchStats = async () => {
+            setStats(null)
+            setError(null)
             try {
                 let url = `/api/dashboard?months=${monthsRange}`
                 if (selectedInvestorId && selectedInvestorId !== "all") {
@@ -264,9 +267,9 @@ export default function DashboardPage() {
             window.clearTimeout(timeoutId)
             controller.abort()
         }
-    }, [selectedInvestorId, monthsRange])
+    }, [selectedInvestorId, monthsRange, retryNonce])
 
-    if (error && !stats) return <div className="space-y-4 pb-20"><ErrorState title="Gagal memuat dashboard" description={error} onRetry={() => { setError(null); setStats(null) }} /></div>
+    if (error && !stats) return <div className="space-y-4 pb-20"><ErrorState title="Gagal memuat dashboard" description={error} onRetry={() => setRetryNonce((value) => value + 1)} /></div>
     if (!stats) {
         return (
             <div className="space-y-4 pb-20">
