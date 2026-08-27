@@ -26,16 +26,19 @@ export default function ActivityLogsPage() {
     const [logs, setLogs] = useState<Log[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isAccessDenied, setIsAccessDenied] = useState(false)
     const [retryNonce, setRetryNonce] = useState(0)
 
     useEffect(() => {
         const fetchLogs = async () => {
             setLogs([])
             setError(null)
+            setIsAccessDenied(false)
             setIsLoading(true)
             try {
                 const res = await fetch("/api/activity-logs")
                 if (res.status === 401 || res.status === 403) {
+                    setIsAccessDenied(true)
                     setError("Akses tidak tersedia")
                     return
                 }
@@ -43,9 +46,13 @@ export default function ActivityLogsPage() {
                     throw new Error("Gagal memuat log aktivitas")
                 }
                 const data = await res.json()
+                if (!Array.isArray(data)) {
+                    throw new Error("Gagal memuat log aktivitas")
+                }
                 setLogs(data)
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Terjadi kesalahan saat memuat data")
+                console.error("Failed to fetch activity logs", err)
+                setError("Gagal memuat log aktivitas. Silakan coba lagi.")
             } finally {
                 setIsLoading(false)
             }
@@ -66,7 +73,11 @@ export default function ActivityLogsPage() {
         return (
             <div className="flex-1 space-y-4">
                 <OperationalPageHeader title="Log Aktivitas" description="Mencatat 50 aktivitas terakhir di sistem." />
-                <ErrorState title="Gagal memuat log aktivitas" description={error} onRetry={() => setRetryNonce((n) => n + 1)} />
+                <ErrorState
+                    title={isAccessDenied ? "Akses tidak tersedia" : "Gagal memuat log aktivitas"}
+                    description={isAccessDenied ? undefined : error}
+                    onRetry={isAccessDenied ? undefined : () => setRetryNonce((n) => n + 1)}
+                />
             </div>
         )
     }

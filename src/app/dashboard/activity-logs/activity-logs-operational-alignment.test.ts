@@ -43,6 +43,7 @@ describe("Activity-logs operational alignment", () => {
   it("retry nonce triggers re-fetch", () => {
     expect(source).toContain("retryNonce")
     expect(source).toContain("setRetryNonce")
+    expect(source).toContain("[retryNonce]")
   })
 
   it("clears stale data before each fetch", () => {
@@ -51,6 +52,21 @@ describe("Activity-logs operational alignment", () => {
 
   it("uses finally block for loading cleanup", () => {
     expect(source).toContain("finally")
+  })
+
+  it("rejects non-array payloads instead of crashing in map", () => {
+    expect(source).toContain("Array.isArray(data)")
+    expect(source).toContain("throw new Error")
+  })
+
+  it("uses a safe generic error message instead of exposing caught errors", () => {
+    expect(source).toContain("Gagal memuat log aktivitas. Silakan coba lagi.")
+    expect(source).not.toContain("err.message")
+  })
+
+  it("does not offer retry for access-denied responses", () => {
+    expect(source).toContain("isAccessDenied")
+    expect(source).toContain("onRetry={isAccessDenied ? undefined")
   })
 
   /* ── data parity ── */
