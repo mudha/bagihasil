@@ -38,7 +38,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, AlertCircle, ReceiptText, Wallet, TrendingUp, Sparkles } from "lucide-react"
+import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, AlertCircle, ReceiptText, Wallet, TrendingUp } from "lucide-react"
 import { MultipleImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -70,6 +70,10 @@ import { ImageHoverPreview } from "@/components/ui/image-hover-preview"
 import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminTransactionDetailDialog } from "@/components/transactions/AdminTransactionDetailDialog"
+import { OperationalPageHeader } from "@/components/mudha/OperationalPageHeader"
+import { SummaryMetric } from "@/components/mudha/SummaryMetric"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { ErrorState } from "@/components/mudha/ErrorState"
 
 
 
@@ -232,6 +236,8 @@ function TransactionsPageContent() {
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [availableUnits, setAvailableUnits] = useState<Unit[]>([])
     const [investors, setInvestors] = useState<Investor[]>([])
+    const [txLoading, setTxLoading] = useState(true)
+    const [txError, setTxError] = useState<string | null>(null)
     const [isOpen, setIsOpen] = useState(false)
     const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null)
 
@@ -490,9 +496,18 @@ function TransactionsPageContent() {
     }
 
     const fetchTransactions = async () => {
-        const res = await fetch('/api/transactions')
-        const data = await res.json()
-        setTransactions(data)
+        try {
+            setTxLoading(true)
+            setTxError(null)
+            const res = await fetch('/api/transactions')
+            if (!res.ok) throw new Error('Gagal memuat data transaksi')
+            const data = await res.json()
+            setTransactions(data)
+        } catch (err: any) {
+            setTxError(err.message || 'Terjadi kesalahan')
+        } finally {
+            setTxLoading(false)
+        }
     }
 
     const fetchAvailableUnits = async () => {
@@ -742,57 +757,23 @@ function TransactionsPageContent() {
 
     return (
         <div className="space-y-5 lg:space-y-7">
-            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
-                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
-                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
-                <div className="relative flex min-w-0 flex-col gap-5 p-5 sm:p-6 2xl:flex-row 2xl:items-end 2xl:justify-between 2xl:p-8">
-                    <div className="min-w-0 max-w-2xl space-y-3">
-                        <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
-                            <Sparkles className="size-3" />
-                            Deal flow
-                        </Badge>
-                        <div>
-                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-100/75">Daftar Transaksi</p>
-                            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                                Alur beli-jual tampil lebih hidup.
-                            </h1>
-                        </div>
-                        <p className="text-sm leading-6 text-teal-50/75 sm:text-base">
-                            Pantau transaksi berjalan, status bayar, nilai beli, dan laporan selesai dengan tampilan yang lebih fokus.
-                        </p>
-                    </div>
-                    <div className="grid min-w-0 w-full grid-cols-2 gap-3 sm:grid-cols-4 2xl:min-w-[560px] 2xl:w-auto">
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <ReceiptText className="mb-3 size-5 text-lime-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Total</p>
-                                <p className="mt-1 text-2xl font-black">{transactionSummary.total}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <TrendingUp className="mb-3 size-5 text-sky-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Berjalan</p>
-                                <p className="mt-1 text-2xl font-black">{transactionSummary.active}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <CheckCircle2 className="mb-3 size-5 text-lime-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Selesai</p>
-                                <p className="mt-1 text-2xl font-black">{transactionSummary.completed}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <Wallet className="mb-3 size-5 text-amber-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Nilai beli</p>
-                                <p className="mt-1 text-2xl font-black leading-tight [overflow-wrap:anywhere]">{formatCurrencyShort(transactionSummary.buyValue)}</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </section>
+            <OperationalPageHeader
+                title="Daftar Transaksi"
+                description="Pantau transaksi berjalan, status bayar, nilai beli, dan laporan selesai."
+            />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <SummaryMetric label="Total" value={transactionSummary.total} icon={<ReceiptText className="h-4 w-4" />} tone="neutral" loading={txLoading} />
+                <SummaryMetric label="Berjalan" value={transactionSummary.active} icon={<TrendingUp className="h-4 w-4" />} tone="info" loading={txLoading} />
+                <SummaryMetric label="Selesai" value={transactionSummary.completed} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={txLoading} />
+                <SummaryMetric label="Nilai beli" value={formatCurrencyShort(transactionSummary.buyValue)} icon={<Wallet className="h-4 w-4" />} tone="warning" loading={txLoading} />
+            </div>
+
+            {txLoading ? (
+                <LoadingState variant="table" label="Memuat data transaksi..." />
+            ) : txError ? (
+                <ErrorState title="Gagal memuat data transaksi" description={txError} onRetry={fetchTransactions} />
+            ) : (
+            <>
 
             <div className="rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur">
                 <div className="grid w-full grid-cols-2 gap-2 [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
@@ -1791,6 +1772,8 @@ function TransactionsPageContent() {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
             />
+            </>
+            )}
 
             <AlertDialog open={deleteTransactionId !== null} onOpenChange={() => setDeleteTransactionId(null)}>
                 <AlertDialogContent>
