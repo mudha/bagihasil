@@ -145,3 +145,72 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ================================================================
+   Mudha Operational Tokens — additive, does not replace shadcn values
+   ================================================================ */
+:root {
+  /* Surfaces */
+  --mudha-bg: #F8FAFC;
+  --mudha-surface: #FFFFFF;
+  --mudha-surface-subtle: #F1F5F9;
+  --mudha-surface-brand: #F0FDFA;
+  --mudha-shell: #062F2D;
+  --mudha-shell-strong: #073F3B;
+
+  /* Borders */
+  --mudha-border: #E2E8F0;
+  --mudha-border-subtle: rgba(15, 23, 42, 0.08);
+  --mudha-border-brand: rgba(15, 118, 110, 0.22);
+
+  /* Text */
+  --mudha-text: #0F172A;
+  --mudha-text-secondary: #475569;
+  --mudha-text-muted: #64748B;
+
+  /* Primary green scale */
+  --mudha-green-950: #062F2D;
+  --mudha-green-900: #073F3B;
+  --mudha-green-700: #0F766E;
+  --mudha-green-600: #0D9488;
+  --mudha-green-100: #CCFBF1;
+  --mudha-green-50: #F0FDFA;
+
+  /* Semantic status — text */
+  --mudha-status-success-text: #166534;
+  --mudha-status-warning-text: #92400E;
+  --mudha-status-danger-text: #991B1B;
+  --mudha-status-info-text: #075985;
+  --mudha-status-neutral-text: #475569;
+
+  /* Semantic status — background */
+  --mudha-status-success-bg: #F0FDF4;
+  --mudha-status-warning-bg: #FFFBEB;
+  --mudha-status-danger-bg: #FEF2F2;
+  --mudha-status-info-bg: #F0F9FF;
+  --mudha-status-neutral-bg: #F8FAFC;
+
+  /* Semantic status — border */
+  --mudha-status-success-border: #BBF7D0;
+  --mudha-status-warning-border: #FDE68A;
+  --mudha-status-danger-border: #FECACA;
+  --mudha-status-info-border: #BAE6FD;
+  --mudha-status-neutral-border: #CBD5E1;
+
+  /* Shadows */
+  --mudha-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --mudha-shadow-sm: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --mudha-shadow-overlay: 0 16px 40px rgba(15, 23, 42, 0.16);
+}
+
+/* Reduced motion: suppress decorative animations/transitions only */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
