@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
@@ -67,7 +67,7 @@ export default function UsersPage() {
         defaultValues: { name: "", username: "", email: "", password: "", role: "VIEWER" },
     })
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setUsers([])
         setError(null)
         setIsAccessDenied(false)
@@ -87,17 +87,18 @@ export default function UsersPage() {
                 throw new Error("Gagal memuat data user")
             }
             setUsers(data)
-        } catch (err) {
-            if (!isAccessDenied) {
-                console.error("Failed to fetch users", err)
-                setError("Gagal memuat data user. Silakan coba lagi.")
-            }
+        } catch {
+            setError("Gagal memuat data user. Silakan coba lagi.")
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
 
-    useEffect(() => { fetchUsers() }, [retryNonce])
+    useEffect(() => {
+        if (sessionStatus === "authenticated" && isAdmin) {
+            fetchUsers()
+        }
+    }, [fetchUsers, sessionStatus, isAdmin, retryNonce])
 
     useEffect(() => {
         if (editingUser) {
@@ -171,6 +172,45 @@ export default function UsersPage() {
     const handleEditClick = (user: User) => { setEditingUser(user); setIsOpen(true) }
     const handleCloseDialog = (open: boolean) => { setIsOpen(open); if (!open) { setEditingUser(null); form.reset() } }
 
+    const userDialog = (
+        <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
+            <DialogTrigger asChild>
+                <Button><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>{editingUser ? "Edit User" : "Tambah User Baru"}</DialogTitle></DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Nama Lengkap</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="username" render={({ field }) => (
+                            <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="johndoe" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="email" render={({ field }) => (
+                            <FormItem><FormLabel>Email (Opsional)</FormLabel><FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="password" render={({ field }) => (
+                            <FormItem><FormLabel>Password {editingUser && "(Kosongkan jika tidak ingin ganti)"}</FormLabel><FormControl><Input type="password" placeholder="******" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="role" render={({ field }) => (
+                            <FormItem><FormLabel>Hak Akses (Role)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="VIEWER">Viewer (Lihat Saja)</SelectItem>
+                                        <SelectItem value="INVESTOR">Investor</SelectItem>
+                                        <SelectItem value="ADMIN">Admin (Akses Penuh)</SelectItem>
+                                    </SelectContent>
+                                </Select><FormMessage /></FormItem>
+                        )} />
+                        <Button type="submit" className="w-full">{editingUser ? "Update User" : "Simpan User"}</Button>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+
     // ── view-state branches ──
 
     if (sessionStatus === "loading") {
@@ -186,7 +226,12 @@ export default function UsersPage() {
         return (
             <div className="space-y-4">
                 <OperationalPageHeader title="Kelola User" description="Tambah dan atur hak akses pengguna aplikasi." />
-                <ErrorState title="Akses Ditolak" description="Anda tidak memiliki izin untuk mengakses halaman ini." />
+                <ErrorState
+                    title="Akses Ditolak"
+                    description="Anda tidak memiliki izin untuk mengakses halaman ini."
+                    icon={<Shield className="h-6 w-6" />}
+                />
+                <Button onClick={() => window.location.href = "/dashboard"}>Kembali ke Dashboard</Button>
             </div>
         )
     }
@@ -197,7 +242,7 @@ export default function UsersPage() {
                 <OperationalPageHeader
                     title="Kelola User"
                     description="Tambah dan atur hak akses pengguna aplikasi."
-                    primaryAction={<Button disabled><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>}
+                    primaryAction={userDialog}
                 />
                 <LoadingState variant="table" label="Memuat data user…" />
             </div>
@@ -210,7 +255,7 @@ export default function UsersPage() {
                 <OperationalPageHeader
                     title="Kelola User"
                     description="Tambah dan atur hak akses pengguna aplikasi."
-                    primaryAction={<Button disabled><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>}
+                    primaryAction={userDialog}
                 />
                 <ErrorState
                     title={isAccessDenied ? "Akses tidak tersedia" : "Gagal memuat data user"}
@@ -228,44 +273,7 @@ export default function UsersPage() {
             <OperationalPageHeader
                 title="Kelola User"
                 description="Tambah dan atur hak akses pengguna aplikasi."
-                primaryAction={
-                    <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-                        <DialogTrigger asChild>
-                            <Button><Plus className="mr-2 h-4 w-4" /> Tambah User</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader><DialogTitle>{editingUser ? "Edit User" : "Tambah User Baru"}</DialogTitle></DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField control={form.control} name="name" render={({ field }) => (
-                                        <FormItem><FormLabel>Nama Lengkap</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="username" render={({ field }) => (
-                                        <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="johndoe" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>Email (Opsional)</FormLabel><FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="password" render={({ field }) => (
-                                        <FormItem><FormLabel>Password {editingUser && "(Kosongkan jika tidak ingin ganti)"}</FormLabel><FormControl><Input type="password" placeholder="******" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="role" render={({ field }) => (
-                                        <FormItem><FormLabel>Hak Akses (Role)</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Pilih Role" /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="VIEWER">Viewer (Lihat Saja)</SelectItem>
-                                                    <SelectItem value="INVESTOR">Investor</SelectItem>
-                                                    <SelectItem value="ADMIN">Admin (Akses Penuh)</SelectItem>
-                                                </SelectContent>
-                                            </Select><FormMessage /></FormItem>
-                                    )} />
-                                    <Button type="submit" className="w-full">{editingUser ? "Update User" : "Simpan User"}</Button>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                }
+                primaryAction={userDialog}
             />
 
             {/* Mobile Card View */}

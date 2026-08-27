@@ -43,7 +43,7 @@ describe("Users operational alignment", () => {
   it("retry nonce triggers re-fetch via dependency", () => {
     expect(source).toContain("retryNonce")
     expect(source).toContain("setRetryNonce")
-    expect(source).toContain("[retryNonce]")
+    expect(source).toContain("retryNonce])")
   })
 
   it("clears stale users before each fetch", () => {
@@ -65,8 +65,14 @@ describe("Users operational alignment", () => {
     expect(source).toContain("session?.user?.role")
   })
 
+  it("does not fetch users before authenticated admin permission is known", () => {
+    expect(source).toContain('sessionStatus === "authenticated" && isAdmin')
+    expect(source).toContain("[fetchUsers, sessionStatus, isAdmin, retryNonce]")
+  })
+
   it("shows Akses Ditolak for non-admin", () => {
     expect(source).toContain("Akses Ditolak")
+    expect(source).toContain("Kembali ke Dashboard")
   })
 
   /* ── data and role parity ── */
@@ -117,6 +123,10 @@ describe("Users operational alignment", () => {
 
   it("retry does not call POST/PUT/DELETE", () => {
     expect(source).not.toMatch(/onRetry.*fetch\(.*POST|onRetry.*fetch\(.*PUT|onRetry.*fetch\(.*DELETE/)
+  })
+
+  it("does not log raw fetch exceptions", () => {
+    expect(source).not.toContain("console.error")
   })
 
   /* ── presentation parity ── */
