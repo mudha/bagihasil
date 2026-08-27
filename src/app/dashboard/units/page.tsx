@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+
 import {
     Table,
     TableBody,
@@ -33,7 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Eye, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench, Sparkles } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -54,6 +54,10 @@ import {
 import { format, isPast, isWithinInterval, addDays } from "date-fns"
 import { cn } from "@/lib/utils"
 import { getTaxStatus } from "@/lib/unit-tax-status"
+import { OperationalPageHeader } from "@/components/mudha/OperationalPageHeader"
+import { SummaryMetric } from "@/components/mudha/SummaryMetric"
+import { LoadingState } from "@/components/mudha/LoadingState"
+import { ErrorState } from "@/components/mudha/ErrorState"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -192,6 +196,8 @@ function UnitsPageContent() {
 
     const [units, setUnits] = useState<Unit[]>([])
     const [investors, setInvestors] = useState<Investor[]>([])
+    const [unitsLoading, setUnitsLoading] = useState(true)
+    const [unitsError, setUnitsError] = useState<string | null>(null)
     const [isOpen, setIsOpen] = useState(false)
     const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
     const [viewingUnit, setViewingUnit] = useState<Unit | null>(null)
@@ -262,9 +268,18 @@ function UnitsPageContent() {
     const selectedInvestorForm = form.watch("investorId")
 
     const fetchUnits = async () => {
-        const res = await fetch('/api/units')
-        const data = await res.json()
-        setUnits(data)
+        try {
+            setUnitsLoading(true)
+            setUnitsError(null)
+            const res = await fetch('/api/units')
+            if (!res.ok) throw new Error('Gagal memuat data unit')
+            const data = await res.json()
+            setUnits(data)
+        } catch (err: any) {
+            setUnitsError(err.message || 'Terjadi kesalahan')
+        } finally {
+            setUnitsLoading(false)
+        }
     }
 
     const fetchInvestors = async () => {
@@ -882,57 +897,16 @@ function UnitsPageContent() {
 
     return (
         <div className="space-y-5 lg:space-y-7">
-            <section className="relative overflow-hidden rounded-lg bg-[#073f3b] text-white shadow-2xl shadow-teal-950/15">
-                <div className="absolute -right-20 -top-24 size-72 rounded-full bg-teal-300/20 blur-3xl" />
-                <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
-                <div className="relative flex min-w-0 flex-col gap-5 p-5 sm:p-6 2xl:flex-row 2xl:items-end 2xl:justify-between 2xl:p-8">
-                    <div className="min-w-0 max-w-2xl space-y-3">
-                        <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/15">
-                            <Sparkles className="size-3" />
-                            Garage view
-                        </Badge>
-                        <div>
-                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-100/75">Manajemen Unit</p>
-                            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-                                Semua kendaraan, lebih gampang dipantau.
-                            </h1>
-                        </div>
-                        <p className="text-sm leading-6 text-teal-50/75 sm:text-base">
-                            Kelola stok aktif, unit terjual, pajak, foto kendaraan, dan data STNK dari satu tampilan yang lebih ringan.
-                        </p>
-                    </div>
-                    <div className="grid min-w-0 w-full grid-cols-2 gap-3 sm:grid-cols-4 2xl:min-w-[520px] 2xl:w-auto">
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <Car className="mb-3 size-5 text-lime-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Total</p>
-                                <p className="mt-1 text-2xl font-black">{unitSummary.total}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <CheckCircle2 className="mb-3 size-5 text-lime-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Aktif</p>
-                                <p className="mt-1 text-2xl font-black">{unitSummary.available}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <Car className="mb-3 size-5 text-sky-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Terjual</p>
-                                <p className="mt-1 text-2xl font-black">{unitSummary.sold}</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-lg border-white/10 bg-white/10 py-0 text-white shadow-none backdrop-blur">
-                            <CardContent className="p-4">
-                                <Wrench className="mb-3 size-5 text-amber-200" />
-                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-100/65">Servis</p>
-                                <p className="mt-1 text-2xl font-black">{unitSummary.maintenance}</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </section>
+            <OperationalPageHeader
+                title="Unit Kendaraan"
+                description="Kelola stok aktif, unit terjual, pajak, foto kendaraan, dan data STNK."
+            />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <SummaryMetric label="Total" value={unitSummary.total} icon={<Car className="h-4 w-4" />} tone="neutral" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Aktif" value={unitSummary.available} icon={<CheckCircle2 className="h-4 w-4" />} tone="success" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Terjual" value={unitSummary.sold} icon={<Car className="h-4 w-4" />} tone="info" loading={unitsLoading || !!unitsError} />
+                <SummaryMetric label="Servis" value={unitSummary.maintenance} icon={<Wrench className="h-4 w-4" />} tone="warning" loading={unitsLoading || !!unitsError} />
+            </div>
 
             {!isViewer && (
                 <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
@@ -1425,6 +1399,12 @@ function UnitsPageContent() {
                 </Select>
             </div>
 
+            {unitsLoading ? (
+                <LoadingState variant="table" label="Memuat data unit..." />
+            ) : unitsError ? (
+                <ErrorState title="Gagal memuat data unit" description={unitsError} onRetry={fetchUnits} />
+            ) : (
+            <>
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedUnits.length === 0 ? (
@@ -1755,6 +1735,8 @@ function UnitsPageContent() {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
             />
+            </>
+            )}
 
             <ImagePreviewDialog
                 isOpen={!!previewUrl}
