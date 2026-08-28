@@ -20,6 +20,7 @@ import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/m
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -952,6 +953,9 @@ function UnitsPageContent() {
                                             {editingUnit ? "Mode edit" : "Unit baru"}
                                         </div>
                                         <DialogTitle className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                        <DialogDescription className="sr-only">
+                                            {editingUnit ? "Formulir untuk memperbarui data unit kendaraan." : "Formulir untuk menambahkan unit kendaraan."}
+                                        </DialogDescription>
                                     </DialogHeader>
                                     <Form {...form}>
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-col overflow-hidden">

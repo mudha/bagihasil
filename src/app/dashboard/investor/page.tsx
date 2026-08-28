@@ -1,38 +1,68 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { InvestorTabs } from "./InvestorTabs"
+import { ErrorState } from "@/components/mudha/ErrorState"
 
 export default function InvestorDashboardPage() {
     const router = useRouter()
     const [data, setData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [isAccessDenied, setIsAccessDenied] = useState(false)
+    const [isNotFound, setIsNotFound] = useState(false)
     const [monthsRange, setMonthsRange] = useState<string>("6")
+    const [retryNonce, setRetryNonce] = useState(0)
+
+    const fetchData = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        setIsAccessDenied(false)
+        setIsNotFound(false)
+        setData(null)
+        try {
+            const res = await fetch(`/api/investor/dashboard?months=${monthsRange}`)
+            if (res.status === 401) {
+                router.push("/login")
+                return
+            }
+            if (res.status === 403) {
+                setIsAccessDenied(true)
+                setError("Akses tidak tersedia")
+                return
+            }
+            if (res.status === 404) {
+                setIsNotFound(true)
+                return
+            }
+            if (!res.ok) {
+                throw new Error("fetch failed")
+            }
+            const result: unknown = await res.json()
+            if (
+                !result ||
+                typeof result !== "object" ||
+                !("investor" in result) ||
+                !("stats" in result) ||
+                !("investmentsData" in result) ||
+                !("paymentsData" in result) ||
+                !Array.isArray(result.investmentsData) ||
+                !Array.isArray(result.paymentsData)
+            ) {
+                throw new Error("invalid response")
+            }
+            setData(result)
+        } catch {
+            setError("Ringkasan modal belum dapat dimuat. Silakan coba lagi.")
+        } finally {
+            setLoading(false)
+        }
+    }, [monthsRange, router])
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true)
-            try {
-                const res = await fetch(`/api/investor/dashboard?months=${monthsRange}`)
-                if (res.status === 401) {
-                    router.push('/login')
-                    return
-                }
-                if (!res.ok) {
-                    throw new Error('Failed to fetch investor data')
-                }
-                const result = await res.json()
-                setData(result)
-            } catch (err) {
-                console.error("Error fetching investor data:", err)
-            } finally {
-                setLoading(false)
-            }
-        }
-
         fetchData()
-    }, [monthsRange, router])
+    }, [fetchData, retryNonce])
 
     if (loading) {
         return (
@@ -47,11 +77,47 @@ export default function InvestorDashboardPage() {
         )
     }
 
+    if (isAccessDenied) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Akses tidak tersedia"
+                    description={error ?? undefined}
+                />
+            </div>
+        )
+    }
+
+    if (isNotFound) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Akun Investor Tidak Ditemukan"
+                    description="Akun Anda terdaftar sebagai User, namun belum dihubungkan ke data Investor oleh Admin."
+                />
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Gagal memuat data pemodal"
+                    description={error}
+                    onRetry={() => setRetryNonce((n) => n + 1)}
+                />
+            </div>
+        )
+    }
+
     if (!data) {
         return (
-            <div className="rounded-lg border border-red-100 bg-white p-6 shadow-sm">
-                <h1 className="text-2xl font-black text-red-600">Akun Investor Tidak Ditemukan</h1>
-                <p className="mt-2 leading-relaxed text-slate-600">Akun Anda terdaftar sebagai User, namun belum dihubungkan ke data Investor oleh Admin.</p>
+            <div className="space-y-4 pb-20">
+                <ErrorState
+                    title="Akun Investor Tidak Ditemukan"
+                    description="Akun Anda terdaftar sebagai User, namun belum dihubungkan ke data Investor oleh Admin."
+                />
             </div>
         )
     }
