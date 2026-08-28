@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
+import { OperationalPageHeader } from "@/components/mudha/OperationalPageHeader"
 import { Calculator, RefreshCw, DollarSign, TrendingUp, PieChart } from "lucide-react"
-// import { formatCurrency } from "@/lib/utils" 
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -28,7 +28,7 @@ export default function CalculatorPage() {
     const [results, setResults] = useState({
         totalCapital: 0,
         grossProfit: 0,
-        netProfit: 0, // Assuming no other deductions for now, keeping it same as gross
+        netProfit: 0,
         roi: 0,
         investorShare: 0,
         managerShare: 0
@@ -37,7 +37,6 @@ export default function CalculatorPage() {
     useEffect(() => {
         const totalCapital = buyPrice + repairCost + otherCost
         const grossProfit = targetSellPrice - totalCapital
-        // Avoid division by zero
         const roi = totalCapital > 0 ? (grossProfit / totalCapital) * 100 : 0
 
         const investorShare = grossProfit > 0 ? grossProfit * (investorSharePct / 100) : 0
@@ -63,80 +62,87 @@ export default function CalculatorPage() {
 
     return (
         <div className="flex-1 space-y-4">
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Kalkulator Estimasi Profit</h2>
-            </div>
+            <OperationalPageHeader
+                title="Kalkulator Estimasi Profit"
+                description="Masukkan estimasi harga beli dan biaya untuk melihat potensi profit."
+            />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 {/* INPUT SECTION */}
-                <Card className="lg:col-span-3 border-emerald-100 shadow-sm">
+                <Card className="lg:col-span-3 border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-emerald-700">
-                            <Calculator className="h-5 w-5" />
+                        <CardTitle className="flex items-center gap-2 text-[var(--mudha-text)]">
+                            <Calculator className="h-5 w-5 text-[var(--mudha-text-muted)]" />
                             Input Simulasi
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-[var(--mudha-text-muted)]">
                             Masukkan estimasi harga beli dan biaya untuk melihat potensi profit.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="buyPrice">Harga Beli Unit</Label>
+                            <Label htmlFor="buyPrice" className="text-sm font-medium text-[var(--mudha-text)]">Harga Beli Unit</Label>
                             <div className="relative">
-                                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-[var(--mudha-text-muted)]" />
                                 <Input
                                     id="buyPrice"
                                     type="number"
                                     placeholder="0"
-                                    className="pl-8"
+                                    className="pl-8 h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-[var(--mudha-border-default)]"
                                     value={buyPrice || ''}
                                     onChange={(e) => setBuyPrice(parseFloat(e.target.value) || 0)}
                                 />
                             </div>
+                            <p className="text-xs text-[var(--mudha-text-muted)]">Harga pembelian unit kendaraan</p>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="repairCost">Estimasi Perbaikan</Label>
+                                <Label htmlFor="repairCost" className="text-sm font-medium text-[var(--mudha-text)]">Estimasi Perbaikan</Label>
                                 <Input
                                     id="repairCost"
                                     type="number"
                                     placeholder="0"
+                                    className="h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-[var(--mudha-border-default)]"
                                     value={repairCost || ''}
                                     onChange={(e) => setRepairCost(parseFloat(e.target.value) || 0)}
                                 />
+                                <p className="text-xs text-[var(--mudha-text-muted)]">Biaya servis/pemulihan</p>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="otherCost">Biaya Lainnya</Label>
+                                <Label htmlFor="otherCost" className="text-sm font-medium text-[var(--mudha-text)]">Biaya Lainnya</Label>
                                 <Input
                                     id="otherCost"
                                     type="number"
                                     placeholder="0"
+                                    className="h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-[var(--mudha-border-default)]"
                                     value={otherCost || ''}
                                     onChange={(e) => setOtherCost(parseFloat(e.target.value) || 0)}
                                 />
+                                <p className="text-xs text-[var(--mudha-text-muted)]">Biaya admin, pajek, dll</p>
                             </div>
                         </div>
 
-                        <div className="space-y-2 pt-2 border-t">
-                            <Label htmlFor="targetSellPrice" className="text-base">Target Harga Jual</Label>
+                        <div className="space-y-2 pt-2 border-t border-[var(--mudha-border-subtle)]">
+                            <Label htmlFor="targetSellPrice" className="text-sm font-medium text-[var(--mudha-text)]">Target Harga Jual</Label>
                             <div className="relative">
-                                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-emerald-600" />
+                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-emerald-600" />
                                 <Input
                                     id="targetSellPrice"
                                     type="number"
                                     placeholder="0"
-                                    className="pl-8 border-emerald-200 focus-visible:ring-emerald-500"
+                                    className="pl-8 h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-emerald-200 focus-visible:ring-emerald-500"
                                     value={targetSellPrice || ''}
                                     onChange={(e) => setTargetSellPrice(parseFloat(e.target.value) || 0)}
                                 />
                             </div>
+                            <p className="text-xs text-[var(--mudha-text-muted)]">Harga jual yang diharapkan</p>
                         </div>
 
-                        <div className="space-y-4 pt-4 border-t">
+                        <div className="space-y-4 pt-4 border-t border-[var(--mudha-border-subtle)]">
                             <div className="flex justify-between">
-                                <Label>Bagi Hasil Pemodal</Label>
-                                <span className="text-sm font-medium">{investorSharePct}%</span>
+                                <Label className="text-sm font-medium text-[var(--mudha-text)]">Bagi Hasil Pemodal</Label>
+                                <span className="text-sm font-medium text-[var(--mudha-text)]">{investorSharePct}%</span>
                             </div>
                             <Slider
                                 value={[investorSharePct]}
@@ -146,12 +152,12 @@ export default function CalculatorPage() {
                                 onValueChange={(val: number[]) => setInvestorSharePct(val[0])}
                                 className="py-2"
                             />
-                            <p className="text-xs text-muted-foreground text-right">
+                            <p className="text-xs text-[var(--mudha-text-muted)] text-right">
                                 Pengelola: {100 - investorSharePct}%
                             </p>
                         </div>
 
-                        <Button variant="outline" className="w-full mt-4" onClick={resetCalculator}>
+                        <Button variant="outline" className="w-full mt-4 min-h-[44px] border-[var(--mudha-border-default)]" onClick={resetCalculator}>
                             <RefreshCw className="mr-2 h-4 w-4" /> Reset Kalkulator
                         </Button>
                     </CardContent>
@@ -160,29 +166,29 @@ export default function CalculatorPage() {
                 {/* RESULT SECTION */}
                 <div className="space-y-4 lg:col-span-4">
                     <div className="grid gap-4 md:grid-cols-2">
-                        <Card>
+                        <Card className="border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Modal</CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <CardTitle className="text-sm font-medium text-[var(--mudha-text)]">Total Modal</CardTitle>
+                                <DollarSign className="h-4 w-4 text-[var(--mudha-text-muted)]" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{formatCurrency(results.totalCapital)}</div>
-                                <p className="text-xs text-muted-foreground">
+                                <div className="text-2xl font-bold text-[var(--mudha-text)]">{formatCurrency(results.totalCapital)}</div>
+                                <p className="text-xs text-[var(--mudha-text-muted)]">
                                     Beli + Perbaikan + Lainnya
                                 </p>
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className="border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Estimasi Profit Bersih</CardTitle>
-                                <TrendingUp className={results.grossProfit >= 0 ? "h-4 w-4 text-green-500" : "h-4 w-4 text-red-500"} />
+                                <CardTitle className="text-sm font-medium text-[var(--mudha-text)]">Estimasi Profit Bersih</CardTitle>
+                                <TrendingUp className={results.grossProfit >= 0 ? "h-4 w-4 text-emerald-500" : "h-4 w-4 text-red-500"} />
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-2xl font-bold ${results.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                <div className={`text-2xl font-bold ${results.grossProfit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                                     {formatCurrency(results.grossProfit)}
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    ROI: <span className={results.roi >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                                <p className="text-xs text-[var(--mudha-text-muted)]">
+                                    ROI: <span className={results.roi >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
                                         {results.roi.toFixed(1)}%
                                     </span>
                                 </p>
@@ -190,28 +196,28 @@ export default function CalculatorPage() {
                         </Card>
                     </div>
 
-                    <Card className="bg-slate-50 border-slate-200">
+                    <Card className="border-[var(--mudha-border-default)] bg-[var(--mudha-surface-subtle)] shadow-[var(--mudha-shadow-xs)]">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-slate-700">
-                                <PieChart className="h-5 w-5" />
+                            <CardTitle className="flex items-center gap-2 text-[var(--mudha-text)]">
+                                <PieChart className="h-5 w-5 text-[var(--mudha-text-muted)]" />
                                 Estimasi Pembagian Profit
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-3 p-4 bg-[var(--mudha-surface-primary)] rounded-lg border border-[var(--mudha-border-default)] shadow-[var(--mudha-shadow-xs)] sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
-                                        <p className="text-sm font-medium leading-none">Bagian Pemodal ({investorSharePct}%)</p>
-                                        <p className="text-xs text-muted-foreground">Return on Investment</p>
+                                        <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pemodal ({investorSharePct}%)</p>
+                                        <p className="text-xs text-[var(--mudha-text-muted)]">Return on Investment</p>
                                     </div>
                                     <div className="text-right font-bold text-lg text-emerald-600">
                                         {formatCurrency(results.investorShare)}
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-3 p-4 bg-[var(--mudha-surface-primary)] rounded-lg border border-[var(--mudha-border-default)] shadow-[var(--mudha-shadow-xs)] sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
-                                        <p className="text-sm font-medium leading-none">Bagian Pengelola ({100 - investorSharePct}%)</p>
-                                        <p className="text-xs text-muted-foreground">Operational Success</p>
+                                        <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pengelola ({100 - investorSharePct}%)</p>
+                                        <p className="text-xs text-[var(--mudha-text-muted)]">Operational Success</p>
                                     </div>
                                     <div className="text-right font-bold text-lg text-blue-600">
                                         {formatCurrency(results.managerShare)}
