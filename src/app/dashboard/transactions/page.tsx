@@ -831,7 +831,7 @@ function TransactionsPageContent() {
                         }
                     }}>
                         <DialogTrigger asChild>
-                            <Button className="h-11 rounded-lg bg-teal-600 px-4 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">
+                            <Button className="h-11 rounded-lg px-4 font-semibold">
                                 <Plus className="mr-2 h-4 w-4" /> Transaksi Baru
                             </Button>
                         </DialogTrigger>

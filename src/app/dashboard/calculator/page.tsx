@@ -208,7 +208,7 @@ export default function CalculatorPage() {
                                 <div className="flex flex-col gap-3 p-4 bg-[var(--mudha-surface-primary)] rounded-lg border border-[var(--mudha-border-default)] shadow-[var(--mudha-shadow-xs)] sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pemodal ({investorSharePct}%)</p>
-                                        <p className="text-xs text-[var(--mudha-text-muted)]">Return on Investment</p>
+                                        <p className="text-xs text-[var(--mudha-text-muted)]">Sesuai persentase yang dipilih</p>
                                     </div>
                                     <div className="text-right font-bold text-lg text-emerald-600">
                                         {formatCurrency(results.investorShare)}
@@ -217,7 +217,7 @@ export default function CalculatorPage() {
                                 <div className="flex flex-col gap-3 p-4 bg-[var(--mudha-surface-primary)] rounded-lg border border-[var(--mudha-border-default)] shadow-[var(--mudha-shadow-xs)] sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pengelola ({100 - investorSharePct}%)</p>
-                                        <p className="text-xs text-[var(--mudha-text-muted)]">Operational Success</p>
+                                        <p className="text-xs text-[var(--mudha-text-muted)]">Sisa setelah bagian pemodal</p>
                                     </div>
                                     <div className="text-right font-bold text-lg text-blue-600">
                                         {formatCurrency(results.managerShare)}
