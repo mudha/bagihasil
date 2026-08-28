@@ -496,8 +496,6 @@ function UnitsPageContent() {
 
             const data = await res.json();
 
-            console.log("[STNK Scan] API Response:", data);
-
             if (data.plateNumber) form.setValue("plateNumber", data.plateNumber);
             if (data.taxDueDate) form.setValue("taxDueDate", new Date(data.taxDueDate));
             if (data.engineNumber) form.setValue("engineNumber", data.engineNumber);
@@ -522,12 +520,6 @@ function UnitsPageContent() {
 
                     // Map Brand (only if vehicle type is valid)
                     if (data.brand) {
-                        console.log("[STNK Scan] Brand matching:", {
-                            vehicleType: data.vehicleType,
-                            apiBrand: data.brand,
-                            brandList
-                        });
-
                         // 1. Try exact match first (case-insensitive)
                         let matchedBrand = brandList.find((b: string) => b.toLowerCase() === data.brand.toLowerCase());
 
@@ -536,11 +528,8 @@ function UnitsPageContent() {
                             matchedBrand = brandList.find((b: string) => data.brand.toLowerCase().includes(b.toLowerCase()) || b.toLowerCase().includes(data.brand.toLowerCase()));
                         }
 
-                        console.log("[STNK Scan] Brand match result:", { matchedBrand });
-
                         if (matchedBrand) {
                             setBrand(matchedBrand);
-                            console.log("[STNK Scan] setBrand called with:", matchedBrand);
 
                             // Use another setTimeout for model to ensure brand state propagates
                             setTimeout(() => {
@@ -548,12 +537,6 @@ function UnitsPageContent() {
                                 // Map Model
                                 if (data.model) {
                                     const modelList = MODELS[data.vehicleType]?.[matchedBrand] || [];
-                                    console.log("[STNK Scan] Model matching:", {
-                                        vehicleType: data.vehicleType,
-                                        brand: matchedBrand,
-                                        apiModel: data.model,
-                                        modelList
-                                    });
 
                                     // 1. Try exact match first
                                     let matchedModel = modelList.find((m: string) => m.toLowerCase() === data.model.toLowerCase());
@@ -562,12 +545,8 @@ function UnitsPageContent() {
                                     if (!matchedModel) {
                                         matchedModel = modelList.find((m: string) => m.toLowerCase().includes(data.model.toLowerCase()) || data.model.toLowerCase().includes(m.toLowerCase()));
                                     }
-
-                                    console.log("[STNK Scan] Model match result:", { matchedModel });
-
                                     if (matchedModel) {
                                         setModel(matchedModel);
-                                        console.log("[STNK Scan] setModel called with:", matchedModel);
                                     } else {
                                         setModel("Lainnya");
                                         setCustomModel(data.model);
@@ -576,7 +555,6 @@ function UnitsPageContent() {
                             }, 50); // 50ms delay for model
                         }
                     } else {
-                        console.log("[STNK Scan] Brand not matched, setting to Lainnya");
                         // If brand not found, defaulting to Lainnya
                         if (brandList.includes("Lainnya")) {
                             setBrand("Lainnya");
@@ -943,16 +921,16 @@ function UnitsPageContent() {
                                 }
                     }}>
                         <DialogTrigger asChild>
-                            <Button className="rounded-lg bg-teal-600 px-3 font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 sm:px-4">
+                            <Button className="h-11 rounded-lg px-3 font-semibold sm:px-4">
                                 <Plus className="mr-1.5 h-4 w-4 sm:mr-2" /> Tambah Unit
                             </Button>
                         </DialogTrigger>
                                 <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
-                                    <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-7 sm:py-5 sm:pr-20">
-                                        <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
+                                    <DialogHeader className="border-b border-[var(--mudha-border-default)] bg-[var(--mudha-surface-secondary)] px-4 py-4 pr-16 text-left sm:px-7 sm:py-5 sm:pr-20">
+                                        <div className="w-fit rounded-full bg-[var(--mudha-surface-primary)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--mudha-text-muted)]">
                                             {editingUnit ? "Mode edit" : "Unit baru"}
                                         </div>
-                                        <DialogTitle className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
+                                        <DialogTitle className="mt-2 text-xl font-bold tracking-tight text-[var(--mudha-text)] sm:text-2xl">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>
                                         <DialogDescription className="sr-only">
                                             {editingUnit ? "Formulir untuk memperbarui data unit kendaraan." : "Formulir untuk menambahkan unit kendaraan."}
                                         </DialogDescription>
@@ -963,7 +941,7 @@ function UnitsPageContent() {
 
                                             <section className="space-y-4">
                                                 <div>
-                                                    <h3 className="text-sm font-black text-teal-950">Foto kendaraan</h3>
+                                                    <h3 className="text-sm font-semibold text-[var(--mudha-text)]">Foto kendaraan</h3>
                                                     <p className="mt-1 text-xs text-muted-foreground">Opsional. Foto dapat dipilih langsung dari galeri HP.</p>
                                                 </div>
                                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1004,7 +982,7 @@ function UnitsPageContent() {
 
                                             <section className="space-y-4 rounded-xl border border-teal-900/10 bg-teal-50/50 p-4 sm:p-5 dark:bg-slate-900">
                                                 <div>
-                                                    <h3 className="text-sm font-black text-teal-950 dark:text-teal-100">Data kendaraan</h3>
+                                                    <h3 className="text-sm font-semibold text-[var(--mudha-text)]">Data kendaraan</h3>
                                                     <p className="mt-1 text-xs text-muted-foreground">Lengkapi informasi utama untuk membentuk nama unit.</p>
                                                 </div>
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1161,7 +1139,7 @@ function UnitsPageContent() {
 
                                             <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
                                                 <div>
-                                                    <h3 className="text-sm font-black text-teal-950">Identitas & kepemilikan</h3>
+                                                    <h3 className="text-sm font-semibold text-[var(--mudha-text)]">Identitas & kepemilikan</h3>
                                                     <p className="mt-1 text-xs text-muted-foreground">Nomor dokumen, pemodal, dan informasi pajak unit.</p>
                                                 </div>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1775,7 +1753,7 @@ function UnitsPageContent() {
 
 export default function UnitsPage() {
     return (
-        <Suspense fallback={<div className="p-8">Loading...</div>}>
+        <Suspense fallback={<div className="p-8">Memuat...</div>}>
             <UnitsPageContent />
         </Suspense>
     )
