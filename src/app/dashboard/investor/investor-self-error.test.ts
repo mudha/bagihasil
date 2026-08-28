@@ -76,9 +76,22 @@ describe("Investor self-view page — privacy and error handling (F1)", () => {
         expect(source).toMatch(/retryNonce|retry|onRetry|Coba Lagi/)
     })
 
-    it("differentiates access-denied (401/403) from generic network errors", () => {
-        // After fix: should distinguish 401/403 from other failures
-        expect(source).toMatch(/401|403/)
+    it("differentiates access-denied (403) and missing mapping (404)", () => {
+        expect(source).toContain("res.status === 403")
+        expect(source).toContain("res.status === 404")
+        expect(source).toContain("setIsAccessDenied(true)")
+        expect(source).toContain("setIsNotFound(true)")
+    })
+
+    it("clears prior financial data before every read", () => {
+        expect(source).toContain("setData(null)")
+        expect(source).toContain("setData(null)\n        try")
+    })
+
+    it("validates the response envelope and collection shapes before rendering", () => {
+        expect(source).toContain("const result: unknown = await res.json()")
+        expect(source).toContain("Array.isArray(result.investmentsData)")
+        expect(source).toContain("Array.isArray(result.paymentsData)")
     })
 
     it("does not conflate network error with missing investor (!data check should be refined after fix)", () => {
