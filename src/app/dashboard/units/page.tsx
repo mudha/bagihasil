@@ -926,8 +926,8 @@ function UnitsPageContent() {
                             </Button>
                         </DialogTrigger>
                                 <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
-                                    <DialogHeader className="border-b border-[var(--mudha-border-default)] bg-[var(--mudha-surface-secondary)] px-4 py-4 pr-16 text-left sm:px-7 sm:py-5 sm:pr-20">
-                                        <div className="w-fit rounded-full bg-[var(--mudha-surface-primary)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--mudha-text-muted)]">
+                                    <DialogHeader className="border-b border-[var(--mudha-border)] bg-[var(--mudha-surface-subtle)] px-4 py-4 pr-16 text-left sm:px-7 sm:py-5 sm:pr-20">
+                                        <div className="w-fit rounded-full bg-[var(--mudha-surface)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--mudha-text-muted)]">
                                             {editingUnit ? "Mode edit" : "Unit baru"}
                                         </div>
                                         <DialogTitle className="mt-2 text-xl font-bold tracking-tight text-[var(--mudha-text)] sm:text-2xl">{editingUnit ? "Edit Unit" : "Tambah Unit Baru"}</DialogTitle>

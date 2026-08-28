@@ -28,13 +28,13 @@ describe("Units page visual cleanup", () => {
     })
 
     it("dialog header uses Mudha surface tokens", () => {
-        expect(units).toContain("bg-[var(--mudha-surface-secondary)]")
+        expect(units).toContain("bg-[var(--mudha-surface-subtle)]")
     })
 
     it("dialog mode badge uses surface tokens not glass", () => {
-        const idx = units.indexOf('bg-[var(--mudha-surface-secondary)]')
+        const idx = units.indexOf('bg-[var(--mudha-surface-subtle)]')
         const region = units.slice(idx, idx + 500)
-        expect(region).toContain("bg-[var(--mudha-surface-primary)]")
+        expect(region).toContain("bg-[var(--mudha-surface)]")
         expect(region).not.toContain("bg-white/10")
     })
 
