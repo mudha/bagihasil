@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { canReadAdminData } from "@/lib/api-auth"
+import { legacyTransactionSelect } from "../../../lib/legacy-read-selects"
 
 const transactionSchema = z.object({
     unitId: z.string(),
@@ -72,21 +73,7 @@ export async function GET(req: Request) {
 
     const transactions = await prisma.transaction.findMany({
         where,
-        include: {
-            unit: {
-                include: {
-                    investor: true
-                }
-            },
-            costs: true,
-            profitSharing: true,
-            paymentHistories: true,
-            _count: {
-                select: {
-                    paymentHistories: true
-                }
-            }
-        },
+        select: legacyTransactionSelect,
         orderBy: { createdAt: 'desc' }
     })
     return NextResponse.json(transactions)
