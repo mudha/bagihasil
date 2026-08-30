@@ -30,6 +30,8 @@ model User {
   investor Investor?
   accounts Account[]
   sessions Session[]
+  determinedLosses TransactionLoss[]
+  capitalMovements CapitalMovement[]
 }
 
 model Account {
@@ -70,12 +72,15 @@ model Investor {
   isActive           Boolean  @default(true)
   managedCapitalBalance          Decimal? @db.Decimal(18, 0)
   managedCapitalBalanceUpdatedAt DateTime?
+  capitalLedgerOpenedAt          DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   user             User?            @relation(fields: [userId], references: [id])
   units            Unit[]
   paymentHistories PaymentHistory[]
+  transactionLosses TransactionLoss[]
+  capitalMovements CapitalMovement[]
 }
 
 model Unit {
@@ -95,6 +100,8 @@ model Unit {
 
   investor     Investor      @relation(fields: [investorId], references: [id])
   transactions Transaction[]
+  transactionLosses TransactionLoss[]
+  capitalMovements CapitalMovement[]
 
   // Structured vehicle data
   vehicleType String?
@@ -120,6 +127,7 @@ model Transaction {
   profitStatus           String? // PROFIT, LOSS, BREAK_EVEN
   lossBearer             String? // INVESTOR, MANAGER, SHARED
   paymentStatus          String    @default("UNPAID") // UNPAID, PARTIAL, PAID
+  finalizationVersion    Int       @default(0)
 
   notes                String?
   buyProofImageUrl     String?
@@ -134,6 +142,8 @@ model Transaction {
   profitSharing    ProfitSharing?
   paymentHistories PaymentHistory[]
   proofs           TransactionProof[]
+  transactionLosses TransactionLoss[]
+  capitalMovements CapitalMovement[]
 }
 
 model TransactionProof {
@@ -215,4 +225,100 @@ model ActivityLog {
   userId    String // User who performed the action
   userName  String? // Snapshot of user name
   createdAt DateTime @default(now())
+}
+
+enum LossResponsibility {
+  NORMAL_BUSINESS
+  MANAGER_MISCONDUCT
+}
+
+enum LedgerTreatment {
+  POSTED
+  IN_OPENING_BALANCE
+  PENDING_REVIEW
+  REVERSED
+}
+
+enum CapitalMovementType {
+  CAPITAL_TOP_UP
+  CAPITAL_WITHDRAWAL
+  REALIZED_NORMAL_LOSS
+  HISTORICAL_LOSS_ADJUSTMENT
+  MANAGER_RISK_CAPITAL_CONTRIBUTION
+  MANAGER_REPAYABLE_ADVANCE
+  MANAGER_VOLUNTARY_CONTRIBUTION
+  MANAGER_RESTITUTION
+  ADMIN_ADJUSTMENT_INCREASE
+  ADMIN_ADJUSTMENT_DECREASE
+  REVERSAL
+}
+
+enum CapitalMovementDirection {
+  CREDIT
+  DEBIT
+}
+
+enum CapitalMovementSource {
+  FINALIZATION
+  ADMIN
+  RECONCILIATION
+  REVERSAL
+}
+
+model TransactionLoss {
+  id                       String            @id @default(cuid())
+  transactionId            String
+  finalizationVersion      Int
+  investorId               String
+  unitId                   String
+  grossLossAmount          Decimal           @db.Decimal(18, 0)
+  investorLossAmount       Decimal           @db.Decimal(18, 0)
+  managerCapitalLossAmount Decimal           @db.Decimal(18, 0)
+  managerLiabilityAmount   Decimal           @db.Decimal(18, 0)
+  responsibility            LossResponsibility
+  ledgerTreatment           LedgerTreatment
+  reason                    String?
+  determinedByUserId        String
+  createdAt                 DateTime          @default(now())
+
+  transaction     Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  investor        Investor    @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  unit            Unit        @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  determinedByUser User      @relation(fields: [determinedByUserId], references: [id], onDelete: Restrict)
+  capitalMovements CapitalMovement[]
+
+  @@unique([transactionId, finalizationVersion])
+  @@index([investorId, createdAt])
+  @@index([unitId, createdAt])
+  @@index([responsibility, ledgerTreatment])
+}
+
+model CapitalMovement {
+  id                  String                  @id @default(cuid())
+  investorId          String
+  transactionId       String?
+  unitId              String?
+  lossEventId         String?
+  type                CapitalMovementType
+  amount              Decimal                 @db.Decimal(18, 0)
+  direction           CapitalMovementDirection
+  effectiveAt         DateTime
+  createdAt           DateTime                @default(now())
+  actorUserId         String
+  source              CapitalMovementSource
+  reason              String
+  idempotencyKey      String                  @unique
+  reversesMovementId  String?                 @unique
+
+  investor        Investor         @relation(fields: [investorId], references: [id], onDelete: Restrict)
+  transaction     Transaction?     @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  unit            Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  lossEvent       TransactionLoss? @relation(fields: [lossEventId], references: [id], onDelete: Restrict)
+  actorUser       User             @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  reversesMovement CapitalMovement? @relation("MovementReversal", fields: [reversesMovementId], references: [id], onDelete: Restrict)
+  reversal        CapitalMovement?  @relation("MovementReversal")
+
+  @@index([investorId, effectiveAt])
+  @@index([investorId, createdAt])
+  @@index([transactionId])
 }

@@ -17,6 +17,8 @@ describe("disposable migration CI validator", () => {
   })
   it.each([
     ["additive", "ALTER TABLE \"User\" ADD COLUMN \"note\" TEXT;", true],
+    ["enum", "CREATE TYPE \"NewStatus\" AS ENUM ('NEW');", true],
+    ["check constraint", "ALTER TABLE \"A\" ADD CONSTRAINT \"A_value_nonnegative\" CHECK (\"value\" >= 0);", true],
     ["referential actions", "ALTER TABLE \"A\" ADD CONSTRAINT fk FOREIGN KEY (id) REFERENCES \"B\"(id) ON UPDATE CASCADE ON DELETE RESTRICT;", true],
     ["data", "UPDATE \"User\" SET name='x';", false],
     ["destructive", "DROP TABLE \"User\";", false],
