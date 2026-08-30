@@ -8,6 +8,14 @@
  */
 import { describe, it, expect } from "vitest"
 import { readFileSync } from "node:fs"
+import {
+    VEHICLE_TYPES,
+    BRANDS,
+    MODELS,
+    COLORS,
+    YEARS,
+    getDuplicateInfo,
+} from "../../../components/units/unit-data"
 
 const page = readFileSync(
     `${process.cwd()}/src/app/dashboard/units/page.tsx`, "utf-8"
@@ -15,6 +23,68 @@ const page = readFileSync(
 const mod = readFileSync(
     `${process.cwd()}/src/components/units/unit-data.ts`, "utf-8"
 )
+
+describe("Executable unit-data behavior", () => {
+    const unit = (id: string, plateNumber: string, createdAt?: string) => ({ id, plateNumber, createdAt })
+
+    it("preserves exact constant values and ordering", () => {
+        expect(VEHICLE_TYPES).toEqual(["Mobil", "Motor"])
+        expect(BRANDS.Mobil).toEqual(["Toyota", "Honda", "Daihatsu", "Mitsubishi", "Suzuki", "Wuling", "Hyundai", "Nissan", "Mazda", "BMW", "Mercedes-Benz", "Lexus", "Isuzu", "Kia", "Lainnya"])
+        expect(BRANDS.Motor).toEqual(["Yamaha", "Honda", "Suzuki", "Kawasaki", "Vespa", "Piaggio", "BMW", "Ducati", "Harley-Davidson", "KTM", "Royal Enfield", "Lainnya"])
+        expect(MODELS).toEqual({
+            Mobil: {
+                Toyota: ["Avanza", "Innova", "Fortuner", "Alphard", "Veloz", "Rush", "Raize", "Agya", "Calya", "Yaris", "Camry"],
+                Honda: ["Brio", "HR-V", "BR-V", "CR-V", "Civic", "City", "Mobilio", "Jazz", "WR-V"],
+                Daihatsu: ["Xenia", "Terios", "Sigra", "Ayla", "Rocky", "Gran Max", "Luxio"],
+                Mitsubishi: ["Xpander", "Xpander Cross", "Pajero Sport", "Triton", "L300"],
+                Suzuki: ["Ertiga", "XL7", "Baleno", "Ignis", "Jimny", "S-Presso"],
+            },
+            Motor: {
+                Yamaha: ["NMAX", "XMAX", "Aerox", "Lexi", "Fazzio", "Grand Filano", "Mio", "Vixion", "R15", "R25", "MT-15", "MT-25"],
+                Honda: ["Beat", "Vario", "Scoopy", "PCX", "ADV", "Genio", "CBR150R", "CBR250RR", "CRF150L", "CB150R", "Sonic", "Supra X", "Revo"],
+                Suzuki: ["Satria F150", "GSX-R150", "Address", "Nex II"],
+                Kawasaki: ["Ninja 250", "KLX 150", "W175"],
+                Vespa: ["Primavera", "Sprint", "LX", "S"],
+            },
+        })
+        expect(COLORS).toEqual(["Hitam", "Putih", "Silver", "Abu-abu", "Merah", "Biru", "Cokelat", "Hijau", "Kuning", "Oranye", "Ungu", "Lainnya"])
+        expect(YEARS).toHaveLength(30)
+        expect(YEARS[0]).toBe((new Date().getFullYear() + 1).toString())
+    })
+
+    it("returns non-duplicate for a unique plate", () => {
+        expect(getDuplicateInfo([unit("u1", "B 1 AA", "2024-01-01")], unit("u1", "B 1 AA", "2024-01-01"))).toEqual({
+            isDuplicate: false, purchaseNumber: 1, totalDuplicates: 1, isBuyback: false,
+        })
+    })
+
+    it("matches case and surrounding spaces without changing source values", () => {
+        const units = [unit("u1", " B 2 BB ", "2024-01-01"), unit("u2", "b 2 bb", "2024-02-01")]
+        expect(getDuplicateInfo(units, unit("u2", " B 2 BB ", "2024-02-01"))).toEqual({
+            isDuplicate: true, purchaseNumber: 2, totalDuplicates: 2, isBuyback: true,
+        })
+    })
+
+    it("orders three same-plate purchases by createdAt", () => {
+        const units = [unit("u3", "C 3 CC", "2024-03-01"), unit("u1", "c 3 cc", "2024-01-01"), unit("u2", "C 3 CC", "2024-02-01")]
+        expect(getDuplicateInfo(units, unit("u3", "C 3 CC", "2024-03-01"))).toMatchObject({
+            isDuplicate: true, purchaseNumber: 3, totalDuplicates: 3, isBuyback: true,
+        })
+    })
+
+    it("returns the baseline empty-plate result for empty collection and blank plate", () => {
+        expect(getDuplicateInfo([], unit("u1", ""))).toEqual({
+            isDuplicate: false, purchaseNumber: 1, totalDuplicates: 1, isBuyback: false,
+        })
+    })
+
+    it("preserves baseline not-found current ID behavior", () => {
+        expect(getDuplicateInfo([unit("u1", "D 4 DD", "2024-01-01")], unit("missing", "D 4 DD", "2024-02-01"))).toEqual({
+            isDuplicate: false, purchaseNumber: 0, totalDuplicates: 1, isBuyback: false,
+        })
+    })
+})
+
 
 describe("Extracted unit-data module", () => {
     it("exports VEHICLE_TYPES, BRANDS, MODELS, COLORS, YEARS, getDuplicateInfo", () => {
