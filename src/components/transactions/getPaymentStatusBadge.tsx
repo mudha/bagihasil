@@ -4,7 +4,8 @@
  *
  * This function is pure — no hooks, no network, no state.
  */
-import { Badge } from "@/components/ui/badge"
+import React from "react"
+import { Badge } from "../ui/badge"
 import { CheckCircle2, AlertCircle } from "lucide-react"
 
 export interface PaymentStatusTx {
