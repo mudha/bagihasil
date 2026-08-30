@@ -19,11 +19,12 @@ function sha256(path: string) {
 }
 
 describe("PostgreSQL baseline repository contract", () => {
-  it("declares PostgreSQL and exactly one active baseline", () => {
+  it("declares PostgreSQL and preserves the canonical baseline", () => {
     expect(readFileSync(join(active, "migration_lock.toml"), "utf8")).toContain('provider = "postgresql"')
     const folders = readdirSync(active).filter((name) => statSync(join(active, name)).isDirectory())
-    expect(folders).toEqual([manifest.baselineMigration])
     expect(manifest.baselineMigration).toBe("20260824000000_postgresql_baseline")
+    expect(folders.filter((name) => name === manifest.baselineMigration)).toHaveLength(1)
+    expect(folders.filter((name) => name !== manifest.baselineMigration).every((name) => /^\d{14}_[a-z0-9][a-z0-9_-]*$/.test(name) && name > manifest.baselineMigration)).toBe(true)
     expect(readFileSync(baseline, "utf8")).toContain('CREATE TABLE "Investor"')
   })
 

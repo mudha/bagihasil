@@ -17,11 +17,19 @@ describe("disposable migration CI validator", () => {
   })
   it.each([
     ["additive", "ALTER TABLE \"User\" ADD COLUMN \"note\" TEXT;", true],
+    ["enum", "CREATE TYPE \"NewStatus\" AS ENUM ('NEW');", true],
+    ["check constraint", "ALTER TABLE \"A\" ADD CONSTRAINT \"A_value_nonnegative\" CHECK (\"value\" >= 0);", true],
+    ["self reversal check", "ALTER TABLE \"A\" ADD CONSTRAINT \"A_no_self\" CHECK (\"parentId\" IS NULL OR \"parentId\" <> \"id\");", true],
     ["referential actions", "ALTER TABLE \"A\" ADD CONSTRAINT fk FOREIGN KEY (id) REFERENCES \"B\"(id) ON UPDATE CASCADE ON DELETE RESTRICT;", true],
     ["data", "UPDATE \"User\" SET name='x';", false],
     ["destructive", "DROP TABLE \"User\";", false],
     ["sqlite", "CREATE TABLE x (id INTEGER PRIMARY KEY AUTOINCREMENT, createdAt DATETIME);", false],
     ["unknown", "DO $$ BEGIN PERFORM unsafe(); END $$;", false],
+    ["check function", "ALTER TABLE \"A\" ADD CONSTRAINT bad CHECK (pg_sleep(1) IS NULL);", false],
+    ["check subquery", "ALTER TABLE \"A\" ADD CONSTRAINT bad CHECK ((SELECT true));", false],
+    ["enum trailing action", "CREATE TYPE \"Status\" AS ENUM ('NEW') GRANT ALL;", false],
+    ["statement smuggling", "CREATE TYPE \"Status\" AS ENUM ('NEW'); UPDATE \"User\" SET name='x';", false],
+    ["alter action", "ALTER TABLE \"A\" DROP COLUMN \"value\";", false],
   ])("classifies %s", (_name, sql, accepted) => expect(classifyMigrationSql(sql).accepted).toBe(accepted))
   it("requires timestamped migration names and rejects path injection", () => {
     expect(validateMigrationName("20260901000000_add_note")).toEqual([])
