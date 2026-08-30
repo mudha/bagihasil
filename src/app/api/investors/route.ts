@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
+import { legacyInvestorSelect } from "../../../lib/legacy-read-selects"
 
 const investorSchema = z.object({
     name: z.string().min(1),
@@ -26,6 +27,7 @@ export async function GET() {
 
         const ownInvestor = await prisma.investor.findMany({
             where: { id: investor.id },
+            select: legacyInvestorSelect,
             orderBy: { createdAt: 'desc' }
         })
         return NextResponse.json(ownInvestor)
@@ -36,6 +38,7 @@ export async function GET() {
     }
 
     const investors = await prisma.investor.findMany({
+        select: legacyInvestorSelect,
         orderBy: { createdAt: 'desc' }
     })
     return NextResponse.json(investors)

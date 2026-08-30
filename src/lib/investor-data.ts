@@ -1,17 +1,17 @@
 import { prisma } from "@/lib/prisma"
 
 import { getHijriMonthYear } from "@/lib/date-utils"
+import {
+    legacyInvestorDashboardSelect,
+    legacyTransactionForDashboardSelect,
+    legacyUnitWithTransactionsSelect,
+} from "./legacy-read-selects"
 
 export async function getInvestorDashboardData(userId: string, months: number = 6) {
     // 1. Find Investor attached to this User
     const investor = await prisma.investor.findUnique({
         where: { userId },
-        include: {
-            units: {
-                where: { status: "AVAILABLE" }, // Only active units for count
-            },
-            paymentHistories: true
-        }
+        select: legacyInvestorDashboardSelect,
     })
 
     if (!investor) return null
@@ -26,10 +26,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
                 investorId: investor.id
             }
         },
-        include: {
-            profitSharing: true,
-            costs: true // to double check logic if needed
-        },
+        select: legacyTransactionForDashboardSelect,
         orderBy: {
             sellDate: 'asc' // Ensure chronological order for charts
         }
@@ -45,7 +42,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     // Total Invested & Active Capital Calculation
     const allInvestorUnits = await prisma.unit.findMany({
         where: { investorId: investor.id },
-        include: { transactions: true }
+        select: legacyUnitWithTransactionsSelect,
     })
 
     for (const unit of allInvestorUnits) {

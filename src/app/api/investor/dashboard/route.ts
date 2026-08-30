@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 import { getInvestorDashboardData } from "@/lib/investor-data"
+import { legacyTransactionWithUnitSelect, legacyUnitWithInvestorSelect } from "../../../../lib/legacy-read-selects"
 
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -29,12 +30,14 @@ export async function GET(request: NextRequest) {
         const units = await prisma.unit.findMany({
 
             where: { investorId: investor.id },
-            include: {
+            select: {
+                ...legacyUnitWithInvestorSelect,
                 transactions: {
                     where: { OR: [{ status: "ON_PROCESS" }, { status: "COMPLETED" }] },
                     orderBy: { createdAt: "desc" },
-                    take: 1
-                }
+                    take: 1,
+                    select: legacyTransactionWithUnitSelect,
+                },
             },
             orderBy: { createdAt: "desc" }
         })
@@ -63,7 +66,21 @@ export async function GET(request: NextRequest) {
         const payments = await prisma.paymentHistory.findMany({
 
             where: { investorId: investor.id },
-            include: { transaction: { include: { unit: true } } },
+            select: {
+                id: true,
+                transactionId: true,
+                investorId: true,
+                idempotencyKey: true,
+                idempotencyFingerprint: true,
+                amount: true,
+                paymentDate: true,
+                method: true,
+                proofImageUrl: true,
+                notes: true,
+                createdAt: true,
+                updatedAt: true,
+                transaction: { select: legacyTransactionWithUnitSelect },
+            },
             orderBy: { paymentDate: "desc" }
         })
 

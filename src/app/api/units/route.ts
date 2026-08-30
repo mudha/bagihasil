@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
+import { legacyUnitWithInvestorSelect } from "../../../lib/legacy-read-selects"
 
 
 const unitSchema = z.object({
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
 
     const units = await prisma.unit.findMany({
         where,
-        include: { investor: true },
+        select: legacyUnitWithInvestorSelect,
         orderBy: { createdAt: 'desc' }
     })
     return NextResponse.json(units)
