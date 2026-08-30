@@ -20,17 +20,20 @@ export type LossAllocationResult = {
 export function calculateLossAllocation(input: LossAllocationInput): LossAllocationResult {
     const { netMargin, investorRiskCapital, managerRiskCapital, responsibility } = input
 
-    if (!Number.isFinite(netMargin) || !Number.isInteger(netMargin)) {
+    if (!Number.isSafeInteger(netMargin)) {
         throw new Error("netMargin harus berupa angka bulat finite (rp tanpa pecahan)")
     }
-    if (!Number.isFinite(investorRiskCapital) || investorRiskCapital < 0 || !Number.isInteger(investorRiskCapital)) {
+    if (!Number.isSafeInteger(investorRiskCapital) || investorRiskCapital < 0) {
         throw new Error("investorRiskCapital harus bulat non-negatif dan finite")
     }
-    if (!Number.isFinite(managerRiskCapital) || managerRiskCapital < 0 || !Number.isInteger(managerRiskCapital)) {
+    if (!Number.isSafeInteger(managerRiskCapital) || managerRiskCapital < 0) {
         throw new Error("managerRiskCapital harus bulat non-negatif dan finite")
     }
+    if (responsibility !== "NORMAL_BUSINESS" && responsibility !== "MANAGER_MISCONDUCT") {
+        throw new Error("responsibility tidak dikenal")
+    }
 
-    const grossRealizedLoss = Math.max(0, Math.round(-netMargin))
+    const grossRealizedLoss = netMargin < 0 ? -netMargin : 0
 
     if (grossRealizedLoss === 0) {
         return {
@@ -44,7 +47,11 @@ export function calculateLossAllocation(input: LossAllocationInput): LossAllocat
         }
     }
 
-    const totalRiskCapital = investorRiskCapital + managerRiskCapital
+    const totalRiskCapitalBigInt = BigInt(investorRiskCapital) + BigInt(managerRiskCapital)
+    if (totalRiskCapitalBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new Error("Total modal berisiko melebihi batas angka aman")
+    }
+    const totalRiskCapital = Number(totalRiskCapitalBigInt)
 
     if (totalRiskCapital === 0) {
         throw new Error("Total modal berisiko nol tetapi terdapat kerugian — tidak dapat mengalokasikan")
@@ -52,11 +59,13 @@ export function calculateLossAllocation(input: LossAllocationInput): LossAllocat
 
     const allocatableCapitalLoss = Math.min(grossRealizedLoss, totalRiskCapital)
     const unallocatedExcessLoss = grossRealizedLoss - allocatableCapitalLoss
+    const allocatableCapitalLossBigInt = BigInt(allocatableCapitalLoss)
+    const investorRiskCapitalBigInt = BigInt(investorRiskCapital)
 
     if (responsibility === "MANAGER_MISCONDUCT") {
         // investorCapitalLoss = 0; bagian proportional menjadi liability
-        const managerLiabilityToInvestor = Math.floor(
-            allocatableCapitalLoss * investorRiskCapital / totalRiskCapital
+        const managerLiabilityToInvestor = Number(
+            allocatableCapitalLossBigInt * investorRiskCapitalBigInt / totalRiskCapitalBigInt
         )
         const proportionalManagerLoss = allocatableCapitalLoss - managerLiabilityToInvestor
 
@@ -72,8 +81,8 @@ export function calculateLossAllocation(input: LossAllocationInput): LossAllocat
     }
 
     // Normal: investorFloor (deterministik), manager = remainder
-    const investorCapitalLoss = Math.floor(
-        allocatableCapitalLoss * investorRiskCapital / totalRiskCapital
+    const investorCapitalLoss = Number(
+        allocatableCapitalLossBigInt * investorRiskCapitalBigInt / totalRiskCapitalBigInt
     )
     const managerCapitalLoss = allocatableCapitalLoss - investorCapitalLoss
 

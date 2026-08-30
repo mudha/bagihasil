@@ -237,6 +237,51 @@ describe("calculateLossAllocation", () => {
         ).toThrow()
     })
 
+    it("13d. input di luar safe-integer ditolak", () => {
+        expect(() =>
+            calculateLossAllocation({
+                netMargin: Number.MAX_SAFE_INTEGER + 1,
+                investorRiskCapital: 100,
+                managerRiskCapital: 0,
+                responsibility: "NORMAL_BUSINESS",
+            })
+        ).toThrow()
+
+        expect(() =>
+            calculateLossAllocation({
+                netMargin: -100,
+                investorRiskCapital: Number.MAX_SAFE_INTEGER,
+                managerRiskCapital: 1,
+                responsibility: "NORMAL_BUSINESS",
+            })
+        ).toThrow()
+    })
+
+    it("13e. responsibility yang tidak dikenal ditolak termasuk saat no-loss", () => {
+        expect(() =>
+            calculateLossAllocation({
+                netMargin: 0,
+                investorRiskCapital: 100,
+                managerRiskCapital: 0,
+                responsibility: "UNKNOWN" as never,
+            })
+        ).toThrow("responsibility tidak dikenal")
+    })
+
+    it("13f. total modal tepat pada batas safe-integer tetap exact", () => {
+        const result = calculateLossAllocation({
+            netMargin: -Number.MAX_SAFE_INTEGER,
+            investorRiskCapital: Number.MAX_SAFE_INTEGER,
+            managerRiskCapital: 0,
+            responsibility: "NORMAL_BUSINESS",
+        })
+
+        expect(result.grossRealizedLoss).toBe(Number.MAX_SAFE_INTEGER)
+        expect(result.allocatableCapitalLoss).toBe(Number.MAX_SAFE_INTEGER)
+        expect(result.investorCapitalLoss).toBe(Number.MAX_SAFE_INTEGER)
+        expect(result.managerCapitalLoss).toBe(0)
+    })
+
     it("14. hasil tidak dipengaruhi nisbah keuntungan karena nisbah bukan input", () => {
         // nisbah tidak ada di input — verify function signature
         const result = calculateLossAllocation({
