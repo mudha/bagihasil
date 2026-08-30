@@ -311,8 +311,8 @@ model CapitalMovement {
   reversesMovementId  String?                 @unique
 
   investor        Investor         @relation(fields: [investorId], references: [id], onDelete: Restrict)
-  transaction     Transaction?     @relation(fields: [transactionId], references: [id], onDelete: SetNull)
-  unit            Unit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  transaction     Transaction?     @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  unit            Unit?            @relation(fields: [unitId], references: [id], onDelete: Restrict)
   lossEvent       TransactionLoss? @relation(fields: [lossEventId], references: [id], onDelete: Restrict)
   actorUser       User             @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
   reversesMovement CapitalMovement? @relation("MovementReversal", fields: [reversesMovementId], references: [id], onDelete: Restrict)

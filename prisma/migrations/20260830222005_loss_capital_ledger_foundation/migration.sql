@@ -133,6 +133,11 @@ ALTER TABLE "CapitalMovement"
     ADD CONSTRAINT "CapitalMovement_amount_positive"
     CHECK ("amount" > 0);
 
+-- AddCheckConstraint
+ALTER TABLE "CapitalMovement"
+    ADD CONSTRAINT "CapitalMovement_no_self_reversal"
+    CHECK ("reversesMovementId" IS NULL OR "reversesMovementId" <> "id");
+
 -- AddForeignKey
 ALTER TABLE "TransactionLoss"
     ADD CONSTRAINT "TransactionLoss_transactionId_fkey"
@@ -161,12 +166,12 @@ ALTER TABLE "CapitalMovement"
 -- AddForeignKey
 ALTER TABLE "CapitalMovement"
     ADD CONSTRAINT "CapitalMovement_transactionId_fkey"
-    FOREIGN KEY ("transactionId") REFERENCES "Transaction"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    FOREIGN KEY ("transactionId") REFERENCES "Transaction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CapitalMovement"
     ADD CONSTRAINT "CapitalMovement_unitId_fkey"
-    FOREIGN KEY ("unitId") REFERENCES "Unit"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    FOREIGN KEY ("unitId") REFERENCES "Unit"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CapitalMovement"
