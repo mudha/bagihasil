@@ -1188,7 +1188,7 @@ function TransactionsPageContent() {
                                         >
                                             {getInvestorInitials(trx.unit.investor.name)}
                                         </span>
-                                        <span className="min-w-0 flex-1 break-words leading-tight">{trx.unit.investor.name}</span>
+                                        <span className="min-w-0 flex-1 break-words leading-tight line-clamp-2 text-left" title={trx.unit.investor.name}>{trx.unit.investor.name}</span>
                                     </span>
                                 </div>
                                 <div>
@@ -1577,7 +1577,7 @@ function TransactionsPageContent() {
                                         >
                                             {getInvestorInitials(trx.unit.investor.name)}
                                         </span>
-                                        <span className="min-w-0 flex-1 break-words leading-tight">{trx.unit.investor.name}</span>
+                                        <span className="min-w-0 flex-1 break-words leading-tight line-clamp-2 text-left" title={trx.unit.investor.name}>{trx.unit.investor.name}</span>
                                     </span>
                                 </TableCell>
                                 <TableCell>
