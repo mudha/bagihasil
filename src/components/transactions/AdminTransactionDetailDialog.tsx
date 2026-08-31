@@ -104,7 +104,7 @@ export function AdminTransactionDetailDialog({ open, onOpenChange, transaction, 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl">
+                <DialogContent className="min-w-0 grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl">
                     <div className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-14 text-white sm:px-6 sm:py-5 sm:pr-16">
                         <DialogHeader>
                             <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
