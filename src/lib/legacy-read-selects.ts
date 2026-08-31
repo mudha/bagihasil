@@ -287,3 +287,16 @@ export const transactionCreateActiveCheckSelect = {
 export const transactionCreateResponseSelect = {
     ...legacyTransactionScalarSelect,
 } satisfies Prisma.TransactionSelect
+
+export const profitSharingPatchPreReadSelect = {
+    netMargin: true,
+} satisfies Prisma.ProfitSharingSelect
+
+export const profitSharingPatchTransactionSelect = {
+    paymentStatus: true,
+    paymentHistories: { select: { amount: true } },
+} satisfies Prisma.TransactionSelect
+
+export const profitSharingPatchUpdateSelect = {
+    id: true,
+} satisfies Prisma.TransactionSelect
