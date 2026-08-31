@@ -8,7 +8,11 @@ import { notifyUnitSold } from "@/lib/notifications"
 import { canAccessTransaction } from "@/lib/api-auth"
 import { calculateProfitSharing } from "@/lib/profit-sharing"
 import { runSerializableTransaction } from "@/lib/serializable-transaction"
-import { legacyTransactionDetailSelect } from "../../../../lib/legacy-read-selects"
+import {
+    legacyTransactionDetailSelect,
+    transactionMutationPreReadSelect,
+    transactionMutationResponseSelect,
+} from "../../../../lib/legacy-read-selects"
 
 export async function GET(
     req: Request,
@@ -100,11 +104,7 @@ export async function PUT(
         const outcome = await runSerializableTransaction(prisma, async (tx) => {
             const currentTransaction = await tx.transaction.findUnique({
                 where: { id },
-                include: {
-                    costs: true,
-                    profitSharing: true,
-                    unit: { include: { investor: true } },
-                },
+                select: transactionMutationPreReadSelect,
             })
 
             if (!currentTransaction) {
@@ -191,7 +191,8 @@ export async function PUT(
             // 1. Update Transaction
             await tx.transaction.update({
                 where: { id },
-                data: updateData
+                data: updateData,
+                select: { id: true },
             })
 
             // 2. Handle Buy Proofs
@@ -230,7 +231,7 @@ export async function PUT(
 
             const result = await tx.transaction.findUnique({
                 where: { id },
-                include: { costs: true, proofs: true }
+                select: transactionMutationResponseSelect,
             })
             return { kind: "OK" as const, result, notifyInvestorId }
         })

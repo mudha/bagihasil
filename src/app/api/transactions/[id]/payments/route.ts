@@ -5,6 +5,11 @@ import { notifyPaymentProof } from '@/lib/notifications'
 import { requireAdmin } from '@/lib/api-auth'
 import { runSerializableTransaction } from '@/lib/serializable-transaction'
 import { createHash } from 'node:crypto'
+import {
+    legacyPaymentHistorySelect,
+    paymentMutationReplaySelect,
+    paymentTransactionPreReadSelect,
+} from '@/lib/legacy-read-selects'
 
 function isUniqueConstraintError(error: unknown): error is { code: string } {
     return typeof error === 'object'
@@ -60,7 +65,7 @@ export async function POST(
             if (validatedData.idempotencyKey) {
                 const existing = await tx.paymentHistory.findUnique({
                     where: { idempotencyKey: validatedData.idempotencyKey },
-                    include: { transaction: { select: { paymentStatus: true } } },
+                    select: paymentMutationReplaySelect,
                 })
                 if (existing) {
                     if (existing.idempotencyFingerprint !== fingerprint) {
@@ -83,11 +88,7 @@ export async function POST(
 
             const transaction = await tx.transaction.findUnique({
                 where: { id: transactionId },
-                include: {
-                    unit: true,
-                    profitSharing: true,
-                    paymentHistories: true,
-                },
+                select: paymentTransactionPreReadSelect,
             })
 
             if (!transaction) return { kind: 'NOT_FOUND' as const }
@@ -136,6 +137,7 @@ export async function POST(
                     idempotencyKey: validatedData.idempotencyKey,
                     idempotencyFingerprint: validatedData.idempotencyKey ? fingerprint : null,
                 },
+                select: legacyPaymentHistorySelect,
             })
 
             const totalPaid = totalPaidBefore + validatedData.amount
@@ -148,6 +150,7 @@ export async function POST(
             await tx.transaction.update({
                 where: { id: transactionId },
                 data: { paymentStatus },
+                select: { id: true },
             })
 
             return { kind: 'CREATED' as const, payment, paymentStatus, totalPaid }
@@ -206,7 +209,7 @@ export async function POST(
             // The winner's committed row is the authoritative replay response.
             const replay = await prisma.paymentHistory.findUnique({
                 where: { idempotencyKey: parsedIdempotencyKey },
-                include: { transaction: { select: { paymentStatus: true } } },
+                select: paymentMutationReplaySelect,
             })
             if (replay) {
                 if (replay.idempotencyFingerprint !== parsedFingerprint) {
