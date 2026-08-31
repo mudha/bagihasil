@@ -300,3 +300,18 @@ export const profitSharingPatchTransactionSelect = {
 export const profitSharingPatchUpdateSelect = {
     id: true,
 } satisfies Prisma.TransactionSelect
+
+export const transactionDeletePreReadSelect = {
+    id: true,
+    transactionCode: true,
+    unitId: true,
+} satisfies Prisma.TransactionSelect
+
+export const transactionDeleteMutationSelect = {
+    id: true,
+} satisfies Prisma.TransactionSelect
+
+export const transactionDeleteBulkPreReadSelect = {
+    id: true,
+    unitId: true,
+} satisfies Prisma.TransactionSelect

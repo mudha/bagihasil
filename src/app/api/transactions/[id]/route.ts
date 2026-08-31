@@ -7,9 +7,11 @@ import { logActivity } from "@/lib/activity-logger"
 import { notifyUnitSold } from "@/lib/notifications"
 import { canAccessTransaction } from "@/lib/api-auth"
 import { calculateProfitSharing } from "@/lib/profit-sharing"
-import { runSerializableTransaction } from "@/lib/serializable-transaction"
+import { runSerializableTransaction } from "../../../../lib/serializable-transaction"
 import {
     legacyTransactionDetailSelect,
+    transactionDeleteMutationSelect,
+    transactionDeletePreReadSelect,
     transactionMutationPreReadSelect,
     transactionMutationResponseSelect,
 } from "../../../../lib/legacy-read-selects"
@@ -298,37 +300,32 @@ export async function DELETE(
 
     try {
         const { id } = await params
+        const outcome = await runSerializableTransaction(prisma, async (tx) => {
+            const transaction = await tx.transaction.findUnique({
+                where: { id },
+                select: transactionDeletePreReadSelect,
+            })
 
-        // Check if transaction exists
-        const transaction = await prisma.transaction.findUnique({
-            where: { id },
-            include: { costs: true }
+            if (!transaction) return { kind: "NOT_FOUND" as const }
+
+            await tx.cost.deleteMany({ where: { transactionId: id } })
+            await tx.transaction.delete({
+                where: { id },
+                select: transactionDeleteMutationSelect,
+            })
+            await tx.unit.update({
+                where: { id: transaction.unitId },
+                data: { status: "AVAILABLE" },
+            })
+
+            return { kind: "DELETED" as const, transactionCode: transaction.transactionCode }
         })
 
-        if (!transaction) {
+        if (outcome.kind === "NOT_FOUND") {
             return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
         }
 
-        // Delete related costs first, then the transaction
-        await prisma.cost.deleteMany({
-            where: { transactionId: id }
-        })
-
-        await prisma.transaction.delete({
-            where: { id }
-        })
-
-        // Update unit status back to AVAILABLE if needed
-        if (transaction.unitId) {
-            await prisma.unit.update({
-                where: { id: transaction.unitId },
-                data: { status: "AVAILABLE" }
-            })
-        }
-
-        // Log deletion
-        await logActivity("DELETE", "TRANSACTION", id, `Deleted transaction ${transaction.transactionCode}`)
-
+        await logActivity("DELETE", "TRANSACTION", id, `Deleted transaction ${outcome.transactionCode}`)
         return NextResponse.json({ success: true })
     } catch (error) {
         console.error("Error deleting transaction:", error)
