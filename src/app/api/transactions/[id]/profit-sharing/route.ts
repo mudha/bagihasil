@@ -7,6 +7,7 @@ import {
     legacyProfitSharingSelect,
     profitSharingPatchPreReadSelect,
     profitSharingPatchTransactionSelect,
+    profitSharingPatchUpdateSelect,
 } from "../../../../../lib/legacy-read-selects"
 
 const updateProfitSharingSchema = z.object({
@@ -45,8 +46,10 @@ export async function PATCH(
             let managerProfitAmount = 0
 
             if (netMargin > 0) {
-                investorProfitAmount = netMargin * (validatedData.investorSharePercentage / 100)
-                managerProfitAmount = netMargin * (validatedData.managerSharePercentage / 100)
+                investorProfitAmount = Math.round(
+                    netMargin * validatedData.investorSharePercentage / 100
+                )
+                managerProfitAmount = netMargin - investorProfitAmount
             }
             // If netMargin <= 0, amounts remain 0 (or handled differently if loss sharing logic changes, but standard is 0 for profit)
 
@@ -85,6 +88,7 @@ export async function PATCH(
                     await tx.transaction.update({
                         where: { id },
                         data: { paymentStatus },
+                        select: profitSharingPatchUpdateSelect,
                     })
                 }
             }

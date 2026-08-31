@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
-import { legacyProfitSharingSelect } from "../../../../../lib/legacy-read-selects"
+import { calculateProfitSharing } from "../../../../../lib/profit-sharing"
+import {
+    legacyProfitSharingSelect,
+    profitSharingPatchPreReadSelect,
+    profitSharingPatchTransactionSelect,
+    profitSharingPatchUpdateSelect,
+} from "../../../../../lib/legacy-read-selects"
 
 const mocks = vi.hoisted(() => {
     type State = {
@@ -18,6 +24,9 @@ const mocks = vi.hoisted(() => {
     let failProfitUpdate = false
     let p2034Once = false
     let transactionCalls = 0
+    let profitReadArgs: unknown[] = []
+    let transactionReadArgs: unknown[] = []
+    let transactionUpdateArgs: unknown[] = []
 
     const reset = () => {
         state = {
@@ -35,13 +44,16 @@ const mocks = vi.hoisted(() => {
                 calculatedAt: new Date("2026-01-01"),
             },
             transaction: { id: "tx-1", paymentStatus: "UNPAID" },
-            payments: [{ amount: 4_901 }],
+            payments: [{ amount: 6_500 }],
             logCount: 0,
         }
         failTransactionUpdate = false
         failProfitUpdate = false
         p2034Once = false
         transactionCalls = 0
+        profitReadArgs = []
+        transactionReadArgs = []
+        transactionUpdateArgs = []
     }
 
     const transaction = vi.fn(async (operation: (tx: unknown) => Promise<unknown>) => {
@@ -49,7 +61,10 @@ const mocks = vi.hoisted(() => {
         const local = structuredClone(state)
         const tx = {
             profitSharing: {
-                findUnique: vi.fn(async () => local.profitSharing),
+                findUnique: vi.fn(async (args: unknown) => {
+                    profitReadArgs.push(args)
+                    return local.profitSharing
+                }),
                 update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
                     if (failProfitUpdate) throw new Error("profit update failed")
                     local.profitSharing = { ...local.profitSharing, ...data }
@@ -57,11 +72,15 @@ const mocks = vi.hoisted(() => {
                 }),
             },
             transaction: {
-                findUnique: vi.fn(async () => ({
-                    ...local.transaction,
-                    paymentHistories: local.payments,
-                })),
-                update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+                findUnique: vi.fn(async (args: unknown) => {
+                    transactionReadArgs.push(args)
+                    return {
+                        ...local.transaction,
+                        paymentHistories: local.payments,
+                    }
+                }),
+                update: vi.fn(async ({ data, ...args }: { data: Record<string, unknown>; select?: unknown }) => {
+                    transactionUpdateArgs.push({ data, ...args })
                     if (failTransactionUpdate) throw new Error("transaction update failed")
                     local.transaction = { ...local.transaction, ...data }
                     return { id: local.transaction.id }
@@ -84,6 +103,7 @@ const mocks = vi.hoisted(() => {
         reset,
         failTransaction: () => { failTransactionUpdate = true },
         failProfit: () => { failProfitUpdate = true },
+        setNetMargin: (netMargin: number) => { state.profitSharing.netMargin = netMargin },
         enableSerializationConflict: () => { p2034Once = true },
         counts: () => ({
             investorSharePercentage: state.profitSharing.investorSharePercentage,
@@ -93,6 +113,9 @@ const mocks = vi.hoisted(() => {
             paymentStatus: state.transaction.paymentStatus,
             logCount: state.logCount,
             transactionCalls,
+            profitReadArgs,
+            transactionReadArgs,
+            transactionUpdateArgs,
         }),
     }
 })
@@ -134,9 +157,23 @@ describe("PATCH profit-sharing atomicity and compatibility contract", () => {
         const response = (await PATCH(request(validBody), { params: Promise.resolve({ id: "tx-1" }) }))!
         const body = await response.json()
         expect(response.status).toBe(200)
-        expect(body.investorProfitAmount).toBeCloseTo(6_000.6)
-        expect(body.managerProfitAmount).toBeCloseTo(4_000.4)
-        expect(mocks.counts()).toMatchObject({ paymentStatus: "PARTIAL", logCount: 0 })
+        expect(body.investorProfitAmount).toBe(6_001)
+        expect(body.managerProfitAmount).toBe(4_000)
+        expect(body.investorProfitAmount + body.managerProfitAmount).toBe(10_001)
+        expect(mocks.counts()).toMatchObject({ paymentStatus: "PAID", logCount: 0 })
+        expect(mocks.counts().profitReadArgs[0]).toEqual({
+            where: { transactionId: "tx-1" },
+            select: profitSharingPatchPreReadSelect,
+        })
+        expect(mocks.counts().transactionReadArgs[0]).toEqual({
+            where: { id: "tx-1" },
+            select: profitSharingPatchTransactionSelect,
+        })
+        expect(mocks.counts().transactionUpdateArgs[0]).toEqual({
+            where: { id: "tx-1" },
+            data: { paymentStatus: "PAID" },
+            select: profitSharingPatchUpdateSelect,
+        })
         expect(mocks.prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" })
     })
 
@@ -162,25 +199,67 @@ describe("PATCH profit-sharing atomicity and compatibility contract", () => {
 
     it("retries concurrent PATCH attempts as complete serialized outcomes", async () => {
         mocks.enableSerializationConflict()
+        const requestA = { investorSharePercentage: 60, managerSharePercentage: 40 }
+        const requestB = { investorSharePercentage: 70, managerSharePercentage: 30 }
         const [first, second] = await Promise.all([
-            PATCH(request(validBody), { params: Promise.resolve({ id: "tx-1" }) }),
-            PATCH(request(validBody), { params: Promise.resolve({ id: "tx-1" }) }),
+            PATCH(request(requestA), { params: Promise.resolve({ id: "tx-1" }) }),
+            PATCH(request(requestB), { params: Promise.resolve({ id: "tx-1" }) }),
         ])
         expect(first!.status).toBe(200)
         expect(second!.status).toBe(200)
-        expect(mocks.counts()).toMatchObject({
-            investorSharePercentage: 60,
-            managerSharePercentage: 40,
-            paymentStatus: "PARTIAL",
-            transactionCalls: 3,
-        })
+        const final = mocks.counts()
+        const finalTuple = [
+            final.investorSharePercentage,
+            final.managerSharePercentage,
+            final.investorProfitAmount,
+            final.managerProfitAmount,
+            final.paymentStatus,
+        ]
+        expect([
+            [60, 40, 6_001, 4_000, "PAID"],
+            [70, 30, 7_001, 3_000, "PARTIAL"],
+        ]).toContainEqual(finalTuple)
+        expect(final.transactionCalls).toBe(3)
+    })
+    it("matches shared integer allocation for rounding, remainder, and even values", async () => {
+        for (const [netMargin, investorSharePercentage, managerSharePercentage] of [
+            [10_001, 60, 40],
+            [10_001, 33, 67],
+            [10_000, 50, 50],
+            [9_999, 70, 30],
+        ]) {
+            mocks.reset()
+            mocks.setNetMargin(netMargin)
+            const response = (await PATCH(request({ investorSharePercentage, managerSharePercentage }), { params: Promise.resolve({ id: "tx-1" }) }))!
+            const body = await response.json()
+            const expected = calculateProfitSharing({
+                buyPrice: 0,
+                sellPrice: netMargin,
+                initialInvestorCapital: 0,
+                initialManagerCapital: 0,
+                costs: [],
+                investorSharePercentage,
+                managerSharePercentage,
+            })
+            expect([body.investorProfitAmount, body.managerProfitAmount]).toEqual([
+                expected.investorProfitAmount,
+                expected.managerProfitAmount,
+            ])
+        }
     })
     it("uses exact typed legacy selections and no pending field", () => {
         const text = source()
         expect(text).toContain('import { runSerializableTransaction } from "../../../../../lib/serializable-transaction"')
         expect(text).toContain("select: legacyProfitSharingSelect")
+        expect(text).toContain("select: profitSharingPatchPreReadSelect")
+        expect(text).toContain("select: profitSharingPatchTransactionSelect")
+        expect(text).toContain("select: profitSharingPatchUpdateSelect")
         expect(text).not.toContain("include: { paymentHistories: true }")
         expect(text).not.toContain("finalizationVersion")
+        expect(Object.keys(profitSharingPatchPreReadSelect)).toEqual(["netMargin"])
+        expect(Object.keys(profitSharingPatchTransactionSelect)).toEqual(["paymentStatus", "paymentHistories"])
+        expect(Object.keys(profitSharingPatchTransactionSelect.paymentHistories.select)).toEqual(["amount"])
+        expect(Object.keys(profitSharingPatchUpdateSelect)).toEqual(["id"])
         expect(Object.keys(legacyProfitSharingSelect)).toEqual([
             "id", "transactionId", "totalCapitalInvestor", "totalCapitalManager", "totalCapital",
             "netMargin", "investorSharePercentage", "managerSharePercentage",
