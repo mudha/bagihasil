@@ -53,6 +53,42 @@ describe("Transaction mutation pre-migration schema compatibility", () => {
         expect(finalRead).not.toContain("finalizationVersion")
     })
 
+    it("defines the PUT pre-read as an exact least-data selection", () => {
+        const source = selections()
+        const selection = source.match(
+            /export const transactionMutationPreReadSelect = \{([\s\S]*?)\} satisfies Prisma\.TransactionSelect/,
+        )?.[1]
+
+        expect(selection).toBeDefined()
+        expect(selection).not.toContain("...legacyTransactionScalarSelect")
+        expect(selection).not.toContain("...legacyCostSelect")
+        expect(selection).not.toContain("...legacyProfitSharingSelect")
+        expect(selection).toContain(`
+    unitId: true,
+    buyPrice: true,
+    initialInvestorCapital: true,
+    initialManagerCapital: true,
+    sellDate: true,
+    sellPrice: true,
+    status: true,
+`)
+        expect(selection).toContain(`
+    unit: { select: {
+        investorId: true,
+        investor: { select: { marginPercentage: true } },
+    } },
+    costs: { select: {
+        payer: true,
+        amount: true,
+    } },
+    profitSharing: { select: {
+        investorSharePercentage: true,
+        managerSharePercentage: true,
+    } },
+`)
+        expect(selection).not.toContain("finalizationVersion")
+    })
+
     it("Payment pre-read and replay reads use explicit least-data selections", () => {
         const source = paymentRoute()
         const existing = extract(
@@ -73,6 +109,26 @@ describe("Transaction mutation pre-migration schema compatibility", () => {
         expect(transaction).toContain("select: paymentTransactionPreReadSelect")
         expect(transaction).not.toContain("include:")
         expect(transaction).not.toContain("finalizationVersion")
+    })
+
+    it("defines Payment pre-read history as an exact six-field selection", () => {
+        const source = selections()
+        const selection = source.match(
+            /export const paymentTransactionPreReadSelect = \{([\s\S]*?)\} satisfies Prisma\.TransactionSelect/,
+        )?.[1]
+
+        expect(selection).toBeDefined()
+        expect(selection).not.toContain("legacyPaymentHistorySelect")
+        expect(selection).toContain(`
+    paymentHistories: { select: {
+        investorId: true,
+        amount: true,
+        paymentDate: true,
+        method: true,
+        proofImageUrl: true,
+        notes: true,
+    } },
+`)
     })
 
     it("Payment create and concurrent replay use explicit typed selections", () => {
@@ -102,12 +158,15 @@ describe("Transaction mutation pre-migration schema compatibility", () => {
         expect(concurrentReplay).not.toContain("include:")
     })
 
-    it("typed selection contracts preserve legacy response fields and exclude pending fields", () => {
+    it("typed response selections preserve legacy fields and exclude pending fields", () => {
         const source = selections()
-        expect(source).toContain("export const transactionMutationPreReadSelect")
         expect(source).toContain("export const transactionMutationResponseSelect")
-        expect(source).toContain("export const paymentTransactionPreReadSelect")
+        expect(source).toContain("...legacyTransactionScalarSelect")
+        expect(source).toContain("costs: { select: legacyCostSelect }")
+        expect(source).toContain("proofs: { select: legacyTransactionProofSelect }")
         expect(source).toContain("export const paymentMutationReplaySelect")
+        expect(source).toContain("...legacyPaymentHistorySelect")
+        expect(source).toContain("transaction: { select: { paymentStatus: true } }")
         expect(source).not.toContain("finalizationVersion: true")
     })
 })
