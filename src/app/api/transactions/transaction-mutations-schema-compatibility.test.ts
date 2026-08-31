@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { transactionMutationPreReadSelect, paymentTransactionPreReadSelect } from "../../../lib/legacy-read-selects"
 
 const read = (relativePath: string) =>
     readFileSync(resolve(__dirname, relativePath), "utf8")
@@ -54,39 +55,35 @@ describe("Transaction mutation pre-migration schema compatibility", () => {
     })
 
     it("defines the PUT pre-read as an exact least-data selection", () => {
+        expect(Object.keys(transactionMutationPreReadSelect)).toEqual([
+            "unitId",
+            "buyPrice",
+            "initialInvestorCapital",
+            "initialManagerCapital",
+            "sellDate",
+            "sellPrice",
+            "status",
+            "unit",
+            "costs",
+            "profitSharing",
+        ])
+        expect(Object.keys(transactionMutationPreReadSelect.unit.select)).toEqual(["investorId", "investor"])
+        expect(Object.keys(transactionMutationPreReadSelect.unit.select.investor.select)).toEqual(["marginPercentage"])
+        expect(Object.keys(transactionMutationPreReadSelect.costs.select)).toEqual(["payer", "amount"])
+        expect(Object.keys(transactionMutationPreReadSelect.profitSharing.select)).toEqual([
+            "investorSharePercentage",
+            "managerSharePercentage",
+        ])
+
         const source = selections()
-        const selection = source.match(
+        const preReadSource = source.match(
             /export const transactionMutationPreReadSelect = \{([\s\S]*?)\} satisfies Prisma\.TransactionSelect/,
         )?.[1]
-
-        expect(selection).toBeDefined()
-        expect(selection).not.toContain("...legacyTransactionScalarSelect")
-        expect(selection).not.toContain("...legacyCostSelect")
-        expect(selection).not.toContain("...legacyProfitSharingSelect")
-        expect(selection).toContain(`
-    unitId: true,
-    buyPrice: true,
-    initialInvestorCapital: true,
-    initialManagerCapital: true,
-    sellDate: true,
-    sellPrice: true,
-    status: true,
-`)
-        expect(selection).toContain(`
-    unit: { select: {
-        investorId: true,
-        investor: { select: { marginPercentage: true } },
-    } },
-    costs: { select: {
-        payer: true,
-        amount: true,
-    } },
-    profitSharing: { select: {
-        investorSharePercentage: true,
-        managerSharePercentage: true,
-    } },
-`)
-        expect(selection).not.toContain("finalizationVersion")
+        expect(preReadSource).toBeDefined()
+        expect(preReadSource).not.toContain("...legacyTransactionScalarSelect")
+        expect(preReadSource).not.toContain("...legacyCostSelect")
+        expect(preReadSource).not.toContain("...legacyProfitSharingSelect")
+        expect(preReadSource).not.toContain("finalizationVersion")
     })
 
     it("Payment pre-read and replay reads use explicit least-data selections", () => {
@@ -112,23 +109,24 @@ describe("Transaction mutation pre-migration schema compatibility", () => {
     })
 
     it("defines Payment pre-read history as an exact six-field selection", () => {
+        expect(Object.keys(paymentTransactionPreReadSelect)).toEqual(["unit", "profitSharing", "paymentHistories"])
+        expect(Object.keys(paymentTransactionPreReadSelect.unit.select)).toEqual(["investorId"])
+        expect(Object.keys(paymentTransactionPreReadSelect.profitSharing.select)).toEqual(["investorProfitAmount"])
+        expect(Object.keys(paymentTransactionPreReadSelect.paymentHistories.select)).toEqual([
+            "investorId",
+            "amount",
+            "paymentDate",
+            "method",
+            "proofImageUrl",
+            "notes",
+        ])
+
         const source = selections()
-        const selection = source.match(
+        const preReadSource = source.match(
             /export const paymentTransactionPreReadSelect = \{([\s\S]*?)\} satisfies Prisma\.TransactionSelect/,
         )?.[1]
-
-        expect(selection).toBeDefined()
-        expect(selection).not.toContain("legacyPaymentHistorySelect")
-        expect(selection).toContain(`
-    paymentHistories: { select: {
-        investorId: true,
-        amount: true,
-        paymentDate: true,
-        method: true,
-        proofImageUrl: true,
-        notes: true,
-    } },
-`)
+        expect(preReadSource).toBeDefined()
+        expect(preReadSource).not.toContain("legacyPaymentHistorySelect")
     })
 
     it("Payment create and concurrent replay use explicit typed selections", () => {
