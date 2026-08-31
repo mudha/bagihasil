@@ -76,6 +76,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls"
 import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminUnitDetailDialog } from "@/components/units/AdminUnitDetailDialog"
 import { UnitCardMobile } from "@/components/units/UnitCardMobile"
+import { formatOdometer } from "@/lib/odometer-format"
 import { VEHICLE_TYPES, BRANDS, MODELS, COLORS, YEARS, getDuplicateInfo } from "@/components/units/unit-data"
 
 
@@ -1364,7 +1365,7 @@ function UnitsPageContent() {
 
             {/* Desktop Table View */}
             <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
-                <Table className="min-w-[1180px]">
+                <Table className="min-w-[1260px]">
                     <TableHeader className="bg-teal-50/70">
                         <TableRow className="hover:bg-teal-50/70">
                             <TableHead className="w-[50px]">
@@ -1440,6 +1441,7 @@ function UnitsPageContent() {
                                     )}
                                 </Button>
                             </TableHead>
+                            <TableHead className="whitespace-nowrap text-right">Odometer</TableHead>
                             <TableHead>
                                 <Button
                                     variant="ghost"
@@ -1557,6 +1559,9 @@ function UnitsPageContent() {
                                             ) : null
                                         })()}
                                     </div>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums" title={formatOdometer(unit.kilometer)}>
+                                    {formatOdometer(unit.kilometer)}
                                 </TableCell>
                                 <TableCell className="max-w-[240px] whitespace-normal">
                                     <span
