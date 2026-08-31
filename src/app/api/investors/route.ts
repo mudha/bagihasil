@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
-import { legacyInvestorSelect } from "../../../lib/legacy-read-selects"
+import {
+    legacyInvestorScalarSelect,
+    legacyInvestorSelect,
+} from "../../../lib/legacy-read-selects"
 
 const investorSchema = z.object({
     name: z.string().min(1),
@@ -54,7 +57,8 @@ export async function POST(req: Request) {
         const validatedData = investorSchema.parse(body)
 
         const investor = await prisma.investor.create({
-            data: validatedData
+            data: validatedData,
+            select: legacyInvestorScalarSelect,
         })
 
         return NextResponse.json(investor)
