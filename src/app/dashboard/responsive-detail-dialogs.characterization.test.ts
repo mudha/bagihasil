@@ -34,5 +34,6 @@ describe("responsive detail dialog and investor identity contracts", () => {
         expect(transactionsPage.match(/title=\{trx\.unit\.investor\.name\}/g) || []).toHaveLength(2)
         expect(transactionsPage).not.toContain("break-all")
         expect(transactionsPage).not.toContain("w-5 h-5 rounded-full")
+        expect(transactionsPage.match(/className="flex w-full min-w-0 max-w-full items-center gap-1\.5 overflow-hidden rounded-full border/g) || []).toHaveLength(0)
     })
 })

@@ -1175,7 +1175,7 @@ function TransactionsPageContent() {
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Investor</span>
                                     <span
-                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2 py-1 text-xs font-black"
+                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-lg border px-2 py-1 text-xs font-black"
                                         style={{
                                             backgroundColor: investorTone.chipBg,
                                             borderColor: investorTone.accent,
@@ -1564,7 +1564,7 @@ function TransactionsPageContent() {
                                 <TableCell className="whitespace-normal break-words font-mono text-sm font-bold text-teal-700">{trx.transactionCode}</TableCell>
                                 <TableCell className="max-w-[240px] whitespace-normal">
                                     <span
-                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border px-2 py-1 text-xs font-black"
+                                        className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-lg border px-2 py-1 text-xs font-black"
                                         style={{
                                             backgroundColor: investorTone.chipBg,
                                             borderColor: investorTone.accent,
