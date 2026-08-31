@@ -279,3 +279,11 @@ export const paymentMutationReplaySelect = {
     ...legacyPaymentHistorySelect,
     transaction: { select: { paymentStatus: true } },
 } satisfies Prisma.PaymentHistorySelect
+
+export const transactionCreateActiveCheckSelect = {
+    id: true,
+} satisfies Prisma.TransactionSelect
+
+export const transactionCreateResponseSelect = {
+    ...legacyTransactionScalarSelect,
+} satisfies Prisma.TransactionSelect

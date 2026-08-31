@@ -4,7 +4,12 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { logActivity } from "@/lib/activity-logger"
 import { canReadAdminData } from "@/lib/api-auth"
-import { legacyTransactionSelect } from "../../../lib/legacy-read-selects"
+import { runSerializableTransaction } from "../../../lib/serializable-transaction"
+import {
+    legacyTransactionSelect,
+    transactionCreateActiveCheckSelect,
+    transactionCreateResponseSelect,
+} from "../../../lib/legacy-read-selects"
 
 const transactionSchema = z.object({
     unitId: z.string(),
@@ -88,27 +93,28 @@ export async function POST(req: Request) {
         const body = await req.json()
         const validatedData = transactionSchema.parse(body)
 
-        // Cek apakah unit sudah punya transaksi aktif
-        const activeTransaction = await prisma.transaction.findFirst({
-            where: {
-                unitId: validatedData.unitId,
-                status: "ON_PROCESS"
-            }
-        })
-
-        if (activeTransaction) {
-            return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400 })
-        }
-
         const { proofs, ...transactionData } = validatedData
 
-        // Atomic: buat transaction + proofs dalam satu DB transaction
-        const transaction = await prisma.$transaction(async (tx) => {
+        const outcome = await runSerializableTransaction(prisma, async (tx) => {
+            const activeTransaction = await tx.transaction.findFirst({
+                where: {
+                    unitId: validatedData.unitId,
+                    status: "ON_PROCESS"
+                },
+                select: transactionCreateActiveCheckSelect,
+            })
+
+            if (activeTransaction) {
+                return { kind: "CONFLICT" as const }
+            }
+
+            // Atomic: buat transaction + proofs dalam satu DB transaction
             const created = await tx.transaction.create({
                 data: {
                     ...transactionData,
                     status: "ON_PROCESS"
                 },
+                select: transactionCreateResponseSelect,
             })
 
             if (proofs && proofs.length > 0) {
@@ -122,8 +128,14 @@ export async function POST(req: Request) {
                 })
             }
 
-            return created
+            return { kind: "CREATED" as const, transaction: created }
         })
+
+        if (outcome.kind === "CONFLICT") {
+            return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400 })
+        }
+
+        const transaction = outcome.transaction
 
         // Log Activity - jangan blokir response jika gagal
         try {
