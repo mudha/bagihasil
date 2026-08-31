@@ -80,6 +80,26 @@ export const legacyCostSelect = {
     updatedAt: true,
 } satisfies Prisma.CostSelect
 
+export const legacyTransactionProofSelect = {
+    id: true,
+    transactionId: true,
+    proofType: true,
+    imageUrl: true,
+    description: true,
+    createdAt: true,
+} satisfies Prisma.TransactionProofSelect
+
+export const legacyCostWithProofsSelect = {
+    ...legacyCostSelect,
+    proofs: { select: {
+        id: true,
+        costId: true,
+        imageUrl: true,
+        description: true,
+        createdAt: true,
+    } },
+} satisfies Prisma.CostSelect
+
 export const legacyProfitSharingSelect = {
     id: true,
     transactionId: true,
@@ -139,3 +159,77 @@ export const legacyUnitWithTransactionsSelect = {
     ...legacyUnitScalarSelect,
     transactions: { select: legacyTransactionScalarSelect },
 } satisfies Prisma.UnitSelect
+
+export const legacyTransactionReportSelect = {
+    ...legacyTransactionScalarSelect,
+    costs: { select: legacyCostSelect },
+    profitSharing: { select: legacyProfitSharingSelect },
+    paymentHistories: { select: legacyPaymentHistorySelect },
+} satisfies Prisma.TransactionSelect
+
+const legacyInvestorReportUnitsSelect = {
+    select: {
+        ...legacyUnitScalarSelect,
+        transactions: { select: legacyTransactionReportSelect },
+    },
+} satisfies Prisma.InvestorSelect["units"]
+
+export const legacyInvestorReportSelect = {
+    ...legacyInvestorScalarSelect,
+    units: {
+        ...legacyInvestorReportUnitsSelect,
+        select: {
+            ...legacyInvestorReportUnitsSelect.select,
+            transactions: {
+                ...legacyInvestorReportUnitsSelect.select.transactions,
+                orderBy: { buyDate: "desc" },
+            },
+        },
+    },
+} satisfies Prisma.InvestorSelect
+
+export const legacyInvestorCsvReportSelect = {
+    ...legacyInvestorScalarSelect,
+    units: {
+        ...legacyInvestorReportUnitsSelect,
+        select: {
+            ...legacyInvestorReportUnitsSelect.select,
+            transactions: {
+                ...legacyInvestorReportUnitsSelect.select.transactions,
+                orderBy: { sellDate: "desc" },
+            },
+        },
+    },
+} satisfies Prisma.InvestorSelect
+
+export const legacyAllInvestorsReportSelect = {
+    ...legacyInvestorScalarSelect,
+    units: {
+        select: {
+            ...legacyUnitScalarSelect,
+            transactions: {
+                select: {
+                    ...legacyTransactionScalarSelect,
+                    costs: { select: legacyCostSelect, orderBy: { date: "asc" } },
+                    profitSharing: { select: legacyProfitSharingSelect },
+                    paymentHistories: { select: legacyPaymentHistorySelect, orderBy: { paymentDate: "asc" } },
+                },
+                orderBy: { buyDate: "asc" },
+            },
+        },
+    },
+} satisfies Prisma.InvestorSelect
+
+export const legacyTransactionDetailSelect = {
+    ...legacyTransactionScalarSelect,
+    unit: {
+        select: {
+            ...legacyUnitScalarSelect,
+            investor: { select: legacyInvestorScalarSelect },
+        },
+    },
+    costs: { select: legacyCostWithProofsSelect, orderBy: { date: "asc" } },
+    profitSharing: { select: legacyProfitSharingSelect },
+    paymentHistories: { select: legacyPaymentHistorySelect, orderBy: { paymentDate: "asc" } },
+    proofs: { select: legacyTransactionProofSelect },
+} satisfies Prisma.TransactionSelect

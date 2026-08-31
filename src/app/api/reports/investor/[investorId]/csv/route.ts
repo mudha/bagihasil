@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { canAccessInvestor, forbidden, requireAuth } from '@/lib/api-auth'
 import { computeInvestorReportSummary } from '../../../../../../lib/investor-report-summary'
+import { legacyInvestorCsvReportSelect } from '../../../../../../lib/legacy-read-selects'
 
 const privateHeaders = { 'Cache-Control': 'private, no-store' }
 const privateResponse = (response: Response) => {
@@ -41,22 +42,7 @@ export async function GET(
 
         const investor = await prisma.investor.findUnique({
             where: { id: investorId },
-            include: {
-                units: {
-                    include: {
-                        transactions: {
-                            include: {
-                                costs: true,
-                                profitSharing: true,
-                                paymentHistories: true
-                            },
-                            orderBy: {
-                                sellDate: 'desc'
-                            }
-                        }
-                    }
-                }
-            }
+            select: legacyInvestorCsvReportSelect,
         })
 
         if (!investor) {
