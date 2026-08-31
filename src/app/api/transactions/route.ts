@@ -9,6 +9,9 @@ import {
     legacyTransactionSelect,
     transactionCreateActiveCheckSelect,
     transactionCreateResponseSelect,
+    transactionDeleteBulkPreReadSelect,
+    transactionDeleteRemainingSelect,
+    unitDeleteMutationSelect,
 } from "../../../lib/legacy-read-selects"
 
 const transactionSchema = z.object({
@@ -186,9 +189,29 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
         }
 
-        await prisma.transaction.deleteMany({
-            where: {
-                id: { in: ids }
+        await runSerializableTransaction(prisma, async (tx) => {
+            const transactions = await tx.transaction.findMany({
+                where: { id: { in: ids } },
+                select: transactionDeleteBulkPreReadSelect,
+            })
+
+            for (const transaction of transactions) {
+                await tx.cost.deleteMany({ where: { transactionId: transaction.id } })
+            }
+
+            await tx.transaction.deleteMany({ where: { id: { in: ids } } })
+
+            const unitIds = [...new Set(transactions.map((transaction: { unitId: string }) => transaction.unitId))]
+            for (const unitId of unitIds) {
+                const remainingCompleted = await tx.transaction.findFirst({
+                    where: { unitId, status: "COMPLETED" },
+                    select: transactionDeleteRemainingSelect,
+                })
+                await tx.unit.update({
+                    where: { id: unitId },
+                    data: { status: remainingCompleted ? "SOLD" : "AVAILABLE" },
+                    select: unitDeleteMutationSelect,
+                })
             }
         })
 
