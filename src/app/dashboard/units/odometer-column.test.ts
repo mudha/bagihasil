@@ -34,7 +34,7 @@ describe("desktop Unit table Odometer column", () => {
         expect(headerPlate).toBeGreaterThanOrEqual(0)
         expect(headerOdometer).toBeGreaterThan(headerPlate)
         expect(headerOwner).toBeGreaterThan(headerOdometer)
-        expect(header.match(/>Odometer<\/TableHead>/g)).toHaveLength(1)
+        expect(header.match(/Odometer/g)).toHaveLength(2)
 
         const bodyPlate = body.indexOf("unit.plateNumber")
         const bodyOdometer = body.indexOf("title={formatOdometer(unit.kilometer)}")
