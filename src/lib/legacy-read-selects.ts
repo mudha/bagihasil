@@ -233,3 +233,49 @@ export const legacyTransactionDetailSelect = {
     paymentHistories: { select: legacyPaymentHistorySelect, orderBy: { paymentDate: "asc" } },
     proofs: { select: legacyTransactionProofSelect },
 } satisfies Prisma.TransactionSelect
+
+export const transactionMutationPreReadSelect = {
+    unitId: true,
+    buyPrice: true,
+    initialInvestorCapital: true,
+    initialManagerCapital: true,
+    sellDate: true,
+    sellPrice: true,
+    status: true,
+    unit: { select: {
+        investorId: true,
+        investor: { select: { marginPercentage: true } },
+    } },
+    costs: { select: {
+        payer: true,
+        amount: true,
+    } },
+    profitSharing: { select: {
+        investorSharePercentage: true,
+        managerSharePercentage: true,
+    } },
+} satisfies Prisma.TransactionSelect
+
+export const transactionMutationResponseSelect = {
+    ...legacyTransactionScalarSelect,
+    costs: { select: legacyCostSelect },
+    proofs: { select: legacyTransactionProofSelect },
+} satisfies Prisma.TransactionSelect
+
+export const paymentTransactionPreReadSelect = {
+    unit: { select: { investorId: true } },
+    profitSharing: { select: { investorProfitAmount: true } },
+    paymentHistories: { select: {
+        investorId: true,
+        amount: true,
+        paymentDate: true,
+        method: true,
+        proofImageUrl: true,
+        notes: true,
+    } },
+} satisfies Prisma.TransactionSelect
+
+export const paymentMutationReplaySelect = {
+    ...legacyPaymentHistorySelect,
+    transaction: { select: { paymentStatus: true } },
+} satisfies Prisma.PaymentHistorySelect
