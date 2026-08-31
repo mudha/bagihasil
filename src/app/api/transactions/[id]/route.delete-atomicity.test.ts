@@ -4,11 +4,13 @@ import { readFileSync } from "node:fs"
 import {
     transactionDeleteMutationSelect,
     transactionDeletePreReadSelect,
+    transactionDeleteRemainingSelect,
+    unitDeleteMutationSelect,
 } from "../../../../lib/legacy-read-selects"
 
 const mocks = vi.hoisted(() => {
     type State = {
-        transactions: Record<string, { id: string; transactionCode: string; unitId: string }>
+        transactions: Record<string, { id: string; transactionCode: string; unitId: string; status: string }>
         costs: Record<string, number>
         units: Record<string, string>
         paymentHistory: Record<string, number>
@@ -24,10 +26,11 @@ const mocks = vi.hoisted(() => {
     let costDeleteArgs: unknown[] = []
     let transactionDeleteArgs: unknown[] = []
     let unitUpdateArgs: unknown[] = []
+    let remainingArgs: unknown[] = []
 
     const reset = () => {
         state = {
-            transactions: { "tx-1": { id: "tx-1", transactionCode: "TRX-001", unitId: "unit-1" } },
+            transactions: { "tx-1": { id: "tx-1", transactionCode: "TRX-001", unitId: "unit-1", status: "COMPLETED" } },
             costs: { "tx-1": 2 },
             units: { "unit-1": "SOLD", "unit-unrelated": "SOLD" },
             paymentHistory: { "tx-1": 0 },
@@ -42,6 +45,7 @@ const mocks = vi.hoisted(() => {
         costDeleteArgs = []
         transactionDeleteArgs = []
         unitUpdateArgs = []
+        remainingArgs = []
     }
 
     const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
@@ -58,6 +62,12 @@ const mocks = vi.hoisted(() => {
                         return { ...item }
                     }
                     return { ...item }
+                }),
+                findFirst: vi.fn(async (args: unknown) => {
+                    remainingArgs.push(args)
+                    const { where } = args as { where: { unitId: string; status: string } }
+                    const item = Object.values(staged.transactions).find(transaction => transaction.unitId === where.unitId && transaction.status === where.status)
+                    return item ? { id: item.id } : null
                 }),
                 delete: vi.fn(async (args: unknown) => {
                     transactionDeleteArgs.push(args)
@@ -105,7 +115,8 @@ const mocks = vi.hoisted(() => {
         failTransaction: () => { failTransaction = true },
         failPaymentRestriction: () => { failPaymentRestriction = true },
         enableP2034: () => { p2034Once = true },
-        counts: () => ({ ...state, transactionCalls, transactionReadArgs, costDeleteArgs, transactionDeleteArgs, unitUpdateArgs }),
+        addRemaining: (status: string) => { state.transactions["tx-remaining"] = { id: "tx-remaining", transactionCode: "TRX-002", unitId: "unit-1", status } },
+        counts: () => ({ ...state, transactionCalls, transactionReadArgs, costDeleteArgs, transactionDeleteArgs, unitUpdateArgs, remainingArgs }),
     }
 })
 
@@ -162,8 +173,24 @@ describe("single Transaction DELETE atomicity", () => {
         expect(mocks.counts()).toMatchObject({ transactions: {}, costs: {}, units: { "unit-1": "AVAILABLE", "unit-unrelated": "SOLD" }, logCount: 1 })
         expect(mocks.counts().transactionReadArgs[0]).toEqual({ where: { id: "tx-1" }, select: transactionDeletePreReadSelect })
         expect(mocks.counts().transactionDeleteArgs[0]).toEqual({ where: { id: "tx-1" }, select: transactionDeleteMutationSelect })
+        expect(mocks.counts().remainingArgs[0]).toEqual({ where: { unitId: "unit-1", status: "COMPLETED" }, select: transactionDeleteRemainingSelect })
+        expect(mocks.counts().unitUpdateArgs[0]).toEqual({ where: { id: "unit-1" }, data: { status: "AVAILABLE" }, select: unitDeleteMutationSelect })
     })
 
+    it("keeps Unit SOLD when a remaining COMPLETED Transaction exists", async () => {
+        mocks.addRemaining("COMPLETED")
+        const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })
+        expect(response.status).toBe(200)
+        expect(mocks.counts()).toMatchObject({ units: { "unit-1": "SOLD" }, transactions: { "tx-remaining": expect.anything() } })
+        expect(mocks.counts().unitUpdateArgs[0]).toEqual({ where: { id: "unit-1" }, data: { status: "SOLD" }, select: unitDeleteMutationSelect })
+    })
+
+    it("sets Unit AVAILABLE when remaining Transactions are only ON_PROCESS", async () => {
+        mocks.addRemaining("ON_PROCESS")
+        const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })
+        expect(response.status).toBe(200)
+        expect(mocks.counts()).toMatchObject({ units: { "unit-1": "AVAILABLE" }, transactions: { "tx-remaining": expect.anything() } })
+    })
     it("preserves auth and nonexistent response contracts", async () => {
         mocks.auth.mockResolvedValueOnce(null)
         expect((await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })).status).toBe(401)

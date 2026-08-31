@@ -12,6 +12,8 @@ import {
     legacyTransactionDetailSelect,
     transactionDeleteMutationSelect,
     transactionDeletePreReadSelect,
+    transactionDeleteRemainingSelect,
+    unitDeleteMutationSelect,
     transactionMutationPreReadSelect,
     transactionMutationResponseSelect,
 } from "../../../../lib/legacy-read-selects"
@@ -313,9 +315,14 @@ export async function DELETE(
                 where: { id },
                 select: transactionDeleteMutationSelect,
             })
+            const remainingCompleted = await tx.transaction.findFirst({
+                where: { unitId: transaction.unitId, status: "COMPLETED" },
+                select: transactionDeleteRemainingSelect,
+            })
             await tx.unit.update({
                 where: { id: transaction.unitId },
-                data: { status: "AVAILABLE" },
+                data: { status: remainingCompleted ? "SOLD" : "AVAILABLE" },
+                select: unitDeleteMutationSelect,
             })
 
             return { kind: "DELETED" as const, transactionCode: transaction.transactionCode }

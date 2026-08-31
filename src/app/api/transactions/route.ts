@@ -10,6 +10,8 @@ import {
     transactionCreateActiveCheckSelect,
     transactionCreateResponseSelect,
     transactionDeleteBulkPreReadSelect,
+    transactionDeleteRemainingSelect,
+    unitDeleteMutationSelect,
 } from "../../../lib/legacy-read-selects"
 
 const transactionSchema = z.object({
@@ -201,9 +203,14 @@ export async function DELETE(req: Request) {
 
             const unitIds = [...new Set(transactions.map((transaction: { unitId: string }) => transaction.unitId))]
             for (const unitId of unitIds) {
+                const remainingCompleted = await tx.transaction.findFirst({
+                    where: { unitId, status: "COMPLETED" },
+                    select: transactionDeleteRemainingSelect,
+                })
                 await tx.unit.update({
                     where: { id: unitId },
-                    data: { status: "AVAILABLE" },
+                    data: { status: remainingCompleted ? "SOLD" : "AVAILABLE" },
+                    select: unitDeleteMutationSelect,
                 })
             }
         })
