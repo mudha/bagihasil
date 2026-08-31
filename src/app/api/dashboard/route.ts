@@ -192,6 +192,7 @@ export async function GET(req: Request) {
         // Initialize last N months with 0
         for (let i = 0; i < monthsRange; i++) {
             const d = new Date()
+            d.setDate(1)
             d.setMonth(d.getMonth() - i)
             const key = d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) // e.g., "Dec 2025"
             monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
