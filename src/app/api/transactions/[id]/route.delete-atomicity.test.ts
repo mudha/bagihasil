@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
     let failTransaction = false
     let failPaymentRestriction = false
     let p2034Once = false
+    let failRemainingLookup = false
     let transactionCalls = 0
     let transactionReadArgs: unknown[] = []
     let costDeleteArgs: unknown[] = []
@@ -40,6 +41,7 @@ const mocks = vi.hoisted(() => {
         failTransaction = false
         failPaymentRestriction = false
         p2034Once = false
+        failRemainingLookup = false
         transactionCalls = 0
         transactionReadArgs = []
         costDeleteArgs = []
@@ -49,6 +51,7 @@ const mocks = vi.hoisted(() => {
     }
 
     const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+        transactionCalls += 1
         const staged: State = structuredClone(state)
         const tx = {
             transaction: {
@@ -65,6 +68,7 @@ const mocks = vi.hoisted(() => {
                 }),
                 findFirst: vi.fn(async (args: unknown) => {
                     remainingArgs.push(args)
+                    if (failRemainingLookup) throw new Error("remaining lookup failed")
                     const { where } = args as { where: { unitId: string; status: string } }
                     const item = Object.values(staged.transactions).find(transaction => transaction.unitId === where.unitId && transaction.status === where.status)
                     return item ? { id: item.id } : null
@@ -94,9 +98,9 @@ const mocks = vi.hoisted(() => {
             },
         }
         const result = await callback(tx)
-        transactionCalls += 1
         if (p2034Once) {
             p2034Once = false
+            state.transactions["tx-remaining"] = { id: "tx-remaining", transactionCode: "TRX-002", unitId: "unit-1", status: "COMPLETED" }
             throw Object.assign(new Error("serialization conflict"), { code: "P2034" })
         }
         state = staged
@@ -114,6 +118,7 @@ const mocks = vi.hoisted(() => {
         failUnit: () => { failUnit = true },
         failTransaction: () => { failTransaction = true },
         failPaymentRestriction: () => { failPaymentRestriction = true },
+        failRemainingLookup: () => { failRemainingLookup = true },
         enableP2034: () => { p2034Once = true },
         addRemaining: (status: string) => { state.transactions["tx-remaining"] = { id: "tx-remaining", transactionCode: "TRX-002", unitId: "unit-1", status } },
         counts: () => ({ ...state, transactionCalls, transactionReadArgs, costDeleteArgs, transactionDeleteArgs, unitUpdateArgs, remainingArgs }),
@@ -150,6 +155,11 @@ describe("single Transaction DELETE atomicity", () => {
         expect(body).not.toContain("include: { costs: true }")
         expect(body).not.toContain("finalizationVersion")
         expect(body.indexOf("await logActivity")).toBeGreaterThan(body.indexOf("runSerializableTransaction"))
+        expect(transactionDeletePreReadSelect).toEqual({ transactionCode: true, unitId: true })
+        expect(transactionDeleteMutationSelect).toEqual({ id: true })
+        expect(transactionDeleteRemainingSelect).toEqual({ id: true })
+        expect(unitDeleteMutationSelect).toEqual({ id: true })
+
     })
 
     it("rolls back costs and Unit when Transaction delete is restricted", async () => {
@@ -166,6 +176,12 @@ describe("single Transaction DELETE atomicity", () => {
         expect(mocks.counts()).toMatchObject({ costs: { "tx-1": 2 }, transactions: { "tx-1": expect.anything() }, units: { "unit-1": "SOLD" }, logCount: 0 })
     })
 
+    it("rolls back all rows when remaining COMPLETED lookup fails", async () => {
+        mocks.failRemainingLookup()
+        const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })
+        expect(response.status).toBe(500)
+        expect(mocks.counts()).toMatchObject({ transactions: { "tx-1": expect.anything() }, costs: { "tx-1": 2 }, units: { "unit-1": "SOLD" }, logCount: 0 })
+    })
     it("returns the existing response and reconciles Unit only after commit", async () => {
         const response = await DELETE(new Request("http://localhost/api/transactions/tx-1", { method: "DELETE" }), { params })
         expect(response.status).toBe(200)
@@ -206,6 +222,14 @@ describe("single Transaction DELETE atomicity", () => {
         mocks.enableP2034()
         const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })
         expect(response.status).toBe(200)
-        expect(mocks.counts()).toMatchObject({ transactions: {}, costs: {}, units: { "unit-1": "AVAILABLE" }, logCount: 1, transactionCalls: 2 })
+        expect(mocks.counts()).toMatchObject({
+            transactions: { "tx-remaining": { status: "COMPLETED" } },
+            costs: {},
+            units: { "unit-1": "SOLD" },
+            logCount: 1,
+            transactionCalls: 2,
+        })
+        expect(mocks.counts().remainingArgs).toHaveLength(2)
+        expect(mocks.counts().unitUpdateArgs.map((args) => (args as { data: { status: string } }).data.status)).toEqual(["AVAILABLE", "SOLD"])
     })
 })

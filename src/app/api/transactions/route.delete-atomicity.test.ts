@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
     let state: State
     let failDelete = false
     let failUnit = false
+    let failRemainingLookup = false
     let readArgs: unknown[] = []
     let deleteArgs: unknown[] = []
     let unitArgs: unknown[] = []
@@ -33,6 +34,7 @@ const mocks = vi.hoisted(() => {
         }
         failDelete = false
         failUnit = false
+        failRemainingLookup = false
         readArgs = []
         deleteArgs = []
         unitArgs = []
@@ -56,6 +58,7 @@ const mocks = vi.hoisted(() => {
                 }),
                 findFirst: vi.fn(async (args: { where: { unitId: string; status: string }; select: unknown }) => {
                     remainingArgs.push(args)
+                    if (failRemainingLookup) throw new Error("remaining lookup failed")
                     const item = Object.values(staged.transactions).find(transaction => transaction.unitId === args.where.unitId && transaction.status === args.where.status)
                     return item ? { id: item.id } : null
                 }),
@@ -86,6 +89,7 @@ const mocks = vi.hoisted(() => {
         reset,
         failDelete: () => { failDelete = true },
         failUnit: () => { failUnit = true },
+        failRemainingLookup: () => { failRemainingLookup = true },
         counts: () => ({ ...state, readArgs, deleteArgs, unitArgs, remainingArgs }),
     }
 })
@@ -118,6 +122,10 @@ describe("bulk Transaction DELETE atomicity", () => {
         expect(route).toContain("await tx.transaction.deleteMany")
         expect(route).toContain("await tx.unit.update")
         expect(route).not.toContain("finalizationVersion")
+        expect(transactionDeleteBulkPreReadSelect).toEqual({ id: true, unitId: true })
+        expect(transactionDeleteRemainingSelect).toEqual({ id: true })
+        expect(unitDeleteMutationSelect).toEqual({ id: true })
+
         const response = await DELETE(request(["tx-1", "tx-2", "tx-1"]))
         expect(response.status).toBe(200)
         expect(await response.json()).toEqual({ success: true })
@@ -173,6 +181,18 @@ describe("bulk Transaction DELETE atomicity", () => {
             costs: { "tx-1": 1, "tx-2": 2 },
             units: { "unit-1": "SOLD", "unit-2": "SOLD" },
         })
+    })
+
+    it("rolls back all targets when remaining COMPLETED lookup fails", async () => {
+        mocks.failRemainingLookup()
+        const response = await DELETE(request(["tx-1", "tx-2"]))
+        expect(response.status).toBe(500)
+        expect(mocks.counts()).toMatchObject({
+            transactions: { "tx-1": expect.anything(), "tx-2": expect.anything(), "tx-3": expect.anything() },
+            costs: { "tx-1": 1, "tx-2": 2 },
+            units: { "unit-1": "SOLD", "unit-2": "SOLD", "unit-unrelated": "SOLD" },
+        })
+        expect(mocks.counts().unitArgs).toEqual([])
     })
 
     it("keeps bulk auth and body validation before opening a transaction", async () => {
