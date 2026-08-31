@@ -121,6 +121,7 @@ const mocks = vi.hoisted(() => {
         failRemainingLookup: () => { failRemainingLookup = true },
         enableP2034: () => { p2034Once = true },
         addRemaining: (status: string) => { state.transactions["tx-remaining"] = { id: "tx-remaining", transactionCode: "TRX-002", unitId: "unit-1", status } },
+        addUnrelated: () => { state.transactions["tx-unrelated"] = { id: "tx-unrelated", transactionCode: "TRX-999", unitId: "unit-unrelated", status: "ON_PROCESS" } },
         counts: () => ({ ...state, transactionCalls, transactionReadArgs, costDeleteArgs, transactionDeleteArgs, unitUpdateArgs, remainingArgs }),
     }
 })
@@ -178,9 +179,17 @@ describe("single Transaction DELETE atomicity", () => {
 
     it("rolls back all rows when remaining COMPLETED lookup fails", async () => {
         mocks.failRemainingLookup()
+        mocks.addUnrelated()
         const response = await DELETE(new Request("http://localhost", { method: "DELETE" }), { params })
         expect(response.status).toBe(500)
-        expect(mocks.counts()).toMatchObject({ transactions: { "tx-1": expect.anything() }, costs: { "tx-1": 2 }, units: { "unit-1": "SOLD" }, logCount: 0 })
+        expect(await response.json()).toEqual({ error: "Failed to delete transaction" })
+        expect(mocks.counts()).toMatchObject({
+            transactions: { "tx-1": expect.anything(), "tx-unrelated": { unitId: "unit-unrelated", status: "ON_PROCESS" } },
+            costs: { "tx-1": 2 },
+            units: { "unit-1": "SOLD", "unit-unrelated": "SOLD" },
+            logCount: 0,
+            transactionCalls: 1,
+        })
     })
     it("returns the existing response and reconciles Unit only after commit", async () => {
         const response = await DELETE(new Request("http://localhost/api/transactions/tx-1", { method: "DELETE" }), { params })

@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
     let deleteArgs: unknown[] = []
     let unitArgs: unknown[] = []
     let remainingArgs: unknown[] = []
+    let transactionCalls = 0
 
     const reset = () => {
         state = {
@@ -39,9 +40,11 @@ const mocks = vi.hoisted(() => {
         deleteArgs = []
         unitArgs = []
         remainingArgs = []
+        transactionCalls = 0
     }
 
     const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+        transactionCalls += 1
         const staged: State = structuredClone(state)
         const tx = {
             transaction: {
@@ -90,7 +93,7 @@ const mocks = vi.hoisted(() => {
         failDelete: () => { failDelete = true },
         failUnit: () => { failUnit = true },
         failRemainingLookup: () => { failRemainingLookup = true },
-        counts: () => ({ ...state, readArgs, deleteArgs, unitArgs, remainingArgs }),
+        counts: () => ({ ...state, readArgs, deleteArgs, unitArgs, remainingArgs, transactionCalls }),
     }
 })
 
@@ -187,10 +190,12 @@ describe("bulk Transaction DELETE atomicity", () => {
         mocks.failRemainingLookup()
         const response = await DELETE(request(["tx-1", "tx-2"]))
         expect(response.status).toBe(500)
+        expect(await response.json()).toEqual({ error: "Internal Server Error" })
         expect(mocks.counts()).toMatchObject({
             transactions: { "tx-1": expect.anything(), "tx-2": expect.anything(), "tx-3": expect.anything() },
             costs: { "tx-1": 1, "tx-2": 2 },
             units: { "unit-1": "SOLD", "unit-2": "SOLD", "unit-unrelated": "SOLD" },
+            transactionCalls: 1,
         })
         expect(mocks.counts().unitArgs).toEqual([])
     })
