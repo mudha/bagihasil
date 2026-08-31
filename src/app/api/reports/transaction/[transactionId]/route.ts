@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { canAccessTransaction, forbidden, requireAuth } from '@/lib/api-auth'
+import { legacyTransactionDetailSelect } from '../../../../../lib/legacy-read-selects'
 
 export async function GET(
     request: NextRequest,
@@ -19,28 +20,7 @@ export async function GET(
         // Fetch transaction details with all related data
         const transaction = await prisma.transaction.findUnique({
             where: { id: transactionId },
-            include: {
-                unit: {
-                    include: {
-                        investor: true
-                    }
-                },
-                costs: {
-                    include: {
-                        proofs: true
-                    },
-                    orderBy: {
-                        date: 'asc'
-                    }
-                },
-                profitSharing: true,
-                paymentHistories: {
-                    orderBy: {
-                        paymentDate: 'asc'
-                    }
-                },
-                proofs: true
-            }
+            select: legacyTransactionDetailSelect,
         }) as any
 
         if (!transaction) {

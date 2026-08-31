@@ -8,6 +8,7 @@ import { notifyUnitSold } from "@/lib/notifications"
 import { canAccessTransaction } from "@/lib/api-auth"
 import { calculateProfitSharing } from "@/lib/profit-sharing"
 import { runSerializableTransaction } from "@/lib/serializable-transaction"
+import { legacyTransactionDetailSelect } from "../../../../lib/legacy-read-selects"
 
 export async function GET(
     req: Request,
@@ -28,22 +29,7 @@ export async function GET(
 
         const transaction = await prisma.transaction.findUnique({
             where: { id },
-            include: {
-                unit: {
-                    include: {
-                        investor: true
-                    }
-                },
-                costs: {
-                    include: { proofs: true },
-                    orderBy: { date: 'asc' }
-                },
-                profitSharing: true,
-                paymentHistories: {
-                    orderBy: { paymentDate: 'asc' }
-                },
-                proofs: true
-            }
+            select: legacyTransactionDetailSelect,
         }) as any
 
         if (!transaction) {

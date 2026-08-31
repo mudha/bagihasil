@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/api-auth'
+import { legacyAllInvestorsReportSelect } from '../../../../lib/legacy-read-selects'
 
 export async function GET() {
     const authResult = await requireRole(["ADMIN", "VIEWER"])
@@ -9,24 +10,7 @@ export async function GET() {
     try {
         const investors = await prisma.investor.findMany({
             orderBy: { name: 'asc' },
-            include: {
-                units: {
-                    include: {
-                        transactions: {
-                            include: {
-                                costs: {
-                                    orderBy: { date: 'asc' }
-                                },
-                                profitSharing: true,
-                                paymentHistories: {
-                                    orderBy: { paymentDate: 'asc' }
-                                }
-                            },
-                            orderBy: { buyDate: 'asc' }
-                        }
-                    }
-                }
-            }
+            select: legacyAllInvestorsReportSelect,
         })
 
         const result = investors.map((investor) => {

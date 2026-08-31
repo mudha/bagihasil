@@ -93,11 +93,12 @@ describe("GET investor CSV report", () => {
             where: { id: "investor-1" },
         }))
         const query = mocks.findUnique.mock.calls[0][0]
-        expect(query.include.units.include.transactions).not.toHaveProperty("where")
-        expect(query.include.units.include.transactions.include).toEqual(expect.objectContaining({
-            costs: true,
-            profitSharing: true,
-            paymentHistories: true,
+        expect(query).not.toHaveProperty("include")
+        expect(query.select.units.select.transactions.orderBy).toEqual({ sellDate: "desc" })
+        expect(query.select.units.select.transactions.select).toEqual(expect.objectContaining({
+            costs: expect.any(Object),
+            profitSharing: expect.any(Object),
+            paymentHistories: expect.any(Object),
         }))
     })
 
