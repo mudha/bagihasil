@@ -815,7 +815,7 @@ function TransactionsPageContent() {
                                                             <SelectValue placeholder="Pilih unit yang akan dibeli" />
                                                         </SelectTrigger>
                                                     </FormControl>
-                                                    <SelectContent>
+                                                    <SelectContent className="z-[110]">
                                                         {availableUnits.map((unit) => {
                                                             const duplicateInfo = getDuplicateInfo(availableUnits, unit)
                                                             return (
