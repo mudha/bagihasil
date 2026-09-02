@@ -301,7 +301,7 @@ export function AddCostDialog({
                                                     <SelectValue placeholder="Pilih jenis biaya" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent className="z-[110]">
                                                 <SelectItem value="INSPECTION">Inspeksi</SelectItem>
                                                 <SelectItem value="TRANSPORT">Transport</SelectItem>
                                                 <SelectItem value="MEAL">Makan</SelectItem>
@@ -332,7 +332,7 @@ export function AddCostDialog({
                                                     <SelectValue placeholder="Siapa yang bayar?" />
                                                 </SelectTrigger>
                                             </FormControl>
-                                            <SelectContent>
+                                            <SelectContent className="z-[110]">
                                                 <SelectItem value="INVESTOR">Pemodal</SelectItem>
                                                 <SelectItem value="MANAGER">Pengelola</SelectItem>
                                             </SelectContent>
