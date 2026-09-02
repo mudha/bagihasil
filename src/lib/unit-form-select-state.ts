@@ -4,8 +4,6 @@ export interface UnitSelectState {
     model: string
     year: string
     color: string
-    investorId: string
-    brandEnabled: boolean
 }
 
 export type UnitSelectAction =
@@ -14,9 +12,6 @@ export type UnitSelectAction =
     | { type: "model"; value: string }
     | { type: "year"; value: string }
     | { type: "color"; value: string }
-    | { type: "investor"; value: string }
-    | { type: "unrelatedField" }
-    | { type: "previewImage" }
 
 export function createUnitSelectState(): UnitSelectState {
     return {
@@ -25,8 +20,6 @@ export function createUnitSelectState(): UnitSelectState {
         model: "",
         year: "",
         color: "",
-        investorId: "",
-        brandEnabled: false,
     }
 }
 
@@ -39,8 +32,7 @@ export function updateUnitSelectState(state: UnitSelectState, action: UnitSelect
                 ...state,
                 vehicleType: action.value,
                 brand: vehicleTypeChanged && !brandStillValid ? "" : state.brand,
-                model: vehicleTypeChanged && !brandStillValid ? "" : state.model,
-                brandEnabled: Boolean(action.value),
+                model: vehicleTypeChanged ? "" : state.model,
             }
         }
         case "brand":
@@ -55,10 +47,5 @@ export function updateUnitSelectState(state: UnitSelectState, action: UnitSelect
             return { ...state, year: action.value }
         case "color":
             return { ...state, color: action.value }
-        case "investor":
-            return { ...state, investorId: action.value }
-        case "unrelatedField":
-        case "previewImage":
-            return state
     }
 }

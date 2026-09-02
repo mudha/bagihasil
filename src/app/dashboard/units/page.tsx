@@ -344,8 +344,6 @@ function UnitsPageContent() {
                 model: vModel,
                 year: vYear,
                 color: vColor,
-                investorId: editingUnit.investorId,
-                brandEnabled: Boolean(vType),
             })
 
             if (editingUnit.imageUrl) {
@@ -932,7 +930,7 @@ function UnitsPageContent() {
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Pilih Jenis" />
                                                             </SelectTrigger>
-                                                            <SelectContent>
+                                                            <SelectContent className="z-[110]">
                                                                 {VEHICLE_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
@@ -943,7 +941,7 @@ function UnitsPageContent() {
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Pilih Tahun" />
                                                             </SelectTrigger>
-                                                            <SelectContent>
+                                                            <SelectContent className="z-[110]">
                                                                 {YEARS.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
@@ -957,7 +955,7 @@ function UnitsPageContent() {
                                                         <SelectTrigger>
                                                             <SelectValue placeholder={vehicleType ? "Pilih Merek" : "Pilih Jenis dulu"} />
                                                         </SelectTrigger>
-                                                        <SelectContent>
+                                                        <SelectContent className="z-[110]">
                                                             {vehicleType && BRANDS[vehicleType as keyof typeof BRANDS]?.map(b => (
                                                                 <SelectItem key={b} value={b}>{b}</SelectItem>
                                                             ))}
@@ -972,7 +970,7 @@ function UnitsPageContent() {
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Pilih Model" />
                                                             </SelectTrigger>
-                                                            <SelectContent>
+                                                            <SelectContent className="z-[110]">
                                                                 {MODELS[vehicleType]?.[brand]?.map(m => (
                                                                     <SelectItem key={m} value={m}>{m}</SelectItem>
                                                                 ))}
@@ -1019,7 +1017,7 @@ function UnitsPageContent() {
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Pilih Warna" />
                                                         </SelectTrigger>
-                                                        <SelectContent>
+                                                        <SelectContent className="z-[110]">
                                                             {COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
@@ -1143,7 +1141,7 @@ function UnitsPageContent() {
                                                                     <SelectValue placeholder="Pilih Pemodal" />
                                                                 </SelectTrigger>
                                                             </FormControl>
-                                                            <SelectContent>
+                                                            <SelectContent className="z-[110]">
                                                                 {investors.map((investor) => (
                                                                     <SelectItem key={investor.id} value={investor.id}>
                                                                         {investor.name}
@@ -1197,7 +1195,7 @@ function UnitsPageContent() {
                                                                         <SelectValue placeholder="Pilih Status" />
                                                                     </SelectTrigger>
                                                                 </FormControl>
-                                                                <SelectContent>
+                                                                <SelectContent className="z-[110]">
                                                                     <SelectItem value="AVAILABLE">Available</SelectItem>
                                                                     <SelectItem value="SOLD">Sold</SelectItem>
                                                                     <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
