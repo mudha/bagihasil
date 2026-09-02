@@ -2,6 +2,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { format } from 'date-fns'
 import { mapInvestorReportPayment, PAID_PROFIT_REPORT_HEADER } from './investor-report-payment'
+import { getCostTypeLabel } from './cost-types'
 
 interface InvestorReportData {
     investor: {
@@ -708,7 +709,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             yPos = drawSectionHeader('Rincian Biaya Operasional', yPos)
 
             const costsData = data.costs.items.map((cost: any) => [
-                cost.costType,
+                getCostTypeLabel(cost.costType),
                 cost.description,
                 cost.payer === 'INVESTOR' ? 'Pemodal' : 'Pengelola',
                 formatCurrency(cost.amount)
@@ -997,7 +998,7 @@ export async function exportTransactionReportPDF(transactionId: string, transact
             data.costs.items.forEach((cost: any) => {
                 if (cost.proofs && cost.proofs.length > 0) {
                     cost.proofs.forEach((proof: any) => {
-                        addAttachment(`Bukti Biaya: ${cost.costType} (${cost.description || '-'})`, proof.description, proof.imageUrl)
+                        addAttachment(`Bukti Biaya: ${getCostTypeLabel(cost.costType)} (${cost.description || '-'})`, proof.description, proof.imageUrl)
                     })
                 }
             })
@@ -1454,7 +1455,7 @@ export async function exportAllInvestorsXLSX(): Promise<{ success: boolean; erro
                 'Harga Beli (Rp)', 'Harga Jual (Rp)',
                 'Modal Pemodal (Rp)', 'Modal Pengelola (Rp)',
             ]
-            const hdrCosts = costTypes.map(t => `Biaya\n${t} (Rp)`)
+            const hdrCosts = costTypes.map(t => `Biaya\n${getCostTypeLabel(t)} (Rp)`)
             const hdrRight = [
                 'Total Biaya (Rp)',
                 'Biaya Pemodal (Rp)', 'Biaya Pengelola (Rp)',

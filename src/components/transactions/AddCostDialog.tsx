@@ -33,6 +33,7 @@ import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/m
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { COST_TYPE_OPTIONS } from "@/lib/cost-types"
 
 const costSchema = z.object({
     costType: z.string().min(1, "Pilih jenis biaya"),
@@ -302,18 +303,11 @@ export function AddCostDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent className="z-[110]">
-                                                <SelectItem value="INSPECTION">Inspeksi</SelectItem>
-                                                <SelectItem value="TRANSPORT">Transport</SelectItem>
-                                                <SelectItem value="MEAL">Makan</SelectItem>
-                                                <SelectItem value="TOLL">Tol</SelectItem>
-                                                <SelectItem value="ADS">Iklan</SelectItem>
-                                                <SelectItem value="REPAIR">Perbaikan (PR)</SelectItem>
-                                                <SelectItem value="GAS">Bensin</SelectItem>
-                                                <SelectItem value="PARKING">Parkir</SelectItem>
-                                                <SelectItem value="STAMP_DUTY">Materai</SelectItem>
-                                                <SelectItem value="BROKER">Makelar</SelectItem>
-                                                <SelectItem value="SALES">Sales</SelectItem>
-                                                <SelectItem value="OTHER">Lainnya</SelectItem>
+                                                {COST_TYPE_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />

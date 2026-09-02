@@ -76,7 +76,8 @@ export async function POST(req: Request) {
                 biayaParkir,
                 biayaMaterai,
                 biayaMakelar,
-                biayaLainLainPemodal
+                biayaLainLainPemodal,
+                biayaPajak
             } = row
 
             if (!unitCode || !transactionCode || !buyDate || !buyPrice) {
@@ -217,6 +218,15 @@ export async function POST(req: Request) {
                         amount: parseImportNumber(biayaMakelar, "biayaMakelar", { min: 0 })!,
                         payer: "MANAGER",
                         description: "Biaya makelar"
+                    })
+                }
+
+                if (biayaPajak && parseImportNumber(biayaPajak, "biayaPajak", { min: 0 })! > 0) {
+                    costs.push({
+                        costType: "TAX",
+                        amount: parseImportNumber(biayaPajak, "biayaPajak", { min: 0 })!,
+                        payer: "MANAGER",
+                        description: "Biaya pajak"
                     })
                 }
 

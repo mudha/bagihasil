@@ -39,7 +39,7 @@ export async function parseReceiptWithOCR(
     }
 }
 
-function extractDataFromText(text: string): ParsedReceipt {
+export function extractDataFromText(text: string): ParsedReceipt {
     const lines = text.split('\n').filter(line => line.trim().length > 0);
     const textLower = text.toLowerCase();
 
@@ -79,7 +79,8 @@ function extractDataFromText(text: string): ParsedReceipt {
 
     // 3. Determine Cost Type (Keyword matching)
     let costType = "OTHER";
-    if (/bensin|pertalite|pertamax|solar|shell|spbu|pom/i.test(textLower)) costType = "GAS";
+    if (/pajak|stnk|samsat|pkb|sw?dkllj/i.test(textLower)) costType = "TAX";
+    else if (/bensin|pertalite|pertamax|solar|shell|spbu|pom/i.test(textLower)) costType = "GAS";
     else if (/tol|jasa marga|marga/i.test(textLower)) costType = "TOLL";
     else if (/makan|resto|cafe|warung|minum/i.test(textLower)) costType = "MEAL";
     else if (/parkir/i.test(textLower)) costType = "PARKING";
