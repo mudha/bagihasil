@@ -14,6 +14,8 @@ import {
     unitDeleteMutationSelect,
 } from "../../../lib/legacy-read-selects"
 
+const privateHeaders = { "Cache-Control": "private, no-store" }
+
 const transactionSchema = z.object({
     unitId: z.string(),
     transactionCode: z.string().min(1),
@@ -89,8 +91,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     const session = await auth()
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: privateHeaders })
+    if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403, headers: privateHeaders })
 
     try {
         const body = await req.json()
@@ -135,7 +137,7 @@ export async function POST(req: Request) {
         })
 
         if (outcome.kind === "CONFLICT") {
-            return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400 })
+            return NextResponse.json({ error: "Unit has an active transaction" }, { status: 400, headers: privateHeaders })
         }
 
         const transaction = outcome.transaction
@@ -152,27 +154,25 @@ export async function POST(req: Request) {
             // Activity log failure tidak membatalkan response
         }
 
-        return NextResponse.json(transaction)
+        return NextResponse.json(transaction, { headers: privateHeaders })
     } catch (error: any) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.issues }, { status: 400 })
+            return NextResponse.json({ error: error.issues }, { status: 400, headers: privateHeaders })
         }
 
         // Handle Prisma unique constraint violation
         if (error.code === 'P2002') {
             return NextResponse.json({
                 error: `Kode transaksi sudah digunakan. Silakan tutup dialog dan coba lagi untuk mendapatkan kode baru.`
-            }, { status: 400 })
+            }, { status: 400, headers: privateHeaders })
         }
 
         // Handle other Prisma errors
         if (error.code) {
-            return NextResponse.json({
-                error: `Database error: ${error.message || 'Unknown error'}`
-            }, { status: 500 })
+            return NextResponse.json({ error: "Gagal membuat transaksi" }, { status: 500, headers: privateHeaders })
         }
 
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        return NextResponse.json({ error: "Gagal membuat transaksi" }, { status: 500, headers: privateHeaders })
     }
 }
 

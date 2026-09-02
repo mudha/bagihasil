@@ -15,7 +15,10 @@ const mocks = vi.hoisted(() => {
     let readCount = 0
     let concurrentChecks = false
     let failCreate = false
+    let failUnexpected = false
     let failProof = false
+    let createArgs: Record<string, unknown> | null = null
+    let lastError: unknown = null
     let releaseReads!: () => void
     let readsReleased: Promise<void>
 
@@ -27,7 +30,10 @@ const mocks = vi.hoisted(() => {
         readCount = 0
         concurrentChecks = false
         failCreate = false
+        failUnexpected = false
         failProof = false
+        createArgs = null
+        lastError = null
         readsReleased = new Promise(resolve => { releaseReads = resolve })
     }
 
@@ -46,16 +52,23 @@ const mocks = vi.hoisted(() => {
         const tx = {
             transaction: {
                 findFirst: activeCheck,
-                create: async ({ data }: { data: Record<string, unknown> }) => {
+                create: async (args: { data: Record<string, unknown>; select: Record<string, unknown> }) => {
+                    createArgs = args
+                    if ("finalizationVersion" in args.select) {
+                        throw new Error("selection requested pending finalizationVersion")
+                    }
                     if (failCreate) {
                         throw Object.assign(new Error("create failed"), { code: "P2002" })
+                    }
+                    if (failUnexpected) {
+                        throw Object.assign(new Error("The column finalizationVersion does not exist"), { code: "P2022" })
                     }
                     createdInAttempt = true
                     return {
                         id: `transaction-${activeCount + 1}`,
-                        ...data,
-                        transactionCode: data.transactionCode,
-                        unitId: data.unitId,
+                        ...args.data,
+                        transactionCode: args.data.transactionCode,
+                        unitId: args.data.unitId,
                     }
                 },
             },
@@ -66,7 +79,13 @@ const mocks = vi.hoisted(() => {
                 },
             },
         }
-        const result = await operation(tx)
+        let result: unknown
+        try {
+            result = await operation(tx)
+        } catch (error) {
+            lastError = error
+            throw error
+        }
         if (createdInAttempt) {
             if (committedActive) {
                 throw Object.assign(new Error("serialization conflict"), { code: "P2034" })
@@ -89,8 +108,9 @@ const mocks = vi.hoisted(() => {
         reset,
         enableConcurrency: () => { concurrentChecks = true },
         failCreate: () => { failCreate = true },
+        failUnexpected: () => { failUnexpected = true },
         failProof: () => { failProof = true },
-        counts: () => ({ activeCount, proofCount, activityLogCount }),
+        counts: () => ({ activeCount, proofCount, activityLogCount, createArgs, lastError }),
     }
 })
 
@@ -129,6 +149,28 @@ describe("POST /api/transactions pre-migration and concurrency contract", () => 
         expect(route).toContain('import { runSerializableTransaction } from "../../../lib/serializable-transaction"')
         expect(post).toContain("runSerializableTransaction(prisma")
         expect(Object.keys(transactionCreateActiveCheckSelect)).toEqual(["id"])
+        expect(transactionCreateResponseSelect).toEqual({
+            id: true,
+            unitId: true,
+            transactionCode: true,
+            buyDate: true,
+            buyPrice: true,
+            initialInvestorCapital: true,
+            initialManagerCapital: true,
+            sellDate: true,
+            sellPrice: true,
+            status: true,
+            profitStatus: true,
+            lossBearer: true,
+            paymentStatus: true,
+            notes: true,
+            buyProofImageUrl: true,
+            buyProofDescription: true,
+            sellProofImageUrl: true,
+            sellProofDescription: true,
+            createdAt: true,
+            updatedAt: true,
+        })
         expect(Object.keys(transactionCreateResponseSelect)).toEqual(Object.keys(legacyTransactionScalarSelect))
         expect(Object.keys(transactionCreateResponseSelect)).not.toContain("finalizationVersion")
         expect(post).not.toMatch(/const activeTransaction = await prisma\.transaction\.findFirst/)
@@ -173,7 +215,7 @@ describe("POST /api/transactions pre-migration and concurrency contract", () => 
         const statuses = [first.status, second.status].sort()
 
         expect(statuses).toEqual([200, 400])
-        expect(mocks.counts()).toEqual({ activeCount: 1, proofCount: 1, activityLogCount: 1 })
+        expect(mocks.counts()).toMatchObject({ activeCount: 1, proofCount: 1, activityLogCount: 1 })
         expect(mocks.prisma.$transaction).toHaveBeenCalled()
         expect(mocks.transactionFindFirst).not.toHaveBeenCalled()
     })
@@ -184,7 +226,7 @@ describe("POST /api/transactions pre-migration and concurrency contract", () => 
         const response = await POST(new Request("http://localhost/api/transactions", { method: "POST", body: JSON.stringify(validBody("TRX-PROOF-FAIL")) }))
 
         expect(response.status).toBe(500)
-        expect(mocks.counts()).toEqual({ activeCount: 0, proofCount: 0, activityLogCount: 0 })
+        expect(mocks.counts()).toMatchObject({ activeCount: 0, proofCount: 0, activityLogCount: 0 })
     })
 
     it("does not create a proof when transaction creation fails with P2002", async () => {
@@ -195,7 +237,21 @@ describe("POST /api/transactions pre-migration and concurrency contract", () => 
 
         expect(response.status).toBe(400)
         expect(body.error).toContain("Kode transaksi sudah digunakan")
-        expect(mocks.counts()).toEqual({ activeCount: 0, proofCount: 0, activityLogCount: 0 })
+        expect(mocks.counts()).toMatchObject({ activeCount: 0, proofCount: 0, activityLogCount: 0 })
+    })
+
+    it("passes the exact legacy selection to create and hides unexpected database details", async () => {
+        mocks.failUnexpected()
+        const response = await POST(new Request("http://localhost/api/transactions", { method: "POST", body: JSON.stringify(validBody("TRX-SCHEMA")) }))
+        const body = await response.json()
+        const createArgs = mocks.counts().createArgs as { select: Record<string, unknown> }
+
+        expect(response.status).toBe(500)
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store")
+        expect(createArgs.select).toEqual(transactionCreateResponseSelect)
+        expect(body).toEqual({ error: "Gagal membuat transaksi" })
+        expect(JSON.stringify(body)).not.toMatch(/finalizationVersion|prisma|column|SQL|stack/i)
+        expect(mocks.counts()).toMatchObject({ activeCount: 0, proofCount: 0, activityLogCount: 0 })
     })
 
     it("rejects auth and validation failures before opening a transaction", async () => {

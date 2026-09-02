@@ -285,7 +285,26 @@ export const transactionCreateActiveCheckSelect = {
 } satisfies Prisma.TransactionSelect
 
 export const transactionCreateResponseSelect = {
-    ...legacyTransactionScalarSelect,
+    id: true,
+    unitId: true,
+    transactionCode: true,
+    buyDate: true,
+    buyPrice: true,
+    initialInvestorCapital: true,
+    initialManagerCapital: true,
+    sellDate: true,
+    sellPrice: true,
+    status: true,
+    profitStatus: true,
+    lossBearer: true,
+    paymentStatus: true,
+    notes: true,
+    buyProofImageUrl: true,
+    buyProofDescription: true,
+    sellProofImageUrl: true,
+    sellProofDescription: true,
+    createdAt: true,
+    updatedAt: true,
 } satisfies Prisma.TransactionSelect
 
 export const profitSharingPatchPreReadSelect = {
