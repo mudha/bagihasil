@@ -3,7 +3,7 @@
 import { Suspense } from "react"
 
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -77,6 +77,7 @@ import { usePersistedSort } from "@/hooks/use-persisted-sort"
 import { AdminUnitDetailDialog } from "@/components/units/AdminUnitDetailDialog"
 import { UnitCardMobile } from "@/components/units/UnitCardMobile"
 import { formatOdometer, compareOdometer } from "@/lib/odometer-format"
+import { createUnitSelectState, updateUnitSelectState, type UnitSelectState } from "@/lib/unit-form-select-state"
 import { VEHICLE_TYPES, BRANDS, MODELS, COLORS, YEARS, getDuplicateInfo } from "@/components/units/unit-data"
 
 
@@ -181,13 +182,24 @@ function UnitsPageContent() {
     const itemsPerPage = 10
 
     // Unit Form State
-    const [vehicleType, setVehicleType] = useState<string>("")
-    const [brand, setBrand] = useState<string>("")
-    const [model, setModel] = useState<string>("")
+    const [unitSelectState, setUnitSelectState] = useState<UnitSelectState>(createUnitSelectState)
     const [customModel, setCustomModel] = useState<string>("")
-    const [year, setYear] = useState<string>("")
-    const [color, setColor] = useState<string>("")
     const [customColor, setCustomColor] = useState<string>("")
+
+    const { vehicleType, brand, model, year, color } = unitSelectState
+    const setVehicleType = useCallback((value: string) => setUnitSelectState((state: UnitSelectState) => updateUnitSelectState(state, {
+        type: "vehicleType",
+        value,
+        validBrands: BRANDS[value as keyof typeof BRANDS] || [],
+    })), [])
+    const setBrand = useCallback((value: string) => setUnitSelectState((state: UnitSelectState) => updateUnitSelectState(state, {
+        type: "brand",
+        value,
+        validModels: MODELS[vehicleType]?.[value] || [],
+    })), [vehicleType])
+    const setModel = useCallback((value: string) => setUnitSelectState((state: UnitSelectState) => updateUnitSelectState(state, { type: "model", value })), [])
+    const setYear = useCallback((value: string) => setUnitSelectState((state: UnitSelectState) => updateUnitSelectState(state, { type: "year", value })), [])
+    const setColor = useCallback((value: string) => setUnitSelectState((state: UnitSelectState) => updateUnitSelectState(state, { type: "color", value })), [])
 
     const form = useForm<z.infer<typeof unitSchema>>({
         resolver: zodResolver(unitSchema),
@@ -326,11 +338,15 @@ function UnitsPageContent() {
                 }
             }
 
-            setVehicleType(vType)
-            setBrand(vBrand)
-            setModel(vModel)
-            setYear(vYear)
-            setColor(vColor)
+            setUnitSelectState({
+                vehicleType: vType,
+                brand: vBrand,
+                model: vModel,
+                year: vYear,
+                color: vColor,
+                investorId: editingUnit.investorId,
+                brandEnabled: Boolean(vType),
+            })
 
             if (editingUnit.imageUrl) {
                 setUnitImages([{
@@ -353,34 +369,6 @@ function UnitsPageContent() {
             } else {
                 setStnkImages([])
             }
-        } else {
-            form.reset({
-                name: "",
-                plateNumber: "",
-                code: "",
-                investorId: "",
-                status: "AVAILABLE",
-                imageUrl: null,
-                vehicleType: null,
-                brand: null,
-                model: null,
-                type: null,
-                year: null,
-                color: null,
-                kilometer: null,
-                stnkImageUrl: null,
-                engineNumber: null,
-                chassisNumber: null,
-            })
-            setUnitImages([])
-            setStnkImages([])
-            setVehicleType("")
-            setBrand("")
-            setModel("")
-            setCustomModel("")
-            setYear("")
-            setColor("")
-            setCustomColor("")
         }
     }, [editingUnit, form])
 
@@ -864,6 +852,12 @@ function UnitsPageContent() {
                                 if (!open) {
                                     setEditingUnit(null)
                                     setViewingUnit(null)
+                                    form.reset()
+                                    setUnitSelectState(createUnitSelectState())
+                                    setCustomModel("")
+                                    setCustomColor("")
+                                    setUnitImages([])
+                                    setStnkImages([])
                                 }
                     }}>
                         <DialogTrigger asChild>
@@ -934,13 +928,7 @@ function UnitsPageContent() {
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div className="space-y-2">
                                                         <Label>Jenis Kendaraan</Label>
-                                                        <Select value={vehicleType} onValueChange={(v) => {
-                                                            setVehicleType(v);
-                                                            if (v !== vehicleType) {
-                                                                setBrand("");
-                                                                setModel("");
-                                                            }
-                                                        }}>
+                                                        <Select value={vehicleType} onValueChange={setVehicleType}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Pilih Jenis" />
                                                             </SelectTrigger>
@@ -965,10 +953,7 @@ function UnitsPageContent() {
                                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <div className="space-y-2">
                                                     <Label>Merek</Label>
-                                                    <Select value={brand} onValueChange={(v) => {
-                                                        setBrand(v);
-                                                        if (v !== brand) setModel("");
-                                                    }} disabled={!vehicleType}>
+                                                    <Select value={brand} onValueChange={setBrand} disabled={!vehicleType}>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder={vehicleType ? "Pilih Merek" : "Pilih Jenis dulu"} />
                                                         </SelectTrigger>
@@ -1152,7 +1137,7 @@ function UnitsPageContent() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Pemilik Modal</FormLabel>
-                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}>
                                                             <FormControl>
                                                                 <SelectTrigger>
                                                                     <SelectValue placeholder="Pilih Pemodal" />
