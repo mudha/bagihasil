@@ -51,7 +51,7 @@ jobs:
           required=false
           while IFS= read -r path; do
             case "$path" in
-              prisma/schema.prisma|prisma/migrations/*|scripts/ci-postgres-migrations.ts|src/lib/migration-ci-validator.ts|src/lib/migration-ci-validator.test.ts|.github/workflows/postgresql-migrations.yml|package.json|package-lock.json)
+              prisma/schema.prisma|prisma/schema.runtime-legacy.prisma|prisma/migrations/*|scripts/ci-postgres-migrations.ts|scripts/verify-prisma-runtime-schema.ts|src/lib/migration-ci-validator.ts|src/lib/migration-ci-validator.test.ts|src/lib/prisma-runtime-schema.test.ts|.github/workflows/postgresql-migrations.yml|package.json|package-lock.json)
                 required=true
                 break
                 ;;
@@ -100,8 +100,12 @@ jobs:
           cache: npm
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts
-      - name: Generate Prisma client
-        run: node ./node_modules/prisma/build/index.js generate
+      - name: Generate canonical Prisma client for migration checks
+        run: node ./node_modules/prisma/build/index.js generate --schema prisma/schema.prisma
+      - name: Validate canonical and runtime schemas
+        run: |
+          node ./node_modules/prisma/build/index.js validate --schema prisma/schema.prisma
+          node ./node_modules/prisma/build/index.js validate --schema prisma/schema.runtime-legacy.prisma
       - name: Run validator tests
         run: node ./node_modules/.bin/vitest run src/lib/migration-ci-validator.test.ts --reporter=dot
       - name: Run disposable base-head migration verification
