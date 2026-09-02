@@ -32,10 +32,23 @@ export const COST_TYPE_OPTIONS: ReadonlyArray<{ value: CostType; label: string }
     { value: "OTHER", label: "Lainnya" },
 ]
 
-const COST_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-    COST_TYPE_OPTIONS.map(({ value, label }) => [value, label])
-)
+// Preserve the pre-Pajak POST allowlist exactly; SALES remains an existing
+// UI/legacy value and is intentionally not enabled by this category change.
+export const CREATE_COST_TYPE_VALUES = [
+    "INSPECTION",
+    "TRANSPORT",
+    "MEAL",
+    "TOLL",
+    "ADS",
+    "REPAIR",
+    "GAS",
+    "PARKING",
+    "STAMP_DUTY",
+    "BROKER",
+    "TAX",
+    "OTHER",
+] as const
 
 export function getCostTypeLabel(value: string): string {
-    return COST_TYPE_LABELS[value] ?? value
+    return value === "TAX" ? "Pajak" : value
 }

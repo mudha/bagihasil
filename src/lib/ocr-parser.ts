@@ -39,7 +39,7 @@ export async function parseReceiptWithOCR(
     }
 }
 
-function extractDataFromText(text: string): ParsedReceipt {
+export function extractDataFromText(text: string): ParsedReceipt {
     const lines = text.split('\n').filter(line => line.trim().length > 0);
     const textLower = text.toLowerCase();
 
