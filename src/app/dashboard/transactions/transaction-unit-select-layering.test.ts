@@ -16,6 +16,7 @@ describe("New Transaction unit Select layering contract", () => {
         expect(dialogSource).toContain("z-[100]")
         expect(selectSource).toContain("relative z-50")
         expect(unitField).toContain('<SelectContent className="z-[110]">')
+        expect(dialog.match(/<SelectContent className="z-\[110\]">/g)).toHaveLength(1)
     })
 
     it("keeps the real unit ID mapping and controlled selection wiring", () => {
