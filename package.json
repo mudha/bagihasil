@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "npm run prisma:generate:runtime && npm run prisma:verify:runtime",
     "prisma:generate:runtime": "prisma generate --schema prisma/schema.runtime-legacy.prisma",
     "prisma:verify:runtime": "tsx scripts/verify-prisma-runtime-schema.ts",
     "build": "npm run prisma:generate:runtime && npm run prisma:verify:runtime && next build",
     "start": "next start",
+    "prestart": "npm run prisma:generate:runtime && npm run prisma:verify:runtime",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "pretypecheck": "npm run prisma:generate:runtime",

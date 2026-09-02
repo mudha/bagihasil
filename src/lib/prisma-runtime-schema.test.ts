@@ -42,11 +42,15 @@ describe("legacy Prisma runtime schema guard", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
       scripts?: Record<string, string>
     }
-    expect(packageJson.scripts?.["prisma:generate:runtime"]).toContain("--schema prisma/schema.runtime-legacy.prisma")
-    expect(packageJson.scripts?.postinstall).toContain("prisma:generate:runtime")
-    expect(packageJson.scripts?.build).toContain("prisma:generate:runtime")
-    expect(packageJson.scripts?.pretest).toContain("prisma:generate:runtime")
-    expect(packageJson.scripts?.pretypecheck).toContain("prisma:generate:runtime")
-    expect(packageJson.scripts?.["pretest:e2e"]).toContain("prisma:generate:runtime")
+    expect(packageJson.scripts?.["prisma:generate:runtime"]).toBe("prisma generate --schema prisma/schema.runtime-legacy.prisma")
+    expect(packageJson.scripts?.postinstall).toBe("npm run prisma:generate:runtime")
+    expect(packageJson.scripts?.build).toBe("npm run prisma:generate:runtime && npm run prisma:verify:runtime && next build")
+    expect(packageJson.scripts?.predev).toBe("npm run prisma:generate:runtime && npm run prisma:verify:runtime")
+    expect(packageJson.scripts?.prestart).toBe("npm run prisma:generate:runtime && npm run prisma:verify:runtime")
+    expect(packageJson.scripts?.pretest).toBe("npm run prisma:generate:runtime")
+    expect(packageJson.scripts?.pretypecheck).toBe("npm run prisma:generate:runtime")
+    for (const name of ["test:e2e", "test:e2e:auth", "test:e2e:unit", "test:e2e:transaction", "test:e2e:finalize", "test:e2e:payment"]) {
+      expect(packageJson.scripts?.[`pre${name}`]).toBe("npm run prisma:generate:runtime")
+    }
   })
 })
