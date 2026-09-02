@@ -46,7 +46,8 @@ export function ImportTransactionsDialog({ onImportSuccess }: ImportTransactions
             "biayaParkir",
             "biayaMaterai",
             "biayaMakelar",
-            "biayaLainLainPemodal"
+            "biayaLainLainPemodal",
+            "biayaPajak"
         ]
         const sample = [
             "AVZ-001",
@@ -56,6 +57,7 @@ export function ImportTransactionsDialog({ onImportSuccess }: ImportTransactions
             "150000000",
             "0",
             "ON_PROCESS",
+            "",
             "",
             "",
             "",

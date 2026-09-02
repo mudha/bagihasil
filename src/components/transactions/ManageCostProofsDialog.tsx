@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
+import { getCostTypeLabel } from "@/lib/cost-types"
 
 interface Cost {
     id: string
@@ -124,7 +125,7 @@ export function ManageCostProofsDialog({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        Kelola Bukti Biaya: {cost.costType}
+                        Kelola Bukti Biaya: {getCostTypeLabel(cost.costType)}
                         <Sparkles className="h-4 w-4 text-purple-400" />
                     </DialogTitle>
                 </DialogHeader>

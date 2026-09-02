@@ -48,6 +48,7 @@ import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
 import { StatusBadge, type StatusBadgeTone } from "@/components/mudha/StatusBadge"
 import { LoadingState } from "@/components/mudha/LoadingState"
 import { ErrorState } from "@/components/mudha/ErrorState"
+import { getCostTypeLabel } from "@/lib/cost-types"
 
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value || 0)
@@ -470,7 +471,7 @@ export default function TransactionDetailPage() {
                             <TableBody>
                                 {transaction.costs.map((cost: any) => (
                                     <TableRow key={cost.id}>
-                                        <TableCell className="max-w-[180px] whitespace-normal font-semibold [overflow-wrap:anywhere]">{cost.costType}</TableCell>
+                                        <TableCell className="max-w-[180px] whitespace-normal font-semibold [overflow-wrap:anywhere]">{getCostTypeLabel(cost.costType)}</TableCell>
                                         <TableCell className="max-w-[260px] whitespace-normal text-slate-600 [overflow-wrap:anywhere]">{cost.description}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{cost.payer}</Badge>

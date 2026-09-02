@@ -2,12 +2,10 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/api-auth"
+import { COST_TYPE_VALUES } from "@/lib/cost-types"
 
 const costSchema = z.object({
-    costType: z.enum([
-        "INSPECTION", "TRANSPORT", "MEAL", "TOLL", "ADS",
-        "REPAIR", "GAS", "PARKING", "STAMP_DUTY", "BROKER", "OTHER"
-    ]),
+    costType: z.enum(COST_TYPE_VALUES),
     payer: z.enum(["INVESTOR", "MANAGER"]),
     amount: z.number().positive(),
     description: z.string().optional(),

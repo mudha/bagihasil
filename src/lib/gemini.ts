@@ -56,6 +56,7 @@ export async function parseTransferProofs(
                 - STAMP_DUTY: Pembelian materai
                 - BROKER: Fee makelar/perantara
                 - SALES: Komisi penjualan
+                - TAX: Pajak kendaraan, STNK, Samsat, PKB, SWDKLLJ, atau denda pajak
                 - OTHER: Jika tidak masuk ke kategori mana pun di atas
     
                 Kembalikan hasil dalam format JSON murni dengan key: 
