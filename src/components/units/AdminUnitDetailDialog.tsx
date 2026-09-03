@@ -54,9 +54,9 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "AVAILABLE":
-                return <Badge variant="default" className="rounded-full bg-green-600 px-3 py-1">Tersedia</Badge>
+                return <Badge variant="default" className="rounded-full bg-green-600 px-3 py-1 dark:bg-green-700">Tersedia</Badge>
             case "SOLD":
-                return <Badge variant="secondary" className="rounded-full bg-slate-200 px-3 py-1 text-slate-700">Terjual</Badge>
+                return <Badge variant="secondary" className="rounded-full bg-muted px-3 py-1 text-foreground">Terjual</Badge>
             case "MAINTENANCE":
                 return <Badge variant="destructive" className="rounded-full px-3 py-1">Perbaikan</Badge>
             default:
@@ -77,7 +77,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="min-w-0 grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border-teal-900/10 p-0 shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl">
+                <DialogContent className="min-w-0 grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border-border p-0 shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl">
                     <div className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-14 text-white sm:px-6 sm:py-5 sm:pr-16">
                         <DialogHeader>
                             <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -108,27 +108,27 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                         </DialogHeader>
                     </div>
 
-                    <div className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-4 sm:p-6">
+                    <div className="min-h-0 overflow-y-auto overscroll-contain bg-muted/50 p-4 sm:p-6">
                         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                             <section className="space-y-4">
-                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                                     <div className="mb-4 flex items-center gap-2">
-                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-800 dark:text-teal-300">
                                             <ImageIcon className="h-5 w-5" />
                                         </span>
                                         <div>
-                                            <h3 className="font-black text-slate-950">Foto & Dokumen</h3>
-                                            <p className="text-xs text-slate-500">Foto unit dan STNK dalam satu tampilan.</p>
+                                            <h3 className="font-black text-foreground">Foto & Dokumen</h3>
+                                            <p className="text-xs text-muted-foreground">Foto unit dan STNK dalam satu tampilan.</p>
                                         </div>
                                     </div>
 
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="space-y-2">
-                                            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                                            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground">
                                                 <ImageIcon className="h-3.5 w-3.5" />
                                                 Foto Unit
                                             </p>
-                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
+                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-border bg-muted relative">
                                                 {unit.imageUrl ? (
                                                     <ImageHoverPreview
                                                         src={unit.imageUrl}
@@ -150,7 +150,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                                         </button>
                                                     </ImageHoverPreview>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-2 p-6 text-center text-slate-500">
+                                                    <div className="flex flex-col items-center gap-2 p-6 text-center text-muted-foreground">
                                                         <ImageIcon className="h-9 w-9 opacity-30" />
                                                         <span className="text-sm font-semibold">Tidak ada foto</span>
                                                     </div>
@@ -159,11 +159,11 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                         </div>
 
                                         <div className="space-y-2">
-                                            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                                            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground">
                                                 <FileText className="h-3.5 w-3.5" />
                                                 Foto STNK
                                             </p>
-                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 relative">
+                                            <div className="flex min-h-[180px] items-center justify-center overflow-hidden rounded-xl border border-border bg-muted relative">
                                                 {unit.stnkImageUrl ? (
                                                     <ImageHoverPreview
                                                         src={unit.stnkImageUrl}
@@ -185,7 +185,7 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                                         </button>
                                                     </ImageHoverPreview>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-2 p-6 text-center text-slate-500">
+                                                    <div className="flex flex-col items-center gap-2 p-6 text-center text-muted-foreground">
                                                         <FileText className="h-9 w-9 opacity-30" />
                                                         <span className="text-sm font-semibold">Tidak ada STNK</span>
                                                     </div>
@@ -195,14 +195,14 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                                     <div className="mb-4 flex items-center gap-2">
-                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
                                             <Car className="h-5 w-5" />
                                         </span>
                                         <div>
-                                            <h3 className="font-black text-slate-950">Informasi Kendaraan</h3>
-                                            <p className="text-xs text-slate-500">Spesifikasi utama kendaraan.</p>
+                                            <h3 className="font-black text-foreground">Informasi Kendaraan</h3>
+                                            <p className="text-xs text-muted-foreground">Spesifikasi utama kendaraan.</p>
                                         </div>
                                     </div>
 
@@ -211,61 +211,61 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                         <InfoTile label="Model" value={unit.model || "-"} />
                                         <InfoTile label="Tipe" value={unit.type || "-"} />
                                         <InfoTile label="Tahun" value={unit.year || "-"} />
-                                        <InfoTile label="Warna" value={unit.color || "-"} icon={<Palette className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />} />
-                                        <InfoTile label="Kilometer" value={unit.kilometer ? `${unit.kilometer.toLocaleString("id-ID")} km` : "-"} icon={<Gauge className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />} />
+                                        <InfoTile label="Warna" value={unit.color || "-"} icon={<Palette className="mt-0.5 h-4 w-4 shrink-0 text-teal-700 dark:text-teal-300" />} />
+                                        <InfoTile label="Kilometer" value={unit.kilometer ? `${unit.kilometer.toLocaleString("id-ID")} km` : "-"} icon={<Gauge className="mt-0.5 h-4 w-4 shrink-0 text-teal-700 dark:text-teal-300" />} />
                                         <InfoTile label="Jenis" value={unit.vehicleType || "-"} />
                                     </div>
                                 </div>
                             </section>
 
                             <aside className="space-y-4">
-                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                                     <div className="mb-4 flex items-center gap-2">
-                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-800 dark:text-teal-300">
                                             <Fingerprint className="h-5 w-5" />
                                         </span>
                                         <div>
-                                            <h3 className="font-black text-slate-950">Detail Teknis</h3>
-                                            <p className="text-xs text-slate-500">Nomor mesin dan rangka.</p>
+                                            <h3 className="font-black text-foreground">Detail Teknis</h3>
+                                            <p className="text-xs text-muted-foreground">Nomor mesin dan rangka.</p>
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="rounded-lg bg-teal-50 p-3">
-                                            <p className="text-xs font-semibold text-teal-900/60">No. Mesin</p>
-                                            <p className="mt-1 font-mono font-bold text-teal-950 [overflow-wrap:anywhere]">{unit.engineNumber || "-"}</p>
+                                        <div className="rounded-lg bg-teal-50 dark:bg-teal-950/35 p-3">
+                                            <p className="text-xs font-semibold text-teal-900/60 dark:text-teal-200">No. Mesin</p>
+                                            <p className="mt-1 font-mono font-bold text-teal-950 [overflow-wrap:anywhere] dark:text-teal-100">{unit.engineNumber || "-"}</p>
                                         </div>
-                                        <div className="rounded-lg bg-teal-50 p-3">
-                                            <p className="text-xs font-semibold text-teal-900/60">No. Rangka</p>
-                                            <p className="mt-1 font-mono font-bold text-teal-950 [overflow-wrap:anywhere]">{unit.chassisNumber || "-"}</p>
+                                        <div className="rounded-lg bg-teal-50 dark:bg-teal-950/35 p-3">
+                                            <p className="text-xs font-semibold text-teal-900/60 dark:text-teal-200">No. Rangka</p>
+                                            <p className="mt-1 font-mono font-bold text-teal-950 [overflow-wrap:anywhere] dark:text-teal-100">{unit.chassisNumber || "-"}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
+                                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                                     <div className="mb-4 flex items-center gap-2">
-                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
                                             <Hash className="h-5 w-5" />
                                         </span>
                                         <div>
-                                            <h3 className="font-black text-slate-950">Data Administrasi</h3>
-                                            <p className="text-xs text-slate-500">Pemilik, pajak, dan kode internal.</p>
+                                            <h3 className="font-black text-foreground">Data Administrasi</h3>
+                                            <p className="text-xs text-muted-foreground">Pemilik, pajak, dan kode internal.</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-3">
                                         <AdminItem
-                                            icon={<User className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+                                            icon={<User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
                                             label="Pemilik Modal"
                                             value={unit.investor?.name || "-"}
                                         />
                                         <AdminItem
-                                            icon={<Calendar className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+                                            icon={<Calendar className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
                                             label="Jatuh Tempo Pajak"
                                             value={formattedTaxDate}
                                             muted={!unit.taxDueDate}
                                         />
                                         <AdminItem
-                                            icon={<Hash className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+                                            icon={<Hash className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
                                             label="Kode Unit"
                                             value={unit.code || "-"}
                                             mono
@@ -273,13 +273,13 @@ export function AdminUnitDetailDialog({ open, onOpenChange, unit }: AdminUnitDet
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-teal-900/10 bg-white p-4 shadow-sm">
-                                    <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Ringkasan</p>
-                                    <p className="mt-2 break-words text-lg font-black leading-snug text-slate-950">{unit.name}</p>
+                                <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                                    <p className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Ringkasan</p>
+                                    <p className="mt-2 break-words text-lg font-black leading-snug text-foreground">{unit.name}</p>
                                     {vehicleMeta.length > 0 && (
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             {vehicleMeta.map((item) => (
-                                                <span key={item} className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                                                <span key={item} className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-foreground">
                                                     {item}
                                                 </span>
                                             ))}
@@ -312,9 +312,9 @@ function InfoTile({
     icon?: React.ReactNode
 }) {
     return (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500">{label}</p>
-            <p className="mt-2 flex items-start gap-2 break-words font-bold text-slate-950">
+        <div className="rounded-lg border border-border bg-muted/50 p-3">
+            <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+            <p className="mt-2 flex items-start gap-2 break-words font-bold text-foreground">
                 {icon}
                 <span className="min-w-0 [overflow-wrap:anywhere]">{value}</span>
             </p>
@@ -336,11 +336,11 @@ function AdminItem({
     mono?: boolean
 }) {
     return (
-        <div className="flex gap-3 rounded-lg bg-slate-50 p-3">
+        <div className="flex gap-3 rounded-lg bg-muted/50 p-3">
             {icon}
             <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-500">{label}</p>
-                <p className={`mt-1 break-words font-bold [overflow-wrap:anywhere] ${muted ? "italic text-slate-500" : "text-slate-950"} ${mono ? "font-mono" : ""}`}>
+                <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+                <p className={`mt-1 break-words font-bold [overflow-wrap:anywhere] ${muted ? "italic text-muted-foreground" : "text-foreground"} ${mono ? "font-mono" : ""}`}>
                     {value}
                 </p>
             </div>

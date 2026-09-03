@@ -275,13 +275,13 @@ export function AddCostDialog({
                             {existingCost ? "Edit Biaya" : "Input Biaya"}
                         </span>
                         {isAnalyzing ? (
-                            <span className="text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
-                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 animate-pulse flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-full border border-blue-100">
+                                <Sparkles className="h-3 w-3 text-blue-500 dark:text-blue-400 animate-spin-slow" />
                                 AI Menganalisis...
                             </span>
                         ) : (
-                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
-                                <Sparkles className="h-3 w-3 text-purple-400" />
+                            <span className="text-[10px] items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:flex">
+                                <Sparkles className="h-3 w-3 text-purple-400 dark:text-purple-300" />
                                 AI Powered
                             </span>
                         )}
@@ -298,7 +298,7 @@ export function AddCostDialog({
                                         <FormLabel>Jenis Biaya</FormLabel>
                                         <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className={cn(isAnalyzing && "border-blue-300 bg-blue-50/30")}>
+                                                <SelectTrigger className={cn(isAnalyzing && "border-blue-300 dark:border-blue-300 bg-blue-50/30")}>
                                                     <SelectValue placeholder="Pilih jenis biaya" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -357,11 +357,11 @@ export function AddCostDialog({
                                                 }}
                                                 className={cn(
                                                     "transition-all duration-500",
-                                                    isAnalyzing && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                                    isAnalyzing && "border-blue-400 dark:border-blue-300 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:bg-blue-950/35"
                                                 )}
                                             />
                                             {isAnalyzing && (
-                                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
                                             )}
                                         </div>
                                     </FormControl>
@@ -380,7 +380,7 @@ export function AddCostDialog({
                                         <Input
                                             placeholder="Detail biaya..."
                                             {...field}
-                                            className={cn(isAnalyzing && "border-blue-300 bg-blue-50/30")}
+                                            className={cn(isAnalyzing && "border-blue-300 dark:border-blue-300 bg-blue-50/30")}
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -389,9 +389,9 @@ export function AddCostDialog({
                         />
 
                         {existingCost ? (
-                            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                            <div className="rounded-lg border border-blue-200 dark:border-blue-300 bg-blue-50 dark:bg-blue-950/40 px-4 py-3 text-sm text-blue-900 dark:text-blue-300">
                                 <p className="font-medium">Bukti biaya tetap tersimpan saat data ini diedit.</p>
-                                <p className="mt-1 text-xs text-blue-700">
+                                <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
                                     Gunakan tombol Kelola Bukti pada tabel jika ingin menambah atau menghapus lampiran.
                                     {existingCost.proofs?.length > 0 && ` Saat ini ada ${existingCost.proofs.length} bukti.`}
                                 </p>

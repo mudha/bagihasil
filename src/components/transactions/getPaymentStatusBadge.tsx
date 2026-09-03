@@ -31,7 +31,7 @@ export function getPaymentStatusBadge(transaction: PaymentStatusTx) {
 
         if (sellDate < appCreationDate) {
             return (
-                <Badge variant="default" className="bg-emerald-600 gap-1">
+                <Badge variant="default" className="bg-emerald-600 gap-1 dark:bg-emerald-700">
                     <CheckCircle2 className="h-3 w-3" />
                     Lunas
                 </Badge>
@@ -43,7 +43,7 @@ export function getPaymentStatusBadge(transaction: PaymentStatusTx) {
 
     if (paymentCount > 0) {
         return (
-            <Badge variant="default" className="bg-emerald-600 gap-1">
+            <Badge variant="default" className="bg-emerald-600 gap-1 dark:bg-emerald-700">
                 <CheckCircle2 className="h-3 w-3" />
                 Lunas
             </Badge>
@@ -51,7 +51,7 @@ export function getPaymentStatusBadge(transaction: PaymentStatusTx) {
     }
 
     return (
-        <Badge variant="outline" className="border-orange-500 text-orange-700 bg-orange-50 gap-1">
+        <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 gap-1">
             <AlertCircle className="h-3 w-3" />
             Belum Bayar
         </Badge>

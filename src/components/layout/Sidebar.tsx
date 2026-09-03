@@ -57,7 +57,7 @@ const routes = [
         label: "Aktivitas",
         icon: History,
         href: "/dashboard/activity-logs",
-        color: "text-gray-500",
+        color: "text-muted-foreground",
     },
     {
         label: "Kelola User",

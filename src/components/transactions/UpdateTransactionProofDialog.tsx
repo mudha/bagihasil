@@ -184,7 +184,7 @@ export function UpdateTransactionProofDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {title}
-                        <Sparkles className="h-4 w-4 text-purple-400" />
+                        <Sparkles className="h-4 w-4 text-purple-400 dark:text-purple-300" />
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6">

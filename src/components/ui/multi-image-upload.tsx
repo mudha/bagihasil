@@ -213,11 +213,11 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
         >
             <div className="grid gap-4">
                 {images.map((img) => (
-                    <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-slate-50 relative group">
+                    <div key={img.id} className="flex gap-4 p-3 border rounded-lg bg-muted/50 relative group">
                         <ImageHoverPreview
                             src={img.preview}
                             alt="Preview"
-                            className="w-24 h-24 shrink-0 bg-white rounded-md border flex items-center justify-center overflow-hidden relative"
+                            className="w-24 h-24 shrink-0 bg-card rounded-md border flex items-center justify-center overflow-hidden relative"
                         >
                             <Image src={img.preview} alt="Preview" fill className="object-cover cursor-pointer" style={{ top: 0, left: 0 }} />
                         </ImageHoverPreview>
@@ -241,12 +241,12 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                 />
                             </div>
                         </div>
-                        <div className="absolute top-1 right-1 flex gap-1 bg-white/80 rounded-md p-1 shadow-sm">
+                        <div className="absolute top-1 right-1 flex gap-1 bg-card/80 rounded-md p-1 shadow-sm">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                                className="h-6 w-6 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-300 dark:hover:bg-blue-950/40"
                                 onClick={() => setPreviewUrl(img.preview)}
                                 title="Lihat Gambar Full"
                             >
@@ -256,7 +256,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 text-slate-600 hover:text-red-500 hover:bg-red-50"
+                                className="h-6 w-6 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-950/40"
                                 onClick={() => handleRemove(img.id)}
                                 title="Hapus Gambar"
                             >
@@ -277,7 +277,7 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
             {images.length < maxImages && (
                 <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors dark:hover:border-blue-300 dark:hover:bg-blue-950/40"
                 >
                     <input
                         ref={fileInputRef}
@@ -287,11 +287,11 @@ export function MultipleImageUpload({ onImagesChange, maxImages = 5, initialImag
                         className="hidden"
                         onChange={handleFileChange}
                     />
-                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                        <Plus className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2 dark:bg-blue-950/50">
+                        <Plus className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <p className="text-sm font-medium text-slate-700">{uploadLabel}</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-sm font-medium text-foreground">{uploadLabel}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                         Klik untuk pilih atau Paste (Ctrl+V) disini
                     </p>
                 </div>

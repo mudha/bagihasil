@@ -126,12 +126,12 @@ export default function CalculatorPage() {
                         <div className="space-y-2 pt-2 border-t border-[var(--mudha-border-subtle)]">
                             <Label htmlFor="targetSellPrice" className="text-sm font-medium text-[var(--mudha-text)]">Target Harga Jual</Label>
                             <div className="relative">
-                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-emerald-600" />
+                                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                 <Input
                                     id="targetSellPrice"
                                     type="number"
                                     placeholder="0"
-                                    className="pl-8 h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-emerald-200 focus-visible:ring-emerald-500"
+                                    className="pl-8 h-10 min-h-[44px] bg-[var(--mudha-surface-primary)] border-emerald-200 dark:border-emerald-300 focus-visible:ring-emerald-500"
                                     value={targetSellPrice || ''}
                                     onChange={(e) => setTargetSellPrice(parseFloat(e.target.value) || 0)}
                                 />
@@ -181,14 +181,14 @@ export default function CalculatorPage() {
                         <Card className="border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-[var(--mudha-text)]">Estimasi Profit Bersih</CardTitle>
-                                <TrendingUp className={results.grossProfit >= 0 ? "h-4 w-4 text-emerald-500" : "h-4 w-4 text-red-500"} />
+                                <TrendingUp className={results.grossProfit >= 0 ? "h-4 w-4 text-emerald-500 dark:text-emerald-400" : "h-4 w-4 text-red-500 dark:text-red-400"} />
                             </CardHeader>
                             <CardContent>
-                                <div className={`text-2xl font-bold ${results.grossProfit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                <div className={`text-2xl font-bold ${results.grossProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
                                     {formatCurrency(results.grossProfit)}
                                 </div>
                                 <p className="text-xs text-[var(--mudha-text-muted)]">
-                                    ROI: <span className={results.roi >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
+                                    ROI: <span className={results.roi >= 0 ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-red-600 dark:text-red-400 font-medium"}>
                                         {results.roi.toFixed(1)}%
                                     </span>
                                 </p>
@@ -210,7 +210,7 @@ export default function CalculatorPage() {
                                         <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pemodal ({investorSharePct}%)</p>
                                         <p className="text-xs text-[var(--mudha-text-muted)]">Sesuai persentase yang dipilih</p>
                                     </div>
-                                    <div className="text-right font-bold text-lg text-emerald-600">
+                                    <div className="text-right font-bold text-lg text-emerald-600 dark:text-emerald-400">
                                         {formatCurrency(results.investorShare)}
                                     </div>
                                 </div>
@@ -219,14 +219,14 @@ export default function CalculatorPage() {
                                         <p className="text-sm font-medium leading-none text-[var(--mudha-text)]">Bagian Pengelola ({100 - investorSharePct}%)</p>
                                         <p className="text-xs text-[var(--mudha-text-muted)]">Sisa setelah bagian pemodal</p>
                                     </div>
-                                    <div className="text-right font-bold text-lg text-blue-600">
+                                    <div className="text-right font-bold text-lg text-blue-600 dark:text-blue-400">
                                         {formatCurrency(results.managerShare)}
                                     </div>
                                 </div>
                             </div>
 
                             {results.grossProfit < 0 && (
-                                <div className="mt-4 p-3 bg-red-100 text-red-800 text-sm rounded-md border border-red-200">
+                                <div className="mt-4 p-3 bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300 text-sm rounded-md border border-red-200 dark:border-red-300">
                                     <strong>Peringatan:</strong> Estimasi menunjukkan kerugian sebesar {formatCurrency(Math.abs(results.grossProfit))}. Cek kembali harga beli atau biaya perbaikan.
                                 </div>
                             )}

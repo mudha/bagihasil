@@ -8,14 +8,14 @@ const source = readFileSync(
 
 describe("transaction investor tone wiring", () => {
     it("uses the shared helper without local palette duplicates", () => {
-        expect(source).toContain('import { getInvestorTone } from "@/lib/investor-tone"')
+        expect(source).toContain('import { getInvestorToneTheme } from "@/lib/investor-tone"')
         expect(source).not.toMatch(/const INVESTOR_TONES\s*=/)
         expect(source).not.toMatch(/const INVESTOR_TONE_OVERRIDES\s*:/)
         expect(source).not.toMatch(/const getInvestorTone\s*=/)
     })
 
     it("preserves both transaction investor-tone call sites", () => {
-        expect(source.match(/getInvestorTone\(trx\.unit\.investor\.name \|\| trx\.unit\.investorId\)/g)).toHaveLength(2)
+        expect(source.match(/getInvestorToneTheme\(trx\.unit\.investor\.name \|\| trx\.unit\.investorId, isDark\)/g)).toHaveLength(2)
     })
 
     it("preserves every mobile and desktop tone property access", () => {

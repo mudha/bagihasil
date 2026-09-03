@@ -42,6 +42,12 @@ import {
 import { toast } from "sonner"
 import { LoadingState } from "@/components/mudha/LoadingState"
 import { ErrorState } from "@/components/mudha/ErrorState"
+import { useTheme } from "next-themes"
+import {
+    getChartColors,
+    chartBarFill,
+    chartBarAltFill,
+} from "@/lib/chart-theme"
 
 
 interface InvestorStat {
@@ -101,7 +107,7 @@ interface DashboardStats {
     taxReminders?: TaxReminder[]
 }
 
-const statusColors = ["#0d9488", "#14b8a6", "#84cc16", "#f59e0b", "#f97316", "#64748b"]
+// statusColors is now chart.pie from getChartColors
 
 function MetricCard({
     title,
@@ -177,7 +183,7 @@ function MeasuredChartBox({ className, children }: { className: string; children
 
     return (
         <div ref={boxRef} className={className}>
-            {ready ? children : <div className="h-full w-full rounded-lg bg-teal-50/60" />}
+            {ready ? children : <div className="h-full w-full rounded-lg bg-teal-50/60 dark:bg-teal-950/40" />}
         </div>
     )
 }
@@ -199,6 +205,9 @@ function ChartPanel({ title, subtitle, children }: { title: string; subtitle: st
 }
 
 export default function DashboardPage() {
+    const { resolvedTheme } = useTheme()
+    const isDark = resolvedTheme === "dark"
+    const chart = getChartColors(isDark)
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
@@ -519,9 +528,9 @@ export default function DashboardPage() {
             </section>
 
             {stats.taxReminders && stats.taxReminders.length > 0 && (
-                <Card className="rounded-lg border-amber-200 bg-amber-50/80 shadow-sm">
+                <Card className="rounded-lg border-amber-200 dark:border-amber-300 bg-amber-50/80 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-sm font-black text-amber-900">
+                        <CardTitle className="flex items-center gap-2 text-sm font-black text-amber-900 dark:text-amber-300">
                             <Calendar className="h-4 w-4" />
                             Pengingat Pajak Kendaraan
                         </CardTitle>
@@ -529,17 +538,17 @@ export default function DashboardPage() {
                     <CardContent>
                         <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
                             {stats.taxReminders.slice(0, 4).map((reminder) => (
-                                <div key={reminder.id} className="min-w-[220px] rounded-lg border border-amber-200 bg-white p-3 shadow-sm lg:min-w-0">
+                                <div key={reminder.id} className="min-w-[220px] rounded-lg border border-amber-200 bg-card p-3 shadow-sm lg:min-w-0 dark:border-amber-800/40">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-black text-slate-950">{reminder.plateNumber}</p>
-                                            <p className="mt-1 truncate text-xs text-slate-500">{reminder.name}</p>
+                                            <p className="truncate text-sm font-black text-foreground">{reminder.plateNumber}</p>
+                                            <p className="mt-1 truncate text-xs text-muted-foreground">{reminder.name}</p>
                                         </div>
                                         <Badge variant={reminder.daysLeft <= 7 ? "destructive" : "outline"} className="text-[10px]">
                                             {reminder.daysLeft <= 0 ? "Lewat Tempo" : `${reminder.daysLeft} hari`}
                                         </Badge>
                                     </div>
-                                    <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-amber-800">
+                                    <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
                                         <Clock3 className="size-3" />
                                         {format(new Date(reminder.taxDueDate), "dd/MM/yyyy")}
                                     </p>
@@ -554,11 +563,11 @@ export default function DashboardPage() {
                 <ChartPanel title="Omset Bulanan" subtitle="Revenue per periode">
                     <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
                         <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                            <XAxis dataKey="month" stroke={chart.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
                             <YAxis hide />
-                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#ccfbf1", opacity: 0.35 }} />
-                            <Bar dataKey="totalRevenue" name="Omset" fill="#0d9488" radius={[6, 6, 0, 0]} barSize={34} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} cursor={{ fill: chart.cursor, opacity: 0.35 }} />
+                            <Bar dataKey="totalRevenue" name="Omset" fill={chartBarFill(isDark)} radius={[6, 6, 0, 0]} barSize={34} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartPanel>
@@ -566,11 +575,11 @@ export default function DashboardPage() {
                 <ChartPanel title="Profit Bulanan" subtitle="Margin bersih">
                     <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
                         <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                            <XAxis dataKey="month" stroke={chart.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
                             <YAxis hide />
-                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#dcfce7", opacity: 0.45 }} />
-                            <Bar dataKey="totalMargin" name="Total Profit" fill="#22c55e" radius={[6, 6, 0, 0]} barSize={34} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} cursor={{ fill: chart.cursor, opacity: 0.45 }} />
+                            <Bar dataKey="totalMargin" name="Total Profit" fill={chartBarAltFill(isDark)} radius={[6, 6, 0, 0]} barSize={34} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartPanel>
@@ -578,13 +587,13 @@ export default function DashboardPage() {
                 <ChartPanel title="Pembagian Profit" subtitle={`Total dibagi ${formatCurrencyShort(totalSharedProfit)}`}>
                     <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
                         <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                            <XAxis dataKey="month" stroke={chart.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
                             <YAxis hide />
-                            <Tooltip formatter={(value: number) => formatCurrency(value)} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#f7fee7", opacity: 0.5 }} />
-                            <Legend wrapperStyle={{ fontSize: "10px" }} />
-                            <Bar dataKey="investorShare" name="Pemodal" stackId="a" fill="#84cc16" radius={[0, 0, 6, 6]} />
-                            <Bar dataKey="managerShare" name="Pengelola" stackId="a" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} cursor={{ fill: chart.cursor, opacity: 0.5 }} />
+                            <Legend wrapperStyle={{ fontSize: "10px", color: chart.legendText }} />
+                            <Bar dataKey="investorShare" name="Pemodal" stackId="a" fill={chart.pie[2]} radius={[0, 0, 6, 6]} />
+                            <Bar dataKey="managerShare" name="Pengelola" stackId="a" fill={chart.pie[3]} radius={[6, 6, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartPanel>
@@ -592,11 +601,11 @@ export default function DashboardPage() {
                 <ChartPanel title="Unit Terjual" subtitle="Volume penjualan">
                     <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={240} initialDimension={{ width: 320, height: 240 }}>
                         <BarChart data={currentMonthlyStats} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chart.grid} />
+                            <XAxis dataKey="month" stroke={chart.axis} fontSize={10} tickLine={false} axisLine={false} tickFormatter={formatXAxisDate} interval={0} height={54} tick={{ dy: 10 }} angle={-35} textAnchor="end" />
                             <YAxis hide />
-                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Terjual"]} labelStyle={{ color: "#0f172a" }} cursor={{ fill: "#fffbeb", opacity: 0.6 }} />
-                            <Bar dataKey="unitsSold" name="Unit" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={34} />
+                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Terjual"]} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} cursor={{ fill: chart.cursor, opacity: 0.6 }} />
+                            <Bar dataKey="unitsSold" name="Unit" fill={chart.pie[3]} radius={[6, 6, 0, 0]} barSize={34} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartPanel>
@@ -613,23 +622,23 @@ export default function DashboardPage() {
                                 <Link
                                     key={tx.id}
                                     href={`/dashboard/transactions/${tx.id}`}
-                                    className="group flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3 transition hover:border-teal-200 hover:bg-teal-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 sm:flex-row sm:items-center"
+                                    className="group flex flex-col gap-3 rounded-lg border border-border bg-muted/50 p-3 transition hover:border-teal-200 hover:bg-teal-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 sm:flex-row sm:items-center dark:hover:border-teal-800 dark:hover:bg-teal-950/40 dark:ring-teal-950/40"
                                 >
                                     <div className="flex min-w-0 flex-1 items-start gap-3">
                                         <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)] text-[var(--mudha-primary-700)] transition group-hover:bg-[var(--mudha-primary-700)] group-hover:text-white">
                                             <ReceiptText className="size-5" />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="break-words text-sm font-black leading-snug text-slate-950 transition group-hover:text-teal-800">
+                                            <p className="break-words text-sm font-black leading-snug text-foreground transition group-hover:text-teal-800 dark:group-hover:text-teal-200">
                                                 {tx.code} - {tx.unitName}
                                             </p>
-                                            <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">
+                                            <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">
                                                 {formatHijriFull(new Date(tx.date))} • {tx.type}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200/70 pt-3 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
-                                        <div className="text-sm font-black text-slate-950">{formatCurrencyShort(tx.amount)}</div>
+                                    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border pt-3 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
+                                        <div className="text-sm font-black text-foreground">{formatCurrencyShort(tx.amount)}</div>
                                         <Badge variant={tx.status === "COMPLETED" ? "default" : "secondary"} className="text-[10px] sm:mt-1">
                                             {tx.status}
                                         </Badge>
@@ -657,12 +666,12 @@ export default function DashboardPage() {
                                             {index + 1}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-black text-slate-950">{investor.name}</p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="truncate text-sm font-black text-foreground">{investor.name}</p>
+                                            <p className="text-xs text-muted-foreground">
                                                 {investor.activeUnits} aktif • {investor.completedTransactions} selesai
                                             </p>
                                         </div>
-                                        <div className="text-right text-sm font-black text-slate-950">{formatCurrencyShort(investor.totalProfit)}</div>
+                                        <div className="text-right text-sm font-black text-foreground">{formatCurrencyShort(investor.totalProfit)}</div>
                                     </div>
                                 ))}
                                 {stats.investorStats.length === 0 && (
@@ -683,21 +692,21 @@ export default function DashboardPage() {
                                         <PieChart>
                                             <Pie data={stats.unitStatusDistribution} dataKey="value" nameKey="name" innerRadius={36} outerRadius={56} paddingAngle={3}>
                                                 {stats.unitStatusDistribution.map((entry, index) => (
-                                                    <Cell key={`cell-${entry.name}`} fill={statusColors[index % statusColors.length]} />
+                                                    <Cell key={`cell-${entry.name}`} fill={chart.pie[index % chart.pie.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Jumlah"]} />
+                                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Jumlah"]} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </MeasuredChartBox>
                                 <div className="space-y-2">
                                     {stats.unitStatusDistribution.slice(0, 5).map((item, index) => (
                                         <div key={item.name} className="flex items-center justify-between gap-3 text-xs">
-                                            <span className="flex min-w-0 items-center gap-2 text-slate-600">
-                                                <span className="size-2 rounded-full" style={{ backgroundColor: statusColors[index % statusColors.length] }} />
+                                            <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                                                <span className="size-2 rounded-full" style={{ backgroundColor: chart.pie[index % chart.pie.length] }} />
                                                 <span className="truncate">{item.name}</span>
                                             </span>
-                                            <span className="font-black text-slate-950">{item.value}</span>
+                                            <span className="font-black text-foreground">{item.value}</span>
                                         </div>
                                     ))}
                                     {stats.unitStatusDistribution.length === 0 && (

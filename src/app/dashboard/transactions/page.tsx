@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 
 import {
@@ -50,7 +51,7 @@ import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { formatHijriFull } from "@/lib/date-utils"
 import { getInvestorInitials } from "@/lib/investor-initials"
-import { getInvestorTone } from "@/lib/investor-tone"
+import { getInvestorToneTheme } from "@/lib/investor-tone"
 import { ImportTransactionsDialog } from "@/components/import/ImportTransactionsDialog"
 import { EditStatusDialog } from "@/components/transactions/EditStatusDialog"
 
@@ -187,6 +188,8 @@ const getDuplicateInfo = (units: Unit[], currentUnit: Unit) => {
 
 function TransactionsPageContent() {
     const { data: session } = useSession()
+    const { resolvedTheme } = useTheme()
+    const isDark = resolvedTheme === "dark"
     const router = useRouter()
     const searchParams = useSearchParams()
     const isViewer = session?.user?.role === "VIEWER"
@@ -726,7 +729,7 @@ function TransactionsPageContent() {
                 <SummaryMetric label="Nilai beli" value={formatCurrencyShort(transactionSummary.buyValue)} icon={<Wallet className="h-4 w-4" />} tone="warning" loading={txLoading || !!txError} />
             </div>
 
-            <div className="rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur">
+            <div className="rounded-lg border border-border bg-card/85 p-3 shadow-sm backdrop-blur">
                 <div className="grid w-full grid-cols-2 gap-2 [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
                     {selectedIds.length > 0 && !isViewer && (
                         <>
@@ -745,7 +748,7 @@ function TransactionsPageContent() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                                        <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
                                             Hapus
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -793,7 +796,7 @@ function TransactionsPageContent() {
                                 <Plus className="mr-2 h-4 w-4" /> Transaksi Baru
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-2xl sm:border">
+                        <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-border p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-2xl sm:border">
                             <DialogHeader className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-7 sm:py-5 sm:pr-20">
                                 <div className="w-fit rounded-full bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-teal-100">
                                     {editingTransaction ? "Mode edit" : "Transaksi baru"}
@@ -823,7 +826,7 @@ function TransactionsPageContent() {
                                                                     <div className="flex items-center gap-2 w-full">
                                                                         <span>{unit.name} - {unit.plateNumber}</span>
                                                                         {duplicateInfo.isDuplicate && (
-                                                                            <Badge variant="outline" className="ml-auto text-[10px] bg-amber-50 text-amber-700 border-amber-300">
+                                                                            <Badge variant="outline" className="ml-auto text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-300">
                                                                                 🔄 Pembelian ke-{duplicateInfo.purchaseNumber}
                                                                             </Badge>
                                                                         )}
@@ -888,7 +891,7 @@ function TransactionsPageContent() {
                                             )}
                                         />
                                     </div>
-                                    <div className="space-y-4 rounded-lg border border-teal-900/10 bg-teal-50/50 p-4 dark:bg-slate-900/50">
+                                    <div className="space-y-4 rounded-lg border border-border bg-primary/5 p-4">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <FormLabel>Bukti Transfer Pembelian</FormLabel>
                                             <Button
@@ -906,7 +909,7 @@ function TransactionsPageContent() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Scan className="h-4 w-4 text-blue-600" />
+                                                        <Scan className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                         Scan AI (Total)
                                                     </>
                                                 )}
@@ -1001,8 +1004,8 @@ function TransactionsPageContent() {
                                         )}
                                     />
                                     </div>
-                                    <div className="safe-pb shrink-0 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 sm:pb-4">
-                                        <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingTransaction ? "Simpan Perubahan" : "Simpan Transaksi"}</Button>
+                                    <div className="safe-pb shrink-0 border-t border-border bg-card/95 px-4 pt-3 shadow-[var(--mudha-shadow-sm)] backdrop-blur sm:px-6 sm:pb-4">
+                                        <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-800">{editingTransaction ? "Simpan Perubahan" : "Simpan Transaksi"}</Button>
                                     </div>
                                 </form>
                             </Form>
@@ -1012,13 +1015,13 @@ function TransactionsPageContent() {
             </div>
 
 
-            <div className="grid min-w-0 grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
+            <div className="grid min-w-0 grid-cols-2 gap-2 rounded-lg border border-border bg-card/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
                     <div className="relative col-span-2 w-full lg:col-span-1">
                         <Input
                             placeholder="Cari transaksi..."
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
-                            className="h-11 w-full rounded-lg border-teal-900/10 bg-white pr-10"
+                            className="h-11 w-full rounded-lg border-border bg-card pr-10"
                         />
                         {searchQuery && (
                             <Button
@@ -1054,7 +1057,7 @@ function TransactionsPageContent() {
                         else params.delete('investorStatus')
                         window.history.replaceState(null, '', `?${params.toString()}`)
                     }}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card lg:w-[150px]">
                             <SelectValue placeholder="Status Pemodal" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1064,7 +1067,7 @@ function TransactionsPageContent() {
                         </SelectContent>
                     </Select>
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[150px]">
+                            <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card lg:w-[150px]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1079,7 +1082,7 @@ function TransactionsPageContent() {
                         {/* Mobile Sort Dropdown */}
                         <div className="w-full lg:hidden">
                             <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
-                                <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                                <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card">
                                     <SelectValue placeholder="Urutkan" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1091,7 +1094,7 @@ function TransactionsPageContent() {
                             </Select>
                         </div>
                     <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white lg:w-[220px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card lg:w-[220px]">
                             <SelectValue placeholder="Pilih Investor" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1114,17 +1117,17 @@ function TransactionsPageContent() {
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedTransactions.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-teal-900/20 bg-white/80 p-8 text-center text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border bg-card/80 p-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada transaksi yang cocok." : "Belum ada transaksi."}
                     </div>
                 ) : (
                     paginatedTransactions.map((trx) => {
-                        const investorTone = getInvestorTone(trx.unit.investor.name || trx.unit.investorId)
+                        const investorTone = getInvestorToneTheme(trx.unit.investor.name || trx.unit.investorId, isDark)
 
                         return (
                         <div
                             key={trx.id}
-                            className="overflow-hidden rounded-lg border bg-white shadow-sm"
+                            className="overflow-hidden rounded-lg border bg-card shadow-sm"
                             style={{ borderColor: investorTone.accent }}
                         >
                             <div className="h-1.5" style={{ background: investorTone.stripe }} />
@@ -1136,7 +1139,7 @@ function TransactionsPageContent() {
                                             src={trx.unit.imageUrl}
                                             alt={trx.unit.name}
                                             previewSize="lg"
-                                            className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-teal-900/10"
+                                            className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-border"
                                         >
                                             <div className="relative h-full w-full">
                                                 <Image
@@ -1149,15 +1152,15 @@ function TransactionsPageContent() {
                                             </div>
                                         </ImageHoverPreview>
                                     ) : (
-                                        <div className="relative h-14 w-14 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-teal-900/10">
-                                            <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                        <div className="relative h-14 w-14 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border">
+                                            <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground">
                                                 <span className="text-[10px]">No Img</span>
                                             </div>
                                         </div>
                                     )}
                                     <div className="min-w-0 flex-1">
                                         <div className="mb-1 flex flex-wrap items-center gap-2">
-                                            <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700 [overflow-wrap:anywhere]">{trx.transactionCode}</span>
+                                            <span className="rounded-full bg-teal-50 dark:bg-teal-950/35 px-2 py-1 font-mono text-xs font-bold text-teal-700 dark:text-teal-300 [overflow-wrap:anywhere]">{trx.transactionCode}</span>
                                             <Badge variant={trx.status === 'COMPLETED' ? 'default' : 'secondary'} className="h-5 rounded-full py-0 text-[10px]">
                                                 {trx.status}
                                             </Badge>
@@ -1165,13 +1168,13 @@ function TransactionsPageContent() {
                                                 {getPaymentStatusBadge(trx)}
                                             </div>
                                         </div>
-                                        <div className="text-sm font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{trx.unit.name}</div>
-                                        <div className="text-xs text-slate-500 [overflow-wrap:anywhere]">{trx.unit.plateNumber}</div>
+                                        <div className="text-sm font-black leading-snug text-foreground [overflow-wrap:anywhere]">{trx.unit.name}</div>
+                                        <div className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{trx.unit.plateNumber}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
+                            <div className="grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Investor</span>
                                     <span
@@ -1201,7 +1204,7 @@ function TransactionsPageContent() {
                                 </div>
                                 <div>
                                     <span className="block text-xs text-muted-foreground mb-1">Harga Beli</span>
-                                    <span className="text-xs font-medium text-emerald-600 [overflow-wrap:anywhere]">
+                                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 [overflow-wrap:anywhere]">
                                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.buyPrice)}
                                     </span>
                                 </div>
@@ -1213,7 +1216,7 @@ function TransactionsPageContent() {
                                         </div>
                                         <div>
                                             <span className="block text-xs text-muted-foreground mb-1">Harga Jual</span>
-                                            <span className="text-xs font-medium text-blue-600 [overflow-wrap:anywhere]">
+                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 [overflow-wrap:anywhere]">
                                                 {trx.sellPrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(trx.sellPrice) : "-"}
                                             </span>
                                         </div>
@@ -1221,7 +1224,7 @@ function TransactionsPageContent() {
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -1238,22 +1241,22 @@ function TransactionsPageContent() {
                                                 Aksi
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
-                                            <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Transaksi</DropdownMenuLabel>
+                                        <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-border bg-card p-2 shadow-2xl shadow-black/15">
+                                            <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">Menu Transaksi</DropdownMenuLabel>
                                             <DropdownMenuItem
-                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                                className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-teal-50 focus:text-teal-700 dark:focus:bg-teal-950/40 dark:focus:text-teal-300"
                                                 onSelect={() => {
                                                     setViewingTransaction(null)
                                                     handleEdit(trx)
                                                 }}
                                             >
-                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-700 dark:text-teal-300">
                                                     <Pencil className="h-4 w-4" />
                                                 </span>
                                                 Edit Data
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-950/40 dark:focus:text-emerald-300"
                                                 onSelect={() => {
                                                     setViewingTransaction(null)
                                                     setEditingStatusTransaction({
@@ -1263,20 +1266,20 @@ function TransactionsPageContent() {
                                                     })
                                                 }}
                                             >
-                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
                                                     <CheckCircle className="h-4 w-4" />
                                                 </span>
                                                 Update Status
                                             </DropdownMenuItem>
                                             {trx.status === 'COMPLETED' && (
                                                 <DropdownMenuItem
-                                                    className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-blue-50 focus:text-blue-700 dark:focus:bg-blue-950/40 dark:focus:text-blue-300"
                                                     onSelect={() => {
                                                         setViewingTransaction(null)
                                                         handleExportPDF(trx.id, trx.transactionCode)
                                                     }}
                                                 >
-                                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
                                                         <FileText className="h-4 w-4" />
                                                     </span>
                                                     Download Laporan
@@ -1288,9 +1291,9 @@ function TransactionsPageContent() {
                                                     setViewingTransaction(null)
                                                     setDeleteTransactionId(trx.id)
                                                 }}
-                                                className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
+                                                className="h-11 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/40 dark:focus:text-red-300"
                                             >
-                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
                                                     <Trash className="h-4 w-4" />
                                                 </span>
                                                 Hapus
@@ -1302,7 +1305,7 @@ function TransactionsPageContent() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0 text-blue-600"
+                                        className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400"
                                         onClick={() => handleExportPDF(trx.id, trx.transactionCode)}
                                         disabled={exportingTransactionId === trx.id}
                                         title="Download Laporan PDF"
@@ -1319,14 +1322,14 @@ function TransactionsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
+            <div className="hidden min-w-0 overflow-x-auto overscroll-x-contain rounded-lg border border-border bg-card shadow-sm lg:block">
                 <Table className="min-w-[1540px] table-fixed">
-                    <TableHeader className="bg-teal-50/70">
-                        <TableRow className="hover:bg-teal-50/70">
+                    <TableHeader className="bg-teal-50/70 dark:bg-teal-950/40">
+                        <TableRow className="hover:bg-teal-50/70 dark:hover:bg-teal-950/40">
                             <TableHead className="w-[50px]">
                                 <input
                                     type="checkbox"
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                                     checked={paginatedTransactions.length > 0 && selectedIds.length === paginatedTransactions.length}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                 />
@@ -1528,7 +1531,7 @@ function TransactionsPageContent() {
                     </TableHeader>
                     <TableBody>
                         {paginatedTransactions.map((trx) => {
-                            const investorTone = getInvestorTone(trx.unit.investor.name || trx.unit.investorId)
+                            const investorTone = getInvestorToneTheme(trx.unit.investor.name || trx.unit.investorId, isDark)
 
                             return (
                             <TableRow
@@ -1555,13 +1558,13 @@ function TransactionsPageContent() {
                                 <TableCell>
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary disabled:opacity-50"
                                         checked={selectedIds.includes(trx.id)}
                                         onChange={(e) => handleSelectOne(trx.id, e.target.checked)}
                                         disabled={isViewer}
                                     />
                                 </TableCell>
-                                <TableCell className="whitespace-normal break-words font-mono text-sm font-bold text-teal-700">{trx.transactionCode}</TableCell>
+                                <TableCell className="whitespace-normal break-words font-mono text-sm font-bold text-teal-700 dark:text-teal-300">{trx.transactionCode}</TableCell>
                                 <TableCell className="max-w-[240px] whitespace-normal">
                                     <span
                                         className="flex w-full min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-lg border px-2 py-1 text-xs font-black"
@@ -1586,7 +1589,7 @@ function TransactionsPageContent() {
                                             src={trx.unit.imageUrl}
                                             alt={trx.unit.name}
                                             previewSize="lg"
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity relative"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-border hover:opacity-80 transition-opacity relative"
                                         >
                                             <div className="relative h-full w-full">
                                                 <Image
@@ -1599,13 +1602,13 @@ function TransactionsPageContent() {
                                             </div>
                                         </ImageHoverPreview>
                                     ) : (
-                                        <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
+                                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
                                             <span className="text-xs">No Img</span>
                                         </div>
                                     )}
                                 </TableCell>
                                 <TableCell className="w-[340px] max-w-[340px] whitespace-normal">
-                                    <div className="whitespace-normal break-words font-semibold leading-snug text-slate-950">{trx.unit.name}</div>
+                                    <div className="whitespace-normal break-words font-semibold leading-snug text-foreground">{trx.unit.name}</div>
                                     <div className="whitespace-normal break-words text-xs text-muted-foreground">{trx.unit.plateNumber}</div>
                                 </TableCell>
                                 <TableCell className="max-w-[190px] whitespace-normal break-words">{formatHijriFull(new Date(trx.buyDate))}</TableCell>
@@ -1642,27 +1645,27 @@ function TransactionsPageContent() {
                                             <>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                        <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-border px-3 text-xs font-bold text-foreground hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950/40 dark:hover:text-teal-300">
                                                             <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                                             Aksi
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
-                                                        <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Transaksi</DropdownMenuLabel>
+                                                    <DropdownMenuContent align="end" className="min-w-56 rounded-xl border-border bg-card p-2 shadow-2xl shadow-black/15">
+                                                        <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">Menu Transaksi</DropdownMenuLabel>
                                                         <DropdownMenuItem
-                                                            className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                                            className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-teal-50 focus:text-teal-700 dark:focus:bg-teal-950/40 dark:focus:text-teal-300"
                                                             onSelect={() => {
                                                                 setViewingTransaction(null)
                                                                 handleEdit(trx)
                                                             }}
                                                         >
-                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-700 dark:text-teal-300">
                                                                 <Pencil className="h-4 w-4" />
                                                             </span>
                                                             Edit Data
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
-                                                            className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                            className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-950/40 dark:focus:text-emerald-300"
                                                             onSelect={() => {
                                                                 setViewingTransaction(null)
                                                                 setEditingStatusTransaction({
@@ -1672,20 +1675,20 @@ function TransactionsPageContent() {
                                                                 })
                                                             }}
                                                         >
-                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
                                                                 <CheckCircle className="h-4 w-4" />
                                                             </span>
                                                             Update Status
                                                         </DropdownMenuItem>
                                                         {trx.status === 'COMPLETED' && (
                                                             <DropdownMenuItem
-                                                                className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                                className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-blue-50 focus:text-blue-700 dark:focus:bg-blue-950/40 dark:focus:text-blue-300"
                                                                 onSelect={() => {
                                                                     setViewingTransaction(null)
                                                                     handleExportPDF(trx.id, trx.transactionCode)
                                                                 }}
                                                             >
-                                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                                                <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
                                                                     <FileText className="h-4 w-4" />
                                                                 </span>
                                                                 Download Laporan
@@ -1697,9 +1700,9 @@ function TransactionsPageContent() {
                                                                 setViewingTransaction(null)
                                                                 setDeleteTransactionId(trx.id)
                                                             }}
-                                                            className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
+                                                            className="h-11 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/40 dark:focus:text-red-300"
                                                         >
-                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
                                                                 <Trash className="h-4 w-4" />
                                                             </span>
                                                             Hapus
@@ -1742,7 +1745,7 @@ function TransactionsPageContent() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
                             Hapus
                         </AlertDialogAction>
                     </AlertDialogFooter>

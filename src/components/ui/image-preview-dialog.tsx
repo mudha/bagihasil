@@ -65,7 +65,7 @@ export function ImagePreviewDialog({ src, isOpen, onOpenChange, title = "Pratinj
                     {/* Action Bar (Optional) */}
                     <div className="absolute bottom-6 flex gap-3">
                         <a href={src} download={`image-${Date.now()}`}>
-                            <Button className="bg-white/90 hover:bg-white text-black rounded-full shadow-lg gap-2">
+                            <Button className="bg-card/90 hover:bg-card text-foreground rounded-full shadow-lg gap-2">
                                 <Download className="h-4 w-4" />
                                 Simpan Gambar
                             </Button>

@@ -122,7 +122,7 @@ export function MultipleImageUpload({
                     <Label>{uploadLabel}</Label>
                     {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
                 </div>
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                     {images.length}/{maxImages}
                 </span>
             </div>
@@ -139,7 +139,7 @@ export function MultipleImageUpload({
             {images.length > 0 && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                 {images.map((img) => (
-                    <div key={img.id} className="relative group border rounded-lg overflow-hidden bg-slate-50 aspect-video">
+                    <div key={img.id} className="relative group border rounded-lg overflow-hidden bg-muted/50 aspect-video">
                         <ImageHoverPreview
                             src={img.preview}
                             alt="Preview"
@@ -151,7 +151,7 @@ export function MultipleImageUpload({
                             type="button"
                             onClick={() => handleRemove(img.id)}
                             aria-label="Hapus foto"
-                            className="absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition hover:bg-red-700 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                            className="absolute top-2 right-2 flex size-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -162,12 +162,12 @@ export function MultipleImageUpload({
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex aspect-video min-h-28 flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-white transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                        className="flex aspect-video min-h-28 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:hover:border-blue-300 dark:hover:bg-blue-950/40 dark:border-blue-950/40 dark:ring-blue-950/40"
                     >
-                        <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mb-1">
-                            <Plus className="h-4 w-4 text-blue-600" />
+                        <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mb-1 dark:bg-blue-950/50">
+                            <Plus className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                         </div>
-                        <span className="text-xs font-medium text-slate-600">Tambah Foto</span>
+                        <span className="text-xs font-medium text-muted-foreground">Tambah Foto</span>
                     </button>
                 )}
             </div>
@@ -177,13 +177,13 @@ export function MultipleImageUpload({
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 sm:min-h-40"
+                    className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 sm:min-h-40 dark:hover:border-blue-300 dark:hover:bg-blue-950/40 dark:border-blue-950/40 dark:ring-blue-950/40"
                 >
-                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                        <Upload className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2 dark:bg-blue-950/50">
+                        <Upload className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <p className="text-sm font-medium text-slate-700">Klik untuk Upload</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-sm font-medium text-foreground">Klik untuk Upload</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                         Pilih dari galeri atau paste (Ctrl+V)
                     </p>
                 </button>

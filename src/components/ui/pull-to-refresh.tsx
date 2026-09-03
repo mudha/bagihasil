@@ -85,7 +85,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                     transform: `translateY(${refreshing ? THRESHOLD + 80 : currentY}px)`
                 }}
             >
-                <div className="bg-white dark:bg-slate-800 rounded-full p-2 shadow-md border flex items-center justify-center h-10 w-10">
+                <div className="bg-card rounded-full p-2 shadow-md border flex items-center justify-center h-10 w-10">
                     {refreshing ? (
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     ) : (
