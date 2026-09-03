@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { InvestorSidebar } from "@/components/layout/InvestorSidebar"
 import { Navbar } from "@/components/layout/Navbar"
-import { Toaster } from "@/components/ui/sonner"
+
 
 export default async function InvestorLayout({
     children,
@@ -30,7 +30,7 @@ export default async function InvestorLayout({
                     {children}
                 </main>
             </div>
-            <Toaster />
+
         </div>
     )
 }

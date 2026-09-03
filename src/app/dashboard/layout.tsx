@@ -4,7 +4,7 @@ import { useRef } from "react"
 import type { ReactNode, WheelEvent } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Navbar } from "@/components/layout/Navbar"
-import { Toaster } from "@/components/ui/sonner"
+
 import { usePathname } from "next/navigation"
 import { PullToRefresh } from "@/components/ui/pull-to-refresh"
 
@@ -29,7 +29,7 @@ export default function DashboardLayout({
                 <PullToRefresh>
                     {children}
                 </PullToRefresh>
-                <Toaster />
+
             </div>
         )
     }
@@ -53,7 +53,7 @@ export default function DashboardLayout({
                     </div>
                 </PullToRefresh>
             </main>
-            <Toaster />
+
         </div>
     )
 }

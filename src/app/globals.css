@@ -62,7 +62,7 @@
   --secondary: oklch(0.965 0.005 264);
   --secondary-foreground: oklch(0.205 0.02 255);
   --muted: oklch(0.965 0.005 264);
-  --muted-foreground: oklch(0.495 0.015 264);
+  --muted-foreground: #475569;
 
   /* Accent — soft teal */
   --accent: oklch(0.955 0.03 174);               /* ≈#CCFBF1 */
@@ -112,7 +112,7 @@
   --secondary: oklch(0.23 0.02 170);
   --secondary-foreground: oklch(0.935 0.01 170);
   --muted: oklch(0.23 0.02 170);
-  --muted-foreground: oklch(0.68 0.015 170);
+  --muted-foreground: #B6C4C2;
 
   /* Accent — dark teal */
   --accent: oklch(0.27 0.035 170);               /* ≈#164E47 */

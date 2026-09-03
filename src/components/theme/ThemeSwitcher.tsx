@@ -13,7 +13,7 @@ const themes: { value: ThemeOption; icon: typeof Sun; label: string }[] = [
 ]
 
 export function ThemeSwitcher() {
-  const { setTheme, resolvedTheme } = useTheme()
+  const { setTheme, theme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -32,8 +32,8 @@ export function ThemeSwitcher() {
   }
 
   const currentTheme: ThemeOption =
-    resolvedTheme === "dark" || resolvedTheme === "light"
-      ? resolvedTheme
+    theme === "dark" || theme === "light" || theme === "system"
+      ? theme
       : "system"
 
   return (

@@ -9,6 +9,8 @@ const dialogSource = readFileSync("src/components/ui/dialog.tsx", "utf8")
 const selectSource = readFileSync("src/components/ui/select.tsx", "utf8")
 const themeSwitcherSource = readFileSync("src/components/theme/ThemeSwitcher.tsx", "utf8")
 const portalLayerSource = readFileSync("src/components/ui/portal-layer.tsx", "utf8")
+const dashboardLayoutSource = readFileSync("src/app/dashboard/layout.tsx", "utf8")
+const investorLayoutSource = readFileSync("src/app/dashboard/investor/layout.tsx", "utf8")
 
 describe("ThemeProvider props", () => {
   it("wraps children with correct attributes", () => {
@@ -124,6 +126,56 @@ describe("CSS token completeness", () => {
 })
 
 describe("Contrast ratios — key token pairs", () => {
+  const section = (selector: string) => {
+    const start = globalsSource.indexOf(selector)
+    return globalsSource.slice(start, globalsSource.indexOf("\n}", start))
+  }
+  const token = (css: string, name: string) => {
+    const match = css.match(new RegExp(`${name}:\\s*([^;]+)`))
+    if (!match) throw new Error(`Missing ${name}`)
+    return match[1].trim()
+  }
+  const rgb = (value: string): [number, number, number] => {
+    const hex = value.match(/#([0-9a-f]{6})/i)
+    if (hex) return [0, 1, 2].map((index) => parseInt(hex[1].slice(index * 2, index * 2 + 2), 16) / 255) as [number, number, number]
+    const match = value.match(/oklch\(([^)]+)\)/)
+    if (!match) throw new Error(`Unsupported color: ${value}`)
+    const [l, c, h] = match[1].trim().split(/\s+/).map(Number)
+    const radians = (h * Math.PI) / 180
+    const a = c * Math.cos(radians)
+    const b = c * Math.sin(radians)
+    const l1 = l + 0.3963377774 * a + 0.2158037573 * b
+    const m1 = l - 0.1055613458 * a - 0.0638541728 * b
+    const s1 = l - 0.0894841775 * a - 1.291485548 * b
+    const [ll, mm, ss] = [l1 ** 3, m1 ** 3, s1 ** 3]
+    return [
+      4.0767416621 * ll - 3.3077115913 * mm + 0.2309699292 * ss,
+      -1.2684380046 * ll + 2.6097574011 * mm - 0.3413193965 * ss,
+      -0.0041960863 * ll - 0.7034186147 * mm + 1.707614701 * ss,
+    ].map((channel) => Math.max(0, Math.min(1, channel))) as [number, number, number]
+  }
+  const luminance = (value: [number, number, number]) => value.reduce((sum, channel, index) => {
+    const linear = channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    return sum + linear * [0.2126, 0.7152, 0.0722][index]
+  }, 0)
+  const contrast = (foreground: string, background: string) => {
+    const a = luminance(rgb(foreground))
+    const b = luminance(rgb(background))
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  }
+
+  it("muted foreground meets AA against background and card in both themes", () => {
+    for (const css of [section(":root {"), section(".dark {")]) {
+      expect(contrast(token(css, "--muted-foreground"), token(css, "--background"))).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(token(css, "--muted-foreground"), token(css, "--card"))).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it("keeps muted foreground visually distinct from primary foreground", () => {
+    expect(token(section(":root {"), "--muted-foreground")).not.toBe(token(section(":root {"), "--foreground"))
+    expect(token(section(".dark {"), "--muted-foreground")).not.toBe(token(section(".dark {"), "--foreground"))
+  })
+
   // Extract HSL/oklch values and verify light/dark inversion
   it("background is light in :root and dark in .dark", () => {
     const rootSection = globalsSource.slice(
@@ -250,6 +302,14 @@ describe("Single Toaster mount — root layout", () => {
   it("sonner component uses useTheme for theme-aware rendering", () => {
     expect(sonnerSource).toContain('from "next-themes"')
     expect(sonnerSource).toContain("useTheme")
+  })
+
+  it("has exactly one effective Toaster in the actual nested layout tree", () => {
+    expect((layoutSource.match(/<Toaster\b/g) ?? []).length).toBe(1)
+    expect((dashboardLayoutSource.match(/<Toaster\b/g) ?? []).length).toBe(0)
+    expect((investorLayoutSource.match(/<Toaster\b/g) ?? []).length).toBe(0)
+    expect(dashboardLayoutSource).not.toContain("@/components/ui/sonner")
+    expect(investorLayoutSource).not.toContain("@/components/ui/sonner")
   })
 
   it("dialog close button uses semantic tokens (no hardcoded slate/white)", () => {
