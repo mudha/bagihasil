@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const layoutSource = readFileSync("src/app/layout.tsx", "utf8")
@@ -171,6 +171,21 @@ describe("Contrast ratios — key token pairs", () => {
     }
   })
 
+  it("foreground and primary control pairs meet AA in both themes", () => {
+    for (const css of [section(":root {"), section(".dark {")]) {
+      expect(contrast(token(css, "--foreground"), token(css, "--background"))).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(token(css, "--foreground"), token(css, "--card"))).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(token(css, "--primary-foreground"), token(css, "--primary"))).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it("focus ring meets the 3:1 non-text contrast requirement", () => {
+    for (const css of [section(":root {"), section(".dark {")]) {
+      expect(contrast(token(css, "--ring"), token(css, "--background"))).toBeGreaterThanOrEqual(3)
+      expect(contrast(token(css, "--ring"), token(css, "--card"))).toBeGreaterThanOrEqual(3)
+    }
+  })
+
   it("keeps muted foreground visually distinct from primary foreground", () => {
     expect(token(section(":root {"), "--muted-foreground")).not.toBe(token(section(":root {"), "--foreground"))
     expect(token(section(".dark {"), "--muted-foreground")).not.toBe(token(section(".dark {"), "--foreground"))
@@ -270,6 +285,12 @@ describe("ThemeSwitcher hydration safety", () => {
   it("has focus-visible ring for keyboard users", () => {
     expect(themeSwitcherSource).toContain("focus-visible:ring-ring/50")
   })
+
+  it("tracks raw theme so system remains selected", () => {
+    expect(themeSwitcherSource).toContain("const { setTheme, theme } = useTheme()")
+    expect(themeSwitcherSource).not.toContain("resolvedTheme")
+    expect(themeSwitcherSource).toContain('theme === "system"')
+  })
 })
 
 describe("ThemeSwitcher not imported by dashboard surfaces", () => {
@@ -278,16 +299,43 @@ describe("ThemeSwitcher not imported by dashboard surfaces", () => {
     "src/app/dashboard/page.tsx",
     "src/app/login/page.tsx",
     "src/app/dashboard/investor/layout.tsx",
+    "src/components/auth/LoginForm.tsx",
+    "src/components/layout/Sidebar.tsx",
+    "src/components/layout/InvestorSidebar.tsx",
+    "src/components/layout/Navbar.tsx",
   ]
 
   it("not imported in any dashboard/investor/login surface", () => {
     for (const path of surfacesToCheck) {
-      try {
-        const source = readFileSync(path, "utf8")
-        expect(source).not.toContain("ThemeSwitcher")
-        expect(source).not.toContain("@/components/theme/ThemeSwitcher")
-      } catch {
-        // File may not exist, which is fine
+      expect(existsSync(path), `${path} must exist for exposure proof`).toBe(true)
+      const source = readFileSync(path, "utf8")
+      expect(source).not.toContain("ThemeSwitcher")
+      expect(source).not.toContain("@/components/theme/ThemeSwitcher")
+    }
+  })
+})
+
+describe("Theme artifact and CSS variable integrity", () => {
+  it("does not retain the temporary skeleton primitive", () => {
+    expect(existsSync("src/components/ui/skeleton.tsx")).toBe(false)
+  })
+
+  it("has no unresolved or cyclic variables in globals.css", () => {
+    const declarations = new Map<string, string>()
+    for (const match of globalsSource.matchAll(/(--[\w-]+):\s*([^;]+);/g)) declarations.set(match[1], match[2])
+    const external = new Set(["--font-geist-sans", "--font-geist-mono"])
+    for (const [name, value] of declarations) {
+      for (const reference of value.matchAll(/var\((--[\w-]+)/g)) {
+        expect(declarations.has(reference[1]) || external.has(reference[1]), `${name} references missing ${reference[1]}`).toBe(true)
+      }
+      const seen = new Set([name])
+      let current = value
+      while (true) {
+        const reference = current.match(/var\((--[\w-]+)/)?.[1]
+        if (!reference || external.has(reference)) break
+        expect(seen.has(reference), `cycle reaches ${reference}`).toBe(false)
+        seen.add(reference)
+        current = declarations.get(reference) ?? ""
       }
     }
   })
