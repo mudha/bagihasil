@@ -72,7 +72,7 @@ function DialogContent({
             data-slot="dialog-close"
             aria-label="Tutup dialog"
             title="Tutup"
-            className="ring-offset-background focus-visible:ring-ring absolute top-3 right-3 z-20 flex size-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition hover:scale-105 hover:bg-slate-50 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0"
+            className="ring-offset-background focus-visible:ring-ring absolute top-3 right-3 z-20 flex size-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-lg transition hover:scale-105 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0"
           >
             <XIcon />
             <span className="sr-only">Tutup</span>

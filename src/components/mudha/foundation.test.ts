@@ -65,13 +65,16 @@ describe("Mudha Operational CSS tokens", () => {
     expect(css).toContain("--mudha-shadow-overlay:")
   })
 
-  it("does not override existing shadcn --primary", () => {
-    // The primary line in :root should still be the oklch value, not a Mudha color
-    expect(css).toContain("--primary: oklch(0.205 0 0)")
+  it("defines --primary with Mudha teal hue", () => {
+    // Phase 1 intentionally sets --primary to Mudha teal (hue ~174)
+    expect(css).toContain("--primary:")
+    expect(css).toMatch(/--primary:.*oklch\([^)]*\s174\)/)
   })
 
-  it("does not override existing --background", () => {
-    expect(css).toContain("--background: oklch(1 0 0)")
+  it("defines --background as a light surface", () => {
+    // Phase 1 sets --background to a slightly tinted light surface
+    expect(css).toContain("--background:")
+    expect(css).toMatch(/--background:.*oklch\(\s*0\.9/)
   })
 })
 
