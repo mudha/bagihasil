@@ -61,7 +61,7 @@ export function SummaryMetric({
           {label}
         </p>
         {loading ? (
-          <div className="mt-1 h-6 w-24 animate-pulse rounded bg-black/5" />
+          <div className="mt-1 h-6 w-24 animate-pulse rounded bg-muted" />
         ) : (
           <p
             className="mt-1 truncate text-xl font-bold leading-tight text-[var(--mudha-text)]"

@@ -79,12 +79,12 @@ describe("Calculator formula parity", () => {
   })
 
   it("profit colors change by sign: emerald for positive, red for negative", () => {
-    // TrendingUp icon color
-    expect(source).toContain('results.grossProfit >= 0 ? "h-4 w-4 text-emerald-500" : "h-4 w-4 text-red-500"')
+    // TrendingUp icon color preserves sign and adds explicit Dark counterparts
+    expect(source).toContain('results.grossProfit >= 0 ? "h-4 w-4 text-emerald-500 dark:text-emerald-400" : "h-4 w-4 text-red-500 dark:text-red-400"')
     // Profit value text color
-    expect(source).toContain('results.grossProfit >= 0 ? "text-emerald-600" : "text-red-600"')
+    expect(source).toContain('results.grossProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"')
     // ROI text color
-    expect(source).toContain('results.roi >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"')
+    expect(source).toContain('results.roi >= 0 ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-red-600 dark:text-red-400 font-medium"')
   })
 })
 

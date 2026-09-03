@@ -340,7 +340,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                                 AI Menganalisis...
                             </span>
                         ) : (
-                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
+                            <span className="text-[10px] items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:flex">
                                 <Sparkles className="h-3 w-3 text-purple-400" />
                                 AI Powered
                             </span>
@@ -368,17 +368,17 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                                         onChange={e => field.onChange(e.target.value === '' ? 0 : parseFloat(e.target.value))}
                                         className={cn(
                                             "transition-all duration-500",
-                                            isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                            isAnalyzingRef.current && "border-blue-400 dark:border-blue-300 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:bg-blue-950/35"
                                         )}
                                     />
                                 )}
                             />
                             {isAnalyzingRef.current && (
-                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
                             )}
                         </div>
                         {errors.amount && (
-                            <p className="text-sm text-red-500">{errors.amount.message}</p>
+                            <p className="text-sm text-red-500 dark:text-red-400">{errors.amount.message}</p>
                         )}
                     </div>
 
@@ -390,7 +390,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                             {...register('paymentDate')}
                         />
                         {errors.paymentDate && (
-                            <p className="text-sm text-red-500">{errors.paymentDate.message}</p>
+                            <p className="text-sm text-red-500 dark:text-red-400">{errors.paymentDate.message}</p>
                         )}
                     </div>
 
@@ -413,7 +413,7 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                     <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                             <Label htmlFor="proofImage">Bukti Transfer (Opsional)</Label>
-                            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{imageFile ? 1 : 0}/1</span>
+                            <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">{imageFile ? 1 : 0}/1</span>
                         </div>
                         <input
                             ref={fileInputRef}
@@ -427,26 +427,26 @@ export function AddPaymentDialog({ transactionId, investorId, onSuccess }: AddPa
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+                                className="flex min-h-36 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-blue-400 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:hover:border-blue-300 dark:hover:bg-blue-950/40 dark:ring-blue-950/40"
                             >
-                                <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100"><Upload className="h-5 w-5 text-blue-600" /></span>
-                                <span className="text-sm font-medium text-slate-700">Klik untuk Upload</span>
-                                <span className="mt-1 text-xs text-slate-500">Pilih file atau paste (Ctrl+V)</span>
+                                <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/40"><Upload className="h-5 w-5 text-blue-600 dark:text-blue-400" /></span>
+                                <span className="text-sm font-medium text-foreground">Klik untuk Upload</span>
+                                <span className="mt-1 text-xs text-muted-foreground">Pilih file atau paste (Ctrl+V)</span>
                             </button>
                         ) : (
-                            <div className="relative overflow-hidden rounded-lg border bg-slate-50 p-2">
+                            <div className="relative overflow-hidden rounded-lg border bg-muted/50 p-2">
                                 <div className="relative h-40 w-full">
                                     {imageFile?.type.startsWith('image/') ? (
                                         <Image src={imagePreview} alt="Preview bukti transfer" fill className="rounded object-contain" style={{ top: 0, left: 0 }} />
-                                    ) : <div className="flex h-full items-center justify-center text-sm text-slate-600">{imageFile?.name}</div>}
+                                    ) : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{imageFile?.name}</div>}
                                 </div>
-                                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
+                                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                     <span className="truncate">{imageFile?.name}</span><span>{imageFile && formatFileSize(imageFile.size)}</span>
                                 </div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 h-9 w-9 bg-white/90 text-red-600 shadow" onClick={handleRemoveImage} aria-label="Hapus bukti"><X className="h-4 w-4" /></Button>
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 h-9 w-9 bg-card/90 text-red-600 dark:text-red-400 shadow" onClick={handleRemoveImage} aria-label="Hapus bukti"><X className="h-4 w-4" /></Button>
                             </div>
                         )}
-                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">💡 Copy gambar dari WhatsApp, lalu tekan <kbd className="rounded border border-blue-300 bg-white px-1.5 py-0.5 font-mono">Ctrl+V</kbd> untuk paste langsung.</div>
+                        <div className="rounded-lg border border-blue-200 dark:border-blue-300 bg-blue-50 dark:bg-blue-950/40 p-3 text-xs text-blue-800 dark:text-blue-300">💡 Copy gambar dari WhatsApp, lalu tekan <kbd className="rounded border border-blue-300 dark:border-blue-300 bg-card px-1.5 py-0.5 font-mono">Ctrl+V</kbd> untuk paste langsung.</div>
                         <p className="text-xs text-muted-foreground">Format: JPG, PNG, atau PDF (Maks. 5MB)</p>
                     </div>
 

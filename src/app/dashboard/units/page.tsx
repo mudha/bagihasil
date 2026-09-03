@@ -5,6 +5,7 @@ import { Suspense } from "react"
 import Image from "next/image"
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
+import { useTheme } from "next-themes"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
@@ -42,7 +43,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { getInvestorInitials } from "@/lib/investor-initials"
-import { getInvestorTone } from "@/lib/investor-tone"
+import { getInvestorToneTheme } from "@/lib/investor-tone"
 import { ImportUnitsDialog } from "@/components/import/ImportUnitsDialog"
 import {
     DropdownMenu,
@@ -138,6 +139,8 @@ interface Investor {
 
 function UnitsPageContent() {
     const { data: session } = useSession()
+    const { resolvedTheme } = useTheme()
+    const isDark = resolvedTheme === "dark"
     const searchParams = useSearchParams()
     const isViewer = session?.user?.role === "VIEWER"
 
@@ -820,7 +823,7 @@ function UnitsPageContent() {
             </div>
 
             {!isViewer && (
-                <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
+                <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-card/85 p-3 shadow-sm backdrop-blur [&_[data-slot=button]]:h-11 [&_[data-slot=button]]:w-full lg:flex lg:justify-end lg:[&_[data-slot=button]]:w-auto">
                     {selectedIds.length > 0 && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -837,7 +840,7 @@ function UnitsPageContent() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                                    <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
                                         Hapus
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -863,7 +866,7 @@ function UnitsPageContent() {
                                 <Plus className="mr-1.5 h-4 w-4 sm:mr-2" /> Tambah Unit
                             </Button>
                         </DialogTrigger>
-                                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-teal-900/10 p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
+                                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 border-border p-0 shadow-2xl shadow-slate-950/20 sm:h-[92dvh] sm:max-h-[92dvh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl sm:border">
                                     <DialogHeader className="border-b border-[var(--mudha-border)] bg-[var(--mudha-surface-subtle)] px-4 py-4 pr-16 text-left sm:px-7 sm:py-5 sm:pr-20">
                                         <div className="w-fit rounded-full bg-[var(--mudha-surface)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--mudha-text-muted)]">
                                             {editingUnit ? "Mode edit" : "Unit baru"}
@@ -883,7 +886,7 @@ function UnitsPageContent() {
                                                     <p className="mt-1 text-xs text-muted-foreground">Opsional. Foto dapat dipilih langsung dari galeri HP.</p>
                                                 </div>
                                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                                    <div className="rounded-xl border border-border bg-muted/50 p-4">
                                                         <MultipleImageUpload
                                                             initialImages={unitImages}
                                                             onImagesChange={setUnitImages}
@@ -891,7 +894,7 @@ function UnitsPageContent() {
                                                             uploadLabel="Upload Foto Unit"
                                                         />
                                                     </div>
-                                                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                                    <div className="rounded-xl border border-border bg-muted/50 p-4">
                                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                                                             <span className="text-xs font-medium text-muted-foreground">Baca data STNK otomatis</span>
                                                         <Button
@@ -918,7 +921,7 @@ function UnitsPageContent() {
                                                 </div>
                                             </section>
 
-                                            <section className="space-y-4 rounded-xl border border-teal-900/10 bg-teal-50/50 p-4 sm:p-5 dark:bg-slate-900">
+                                            <section className="space-y-4 rounded-xl border border-border bg-primary/5 p-4 sm:p-5">
                                                 <div>
                                                     <h3 className="text-sm font-semibold text-[var(--mudha-text)]">Data kendaraan</h3>
                                                     <p className="mt-1 text-xs text-muted-foreground">Lengkapi informasi utama untuk membentuk nama unit.</p>
@@ -1054,7 +1057,7 @@ function UnitsPageContent() {
 
                                                 <div className="mt-4 pt-4 border-t">
                                                     <Label className="text-xs text-muted-foreground">Preview Nama Unit:</Label>
-                                                    <div className="mt-1 rounded-lg border border-teal-900/10 bg-white p-3 text-sm font-black text-teal-950">
+                                                    <div className="mt-1 rounded-lg border border-border bg-card p-3 text-sm font-black text-teal-950 dark:text-teal-100">
                                                         {form.watch("name") || "(Lengkapi form di atas)"}
                                                     </div>
                                                     <input type="hidden" {...form.register("name")} />
@@ -1066,7 +1069,7 @@ function UnitsPageContent() {
                                                 </div>
                                             </section>
 
-                                            <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+                                            <section className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-5">
                                                 <div>
                                                     <h3 className="text-sm font-semibold text-[var(--mudha-text)]">Identitas & kepemilikan</h3>
                                                     <p className="mt-1 text-xs text-muted-foreground">Nomor dokumen, pemodal, dan informasi pajak unit.</p>
@@ -1208,8 +1211,8 @@ function UnitsPageContent() {
                                             )}
                                             </section>
                                             </div>
-                                            <div className="safe-pb shrink-0 border-t border-slate-200 bg-white/95 px-4 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6 sm:pb-4">
-                                                <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700">{editingUnit ? "Simpan Perubahan" : "Simpan Unit"}</Button>
+                                            <div className="safe-pb shrink-0 border-t border-border bg-card/95 px-4 pt-3 shadow-[var(--mudha-shadow-sm)] backdrop-blur sm:px-6 sm:pb-4">
+                                                <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-800">{editingUnit ? "Simpan Perubahan" : "Simpan Unit"}</Button>
                                             </div>
                                         </form>
                                     </Form>
@@ -1218,13 +1221,13 @@ function UnitsPageContent() {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-teal-900/10 bg-white/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
+            <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-card/95 p-3 shadow-sm backdrop-blur lg:grid-cols-[minmax(240px,1fr)_150px_150px_220px] lg:items-center lg:gap-3">
                     <div className="relative col-span-2 w-full lg:col-span-1">
                         <Input
                             placeholder="Cari unit..."
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
-                            className="h-11 w-full rounded-lg border-teal-900/10 bg-white pr-10"
+                            className="h-11 w-full rounded-lg border-border bg-card pr-10"
                         />
                         {searchQuery && (
                             <Button
@@ -1260,7 +1263,7 @@ function UnitsPageContent() {
                         else params.delete('investorStatus')
                         window.history.replaceState(null, '', `?${params.toString()}`)
                     }}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card">
                             <SelectValue placeholder="Status Pemodal" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1270,7 +1273,7 @@ function UnitsPageContent() {
                         </SelectContent>
                     </Select>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1284,7 +1287,7 @@ function UnitsPageContent() {
                     {/* Mobile Sort Dropdown */}
                     <div className="w-full lg:hidden">
                         <Select value={getMobileSortValue()} onValueChange={handleMobileSort}>
-                            <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                            <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card">
                                 <SelectValue placeholder="Urutkan" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1296,7 +1299,7 @@ function UnitsPageContent() {
                         </Select>
                     </div>
                 <Select value={selectedInvestorId} onValueChange={setSelectedInvestorId}>
-                    <SelectTrigger className="h-11 w-full rounded-lg border-teal-900/10 bg-white">
+                    <SelectTrigger className="h-11 w-full rounded-lg border-border bg-card">
                         <SelectValue placeholder="Pilih Investor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1319,12 +1322,12 @@ function UnitsPageContent() {
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 lg:hidden">
                 {paginatedUnits.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-teal-900/20 bg-white/80 p-8 text-center text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border bg-card/80 p-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada unit yang cocok." : "Belum ada data unit."}
                     </div>
                 ) : (
                     paginatedUnits.map((unit) => {
-                        const investorTone = getInvestorTone(unit.investor.name || unit.investorId)
+                        const investorTone = getInvestorToneTheme(unit.investor.name || unit.investorId, isDark)
                         return (
                             <UnitCardMobile
                                 key={unit.id}
@@ -1349,14 +1352,14 @@ function UnitsPageContent() {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm lg:block">
+            <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-sm lg:block">
                 <Table className="min-w-[1260px]">
-                    <TableHeader className="bg-teal-50/70">
-                        <TableRow className="hover:bg-teal-50/70">
+                    <TableHeader className="bg-teal-50/70 dark:bg-teal-950/40">
+                        <TableRow className="hover:bg-teal-50/70 dark:hover:bg-teal-950/40">
                             <TableHead className="w-[50px]">
                                 <input
                                     type="checkbox"
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
                                     checked={paginatedUnits.length > 0 && selectedIds.length === paginatedUnits.length}
                                     onChange={(e) => handleSelectAll(e.target.checked)}
                                 />
@@ -1476,7 +1479,7 @@ function UnitsPageContent() {
                     </TableHeader>
                     <TableBody>
                         {paginatedUnits.map((unit) => {
-                            const investorTone = getInvestorTone(unit.investor.name || unit.investorId)
+                            const investorTone = getInvestorToneTheme(unit.investor.name || unit.investorId, isDark)
 
                             return (
                             <TableRow
@@ -1501,7 +1504,7 @@ function UnitsPageContent() {
                                 <TableCell>
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
+                                        className="h-4 w-4 rounded border-input text-primary focus:ring-primary disabled:opacity-50"
                                         checked={selectedIds.includes(unit.id)}
                                         onChange={(e) => handleSelectOne(unit.id, e.target.checked)}
                                         disabled={isViewer}
@@ -1513,7 +1516,7 @@ function UnitsPageContent() {
                                             src={unit.imageUrl}
                                             alt={unit.name}
                                             previewSize="lg"
-                                            className="h-10 w-10 rounded-md overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity relative"
+                                            className="h-10 w-10 rounded-md overflow-hidden border border-border hover:opacity-80 transition-opacity relative"
                                         >
                                             <div className="relative h-full w-full">
                                                 <Image
@@ -1526,20 +1529,20 @@ function UnitsPageContent() {
                                             </div>
                                         </ImageHoverPreview>
                                     ) : (
-                                        <div className="h-10 w-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
+                                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
                                             <span className="text-xs">No Img</span>
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell className="font-mono text-sm font-bold text-teal-700 [overflow-wrap:anywhere]">{unit.code}</TableCell>
-                                <TableCell className="max-w-[360px] whitespace-normal font-semibold leading-relaxed text-slate-950 [overflow-wrap:anywhere]">{unit.name}</TableCell>
+                                <TableCell className="font-mono text-sm font-bold text-teal-700 dark:text-teal-300 [overflow-wrap:anywhere]">{unit.code}</TableCell>
+                                <TableCell className="max-w-[360px] whitespace-normal font-semibold leading-relaxed text-foreground [overflow-wrap:anywhere]">{unit.name}</TableCell>
                                 <TableCell className="max-w-[220px] whitespace-normal">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="[overflow-wrap:anywhere]">{unit.plateNumber}</span>
                                         {(() => {
                                             const duplicateInfo = getDuplicateInfo(units, unit)
                                             return duplicateInfo.isBuyback ? (
-                                                <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-300">
+                                                <Badge variant="outline" className="text-[10px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300">
                                                     🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
                                                 </Badge>
                                             ) : null
@@ -1577,11 +1580,11 @@ function UnitsPageContent() {
                                         <div className="flex flex-col gap-0.5">
                                             <span className={cn(
                                                 "font-medium text-sm",
-                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                                isPast(new Date(unit.taxDueDate)) ? "text-red-600 dark:text-red-400" :
                                                     isWithinInterval(new Date(unit.taxDueDate), {
                                                         start: new Date(),
                                                         end: addDays(new Date(), 90)
-                                                    }) ? "text-amber-600" : "text-green-600"
+                                                    }) ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"
                                             )}>
                                                 {format(new Date(unit.taxDueDate), "d MMMM yyyy")}
                                             </span>
@@ -1601,22 +1604,22 @@ function UnitsPageContent() {
                                         <div className="flex justify-end">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                                    <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-border px-3 text-xs font-bold text-foreground hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950/40 dark:hover:text-teal-300">
                                                         <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                                         Aksi
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="min-w-48 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
-                                                    <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Unit</DropdownMenuLabel>
+                                                <DropdownMenuContent align="end" className="min-w-48 rounded-xl border-border bg-card p-2 shadow-2xl shadow-black/15">
+                                                    <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">Menu Unit</DropdownMenuLabel>
                                                     <DropdownMenuItem
-                                                        className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                                        className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-teal-50 focus:text-teal-700 dark:focus:bg-teal-950/40 dark:focus:text-teal-300"
                                                         onSelect={() => {
                                                             setViewingUnit(null)
                                                             setEditingUnit(unit)
                                                             setIsOpen(true)
                                                         }}
                                                     >
-                                                        <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                                        <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-700 dark:text-teal-300">
                                                             <Pencil className="h-4 w-4" />
                                                         </span>
                                                         Edit Unit
@@ -1627,9 +1630,9 @@ function UnitsPageContent() {
                                                             setViewingUnit(null)
                                                             setDeleteId(unit.id)
                                                         }}
-                                                        className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
+                                                        className="h-11 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/40 dark:focus:text-red-300"
                                                     >
-                                                        <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                        <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
                                                             <Trash className="h-4 w-4" />
                                                         </span>
                                                         Hapus
@@ -1670,7 +1673,7 @@ function UnitsPageContent() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800">
                             Hapus
                         </AlertDialogAction>
                     </AlertDialogFooter>

@@ -64,7 +64,7 @@ export function UnitCardMobile({
     return (
         <div
             key={unit.id}
-            className="overflow-hidden rounded-lg border bg-white shadow-sm"
+            className="overflow-hidden rounded-lg border bg-card shadow-sm"
             style={{ borderColor: investorTone.accent }}
         >
             <div className="h-1.5" style={{ background: investorTone.stripe }} />
@@ -76,7 +76,7 @@ export function UnitCardMobile({
                                 src={unit.imageUrl}
                                 alt={unit.name}
                                 previewSize="lg"
-                                className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-teal-900/10"
+                                className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-border"
                             >
                                 <div className="relative h-full w-full">
                                     <Image
@@ -89,24 +89,24 @@ export function UnitCardMobile({
                                 </div>
                             </ImageHoverPreview>
                         ) : (
-                            <div className="relative h-16 w-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-teal-900/10">
-                                <div className="h-full w-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <div className="relative h-16 w-16 flex-shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border">
+                                <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground">
                                     <span className="text-[10px]">No Img</span>
                                 </div>
                             </div>
                         )}
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-teal-50 px-2 py-1 font-mono text-xs font-bold text-teal-700 [overflow-wrap:anywhere]">{unit.code}</span>
+                                <span className="rounded-full bg-teal-50 dark:bg-teal-950/35 px-2 py-1 font-mono text-xs font-bold text-teal-700 dark:text-teal-300 [overflow-wrap:anywhere]">{unit.code}</span>
                                 <Badge variant={unit.status === 'AVAILABLE' ? 'default' : 'secondary'} className="h-5 rounded-full py-0 text-[10px]">
                                     {unit.status}
                                 </Badge>
                             </div>
-                            <div className="mt-2 text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{unit.name}</div>
-                            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                            <div className="mt-2 text-base font-black leading-snug text-foreground [overflow-wrap:anywhere]">{unit.name}</div>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                 <span className="[overflow-wrap:anywhere]">{unit.plateNumber}</span>
                                 {duplicateInfo.isBuyback ? (
-                                    <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-700 border-purple-300 py-0 h-4">
+                                    <Badge variant="outline" className="text-[9px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300 py-0 h-4">
                                         🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
                                     </Badge>
                                 ) : null}
@@ -115,7 +115,7 @@ export function UnitCardMobile({
                     </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
                     <div>
                         <span className="block text-xs text-muted-foreground mb-1">Pemilik</span>
                         <span
@@ -141,11 +141,11 @@ export function UnitCardMobile({
                             <div className="flex flex-col gap-0.5">
                                 <span className={cn(
                                     "font-medium text-sm",
-                                    isPast(new Date(unit.taxDueDate)) ? "text-red-600" :
+                                    isPast(new Date(unit.taxDueDate)) ? "text-red-600 dark:text-red-400" :
                                         isWithinInterval(new Date(unit.taxDueDate), {
                                             start: new Date(),
                                             end: addDays(new Date(), 90)
-                                        }) ? "text-amber-600" : "text-green-600"
+                                        }) ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"
                                 )}>
                                     {format(new Date(unit.taxDueDate), "d MMMM yyyy")}
                                 </span>
@@ -165,27 +165,27 @@ export function UnitCardMobile({
                 <Button
                     variant="outline"
                     size="sm"
-                    className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700"
+                    className="min-h-[44px] rounded-lg border-border px-3 text-xs font-bold text-foreground hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950/40 dark:hover:text-teal-300"
                     onClick={onDetail}
                 >
                     <Eye className="mr-1.5 h-4 w-4" /> Detail
                 </Button>
                 {!isViewer && (
-                    <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
+                    <div className="mt-3 flex justify-end border-t border-border pt-3">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700">
+                                <Button variant="outline" size="sm" className="min-h-[44px] rounded-lg border-border px-3 text-xs font-bold text-foreground hover:bg-teal-50 hover:text-teal-700 dark:hover:bg-teal-950/40 dark:hover:text-teal-300">
                                     <MoreHorizontal className="mr-1.5 h-5 w-5" />
                                     Aksi
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-48 rounded-xl border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
-                                <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Menu Unit</DropdownMenuLabel>
+                            <DropdownMenuContent align="end" className="min-w-48 rounded-xl border-border bg-card p-2 shadow-2xl shadow-black/15">
+                                <DropdownMenuLabel className="px-3 pb-2 pt-1 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">Menu Unit</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    className="h-11 rounded-lg text-sm font-bold text-slate-700 focus:bg-teal-50 focus:text-teal-700"
+                                    className="h-11 rounded-lg text-sm font-bold text-foreground focus:bg-teal-50 focus:text-teal-700 dark:focus:bg-teal-950/40 dark:focus:text-teal-300"
                                     onSelect={onEdit}
                                 >
-                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-950/35 text-teal-700 dark:text-teal-300">
                                         <Pencil className="h-4 w-4" />
                                     </span>
                                     Edit Unit
@@ -193,9 +193,9 @@ export function UnitCardMobile({
                                 <DropdownMenuSeparator className="my-2" />
                                 <DropdownMenuItem
                                     onSelect={onDelete}
-                                    className="h-11 rounded-lg text-sm font-bold text-red-600 focus:bg-red-50 focus:text-red-700"
+                                    className="h-11 rounded-lg text-sm font-bold text-red-600 dark:text-red-400 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/40 dark:focus:text-red-300"
                                 >
-                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                    <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400">
                                         <Trash className="h-4 w-4" />
                                     </span>
                                     Hapus

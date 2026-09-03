@@ -126,7 +126,7 @@ export function ManageCostProofsDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         Kelola Bukti Biaya: {getCostTypeLabel(cost.costType)}
-                        <Sparkles className="h-4 w-4 text-purple-400" />
+                        <Sparkles className="h-4 w-4 text-purple-400 dark:text-purple-300" />
                     </DialogTitle>
                 </DialogHeader>
 

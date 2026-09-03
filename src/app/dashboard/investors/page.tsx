@@ -211,7 +211,7 @@ function ManagedCapitalDialog({
                     </DialogHeader>
 
                     <div className="space-y-4 pt-2">
-                        <div className="rounded-lg border bg-slate-50 p-3">
+                        <div className="rounded-lg border bg-muted/50 p-3">
                             <p className="text-xs font-medium text-muted-foreground mb-1">Saldo Modal Kelolaan Saat Ini</p>
                             <p className="text-lg font-bold">
                                 {formatRupiahOrNull(currentSummary?.managedCapitalBalance ?? null)}
@@ -746,7 +746,7 @@ export default function InvestorsPage() {
                                                         </FormControl>
                                                         <div className="text-sm text-muted-foreground mt-1 flex justify-between">
                                                             <span>Pemodal: {field.value || 0}%</span>
-                                                            <span className="font-semibold text-blue-600">Pengelola: {managerShare}%</span>
+                                                            <span className="font-semibold text-blue-600 dark:text-blue-400">Pengelola: {managerShare}%</span>
                                                         </div>
                                                         <FormMessage />
                                                     </FormItem>

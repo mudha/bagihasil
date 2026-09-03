@@ -229,7 +229,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
                     <DollarSign className="mr-2 h-4 w-4" /> Finalisasi Penjualan
                 </Button>
             </DialogTrigger>
@@ -245,7 +245,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                 AI Menganalisis...
                             </span>
                         ) : (
-                            <span className="text-[10px] items-center gap-1 text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 hidden sm:flex">
+                            <span className="text-[10px] items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:flex">
                                 <Sparkles className="h-3 w-3 text-purple-400" />
                                 AI Powered
                             </span>
@@ -266,11 +266,11 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                             {...field}
                                             className={cn(
                                                 "transition-all duration-500",
-                                                isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                                isAnalyzingRef.current && "border-blue-400 dark:border-blue-300 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:bg-blue-950/35"
                                             )}
                                         />
                                         {isAnalyzingRef.current && (
-                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse" />
+                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
                                         )}
                                     </div>
                                     <FormMessage />
@@ -290,11 +290,11 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                             onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                                             className={cn(
                                                 "transition-all duration-500",
-                                                isAnalyzingRef.current && "border-blue-400 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                                isAnalyzingRef.current && "border-blue-400 dark:border-blue-300 bg-blue-50/50 shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:bg-blue-950/35"
                                             )}
                                         />
                                         {isAnalyzingRef.current && (
-                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse" />
+                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
                                         )}
                                     </div>
                                     <FormMessage />
@@ -361,7 +361,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isLoading}>
+                        <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800" disabled={isLoading}>
                             {isLoading ? "Memproses..." : "Proses & Simpan"}
                         </Button>
                     </form>

@@ -91,7 +91,7 @@ export function SingleImageUpload({ value, onChange, label = "Upload Gambar", de
             {!preview ? (
                 <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors dark:hover:border-blue-300 dark:hover:bg-blue-950/40"
                 >
                     <input
                         ref={fileInputRef}
@@ -100,16 +100,16 @@ export function SingleImageUpload({ value, onChange, label = "Upload Gambar", de
                         className="hidden"
                         onChange={handleFileChange}
                     />
-                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                        <Upload className="h-5 w-5 text-blue-600" />
+                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mb-2 dark:bg-blue-950/50">
+                        <Upload className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <p className="text-sm font-medium text-slate-700">Klik untuk Upload</p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-sm font-medium text-foreground">Klik untuk Upload</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                         atau Paste (Ctrl+V)
                     </p>
                 </div>
             ) : (
-                <div className="relative border rounded-lg overflow-hidden group bg-slate-50">
+                <div className="relative border rounded-lg overflow-hidden group bg-muted">
                     <ImageHoverPreview
                         src={preview}
                         alt="Preview"

@@ -88,7 +88,7 @@ export function EditProfitSharingDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
-                    <Pencil className="h-4 w-4 text-green-700" />
+                    <Pencil className="h-4 w-4 text-green-700 dark:text-green-300" />
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">

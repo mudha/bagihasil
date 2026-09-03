@@ -105,13 +105,13 @@ export function ImportUnitsDialog({ onImportSuccess }: ImportUnitsDialogProps) {
                 </DialogHeader>
 
                 {results && (
-                    <Alert variant={results.errors.length > 0 ? "destructive" : "default"} className="border-green-500/50 bg-green-500/10 text-green-600">
+                    <Alert variant={results.errors.length > 0 ? "destructive" : "default"} className="border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400">
                         {results.errors.length === 0 ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
                         <AlertTitle>Import Selesai</AlertTitle>
                         <AlertDescription>
                             Berhasil mengimport {results.success} data.
                             {results.errors.length > 0 && (
-                                <div className="mt-2 text-red-600 bg-red-50 p-2 rounded text-xs font-mono max-h-40 overflow-y-auto">
+                                <div className="mt-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-2 rounded text-xs font-mono max-h-40 overflow-y-auto">
                                     <p className="font-bold mb-1">Error ({results.errors.length}):</p>
                                     {results.errors.map((err, i) => (
                                         <div key={i}>{err}</div>
@@ -147,7 +147,7 @@ export function ImportUnitsDialog({ onImportSuccess }: ImportUnitsDialogProps) {
                             <Input
                                 type="file"
                                 accept=".csv"
-                                className="w-full sm:w-[250px]"
+                                className="w-full bg-background text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1 file:text-foreground dark:[color-scheme:dark] sm:w-[250px]"
                                 onChange={handleFileUpload}
                                 disabled={isLoading}
                             />

@@ -159,7 +159,7 @@ export default function UsersPage() {
     const getRoleBadge = (role: string) => {
         switch (role) {
             case "ADMIN": return <Badge variant="destructive"><Shield className="w-3 h-3 mr-1" /> Admin</Badge>
-            case "INVESTOR": return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600"><Wallet className="w-3 h-3 mr-1" /> Investor</Badge>
+            case "INVESTOR": return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-950/40 dark:hover:bg-emerald-700"><Wallet className="w-3 h-3 mr-1" /> Investor</Badge>
             default: return <Badge variant="secondary"><UserIcon className="w-3 h-3 mr-1" /> Viewer</Badge>
         }
     }
@@ -300,7 +300,7 @@ export default function UsersPage() {
                                 <div>
                                     <span className="block text-xs text-[var(--mudha-text-muted)] mb-0.5">Terhubung ke Investor</span>
                                     {user.investor ? (
-                                        <span className="text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded text-xs">{user.investor.name}</span>
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded text-xs">{user.investor.name}</span>
                                     ) : (
                                         <span className="text-[var(--mudha-text-muted)] italic text-xs">-</span>
                                     )}
@@ -325,7 +325,7 @@ export default function UsersPage() {
                                 <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditClick(user)}>
                                     <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                                 </Button>
-                                <Button variant="outline" size="sm" className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200" onClick={() => setDeleteId(user.id)}>
+                                <Button variant="outline" size="sm" className="flex-1 text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 border-red-200 dark:border-red-300 dark:hover:bg-red-950/40 dark:hover:text-red-300" onClick={() => setDeleteId(user.id)}>
                                     <Trash2 className="h-3.5 w-3.5 mr-2" /> Hapus
                                 </Button>
                             </div>
@@ -365,7 +365,7 @@ export default function UsersPage() {
                                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                                     <TableCell>
                                         {user.investor ? (
-                                            <span className="text-emerald-600 font-medium">Pemodal: {user.investor.name}</span>
+                                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Pemodal: {user.investor.name}</span>
                                         ) : (
                                             <span className="text-[var(--mudha-text-muted)] italic text-xs">-</span>
                                         )}
@@ -386,7 +386,7 @@ export default function UsersPage() {
                                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(user)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteId(user.id)}>
+                                            <Button variant="ghost" size="icon" className="text-red-500 dark:text-red-400 hover:text-red-600" onClick={() => setDeleteId(user.id)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
@@ -408,7 +408,7 @@ export default function UsersPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600">
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 dark:bg-red-950/40 dark:hover:bg-red-700">
                             Hapus
                         </AlertDialogAction>
                     </AlertDialogFooter>

@@ -437,14 +437,14 @@ export default function TransactionDetailPage() {
             )}
 
             <Tabs defaultValue="costs" className="w-full gap-4">
-                <TabsList className="grid min-h-11 w-full grid-cols-2 rounded-lg border border-teal-900/10 bg-white p-1 shadow-sm sm:w-fit">
+                <TabsList className="grid min-h-11 w-full grid-cols-2 rounded-lg border border-border bg-card p-1 shadow-sm sm:w-fit">
                     <TabsTrigger value="costs" className="rounded-md px-3 py-2 text-xs font-black sm:text-sm">Biaya Operasional</TabsTrigger>
                     <TabsTrigger value="details" className="rounded-md px-3 py-2 text-xs font-black sm:text-sm">Detail Transaksi</TabsTrigger>
                 </TabsList>
                 <TabsContent value="costs" className="space-y-4">
                     <div className="flex justify-stretch sm:justify-end">
                         {transaction.status !== 'COMPLETED' && (
-                            <Button variant="outline" onClick={() => setIsCostOpen(true)} className="min-h-11 w-full rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 sm:w-auto">
+                            <Button variant="outline" onClick={() => setIsCostOpen(true)} className="min-h-11 w-full rounded-lg border-teal-200 dark:border-teal-300 text-teal-800 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/40 dark:hover:text-teal-200 sm:w-auto">
                                 <Plus className="mr-2 h-4 w-4" /> Tambah Biaya
                             </Button>
                         )}
@@ -457,22 +457,22 @@ export default function TransactionDetailPage() {
                         />
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-teal-900/10 bg-white shadow-sm">
+                    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
                         <Table className="min-w-[760px]">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="font-black text-slate-500">Jenis</TableHead>
-                                    <TableHead className="font-black text-slate-500">Keterangan</TableHead>
-                                    <TableHead className="font-black text-slate-500">Dibayar Oleh</TableHead>
-                                    <TableHead className="text-right font-black text-slate-500">Nominal</TableHead>
-                                    <TableHead className="text-right font-black text-slate-500">Aksi</TableHead>
+                                    <TableHead className="font-black text-muted-foreground">Jenis</TableHead>
+                                    <TableHead className="font-black text-muted-foreground">Keterangan</TableHead>
+                                    <TableHead className="font-black text-muted-foreground">Dibayar Oleh</TableHead>
+                                    <TableHead className="text-right font-black text-muted-foreground">Nominal</TableHead>
+                                    <TableHead className="text-right font-black text-muted-foreground">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {transaction.costs.map((cost: any) => (
                                     <TableRow key={cost.id}>
                                         <TableCell className="max-w-[180px] whitespace-normal font-semibold [overflow-wrap:anywhere]">{getCostTypeLabel(cost.costType)}</TableCell>
-                                        <TableCell className="max-w-[260px] whitespace-normal text-slate-600 [overflow-wrap:anywhere]">{cost.description}</TableCell>
+                                        <TableCell className="max-w-[260px] whitespace-normal text-muted-foreground [overflow-wrap:anywhere]">{cost.description}</TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{cost.payer}</Badge>
                                         </TableCell>
@@ -485,7 +485,7 @@ export default function TransactionDetailPage() {
                                                     <Button
                                                         variant="default"
                                                         size="sm"
-                                                        className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                                        className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
                                                         title="Lihat Bukti"
                                                         onClick={() => {
                                                             setProofCost(cost)
@@ -500,7 +500,7 @@ export default function TransactionDetailPage() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="h-8 px-3 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                                                    className="h-8 px-3 text-xs border-blue-300 dark:border-blue-300 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:hover:text-blue-200"
                                                     title="Kelola Bukti"
                                                     onClick={() => {
                                                         setProofCost(cost)
@@ -514,7 +514,7 @@ export default function TransactionDetailPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => handleEditCost(cost)}
-                                                    className="h-8 border-slate-300 px-3 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+                                                    className="h-8 border-border px-3 text-xs text-foreground hover:bg-muted/50 hover:text-foreground"
                                                     title="Edit biaya"
                                                 >
                                                     <Pencil className="mr-1.5 h-3 w-3" />
@@ -525,7 +525,7 @@ export default function TransactionDetailPage() {
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => handleDeleteCost(cost.id)}
-                                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
@@ -546,35 +546,35 @@ export default function TransactionDetailPage() {
                     </div>
                 </TabsContent>
                 <TabsContent value="details">
-                    <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                    <Card className="rounded-lg border-border bg-card shadow-sm">
                         <CardHeader className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                             <div>
-                                <CardTitle className="text-lg font-black text-slate-950">Informasi Detail</CardTitle>
-                                <p className="mt-1 text-sm leading-relaxed text-slate-500">Data utama transaksi dan catatan internal.</p>
+                                <CardTitle className="text-lg font-black text-foreground">Informasi Detail</CardTitle>
+                                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Data utama transaksi dan catatan internal.</p>
                             </div>
                             <EditTransactionDetailsDialog transaction={transaction} onSuccess={fetchTransaction} />
                         </CardHeader>
                         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="rounded-lg bg-slate-50 p-4">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Kode Transaksi</span>
-                                    <p className="mt-2 font-black text-slate-950 [overflow-wrap:anywhere]">{transaction.transactionCode}</p>
+                                <div className="rounded-lg bg-muted/50 p-4">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Kode Transaksi</span>
+                                    <p className="mt-2 font-black text-foreground [overflow-wrap:anywhere]">{transaction.transactionCode}</p>
                                 </div>
-                                <div className="rounded-lg bg-slate-50 p-4">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Unit</span>
-                                    <p className="mt-2 font-black text-slate-950 [overflow-wrap:anywhere]">{transaction.unit.name} ({transaction.unit.plateNumber})</p>
+                                <div className="rounded-lg bg-muted/50 p-4">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Unit</span>
+                                    <p className="mt-2 font-black text-foreground [overflow-wrap:anywhere]">{transaction.unit.name} ({transaction.unit.plateNumber})</p>
                                 </div>
-                                <div className="rounded-lg bg-slate-50 p-4">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Tanggal Beli</span>
-                                    <p className="mt-2 font-black text-slate-950 [overflow-wrap:anywhere]">{formatHijriFull(new Date(transaction.buyDate))}</p>
+                                <div className="rounded-lg bg-muted/50 p-4">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Tanggal Beli</span>
+                                    <p className="mt-2 font-black text-foreground [overflow-wrap:anywhere]">{formatHijriFull(new Date(transaction.buyDate))}</p>
                                 </div>
-                                <div className="rounded-lg bg-slate-50 p-4">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Tanggal Laku</span>
-                                    <p className="mt-2 font-black text-slate-950 [overflow-wrap:anywhere]">{transaction.sellDate ? formatHijriFull(new Date(transaction.sellDate)) : '-'}</p>
+                                <div className="rounded-lg bg-muted/50 p-4">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Tanggal Laku</span>
+                                    <p className="mt-2 font-black text-foreground [overflow-wrap:anywhere]">{transaction.sellDate ? formatHijriFull(new Date(transaction.sellDate)) : '-'}</p>
                                 </div>
-                                <div className="rounded-lg bg-slate-50 p-4 sm:col-span-2">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Catatan</span>
-                                    <p className="mt-2 leading-relaxed text-slate-700 [overflow-wrap:anywhere]">{transaction.notes || '-'}</p>
+                                <div className="rounded-lg bg-muted/50 p-4 sm:col-span-2">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">Catatan</span>
+                                    <p className="mt-2 leading-relaxed text-foreground [overflow-wrap:anywhere]">{transaction.notes || '-'}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -582,27 +582,27 @@ export default function TransactionDetailPage() {
                 </TabsContent>
             </Tabs>
 
-            <Card className="overflow-hidden rounded-lg border-teal-900/10 bg-white shadow-sm">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-teal-50/60 p-4 sm:p-6">
-                    <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-950">
-                        <FileText className="h-5 w-5 text-blue-600" />
+            <Card className="overflow-hidden rounded-lg border-border bg-card shadow-sm">
+                <CardHeader className="bg-muted/50 p-4 sm:p-6">
+                    <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
+                        <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         Dokumen & Bukti Transaksi
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:gap-4 sm:p-6">
-                    <div className="flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-blue-50/30 md:p-5">
+                    <div className="flex h-full flex-col justify-between rounded-lg border border-border bg-card p-4 transition hover:border-blue-200 hover:bg-blue-50/30 md:p-5 dark:hover:border-blue-800 dark:hover:bg-blue-950/40">
                         <div className="flex flex-col gap-2 mb-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">Bukti Beli</p>
-                                    <p className="mt-1 text-xs leading-relaxed text-slate-500 [overflow-wrap:anywhere]">Dari Seller</p>
+                                    <p className="text-base font-black leading-snug text-foreground [overflow-wrap:anywhere]">Bukti Beli</p>
+                                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">Dari Seller</p>
                                 </div>
                                 {(() => {
                                     const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
                                     if (count > 0) {
-                                        return <Badge variant="secondary" className="shrink-0 border-green-300 bg-green-100 text-[10px] font-medium text-green-700">{count}</Badge>
+                                        return <Badge variant="secondary" className="shrink-0 border-green-300 dark:border-green-300 bg-green-100 dark:bg-green-950/40 text-[10px] font-medium text-green-700 dark:text-green-300">{count}</Badge>
                                     }
-                                    return <Badge variant="outline" className="shrink-0 border-slate-300 text-[10px] text-slate-400">0</Badge>
+                                    return <Badge variant="outline" className="shrink-0 border-border text-[10px] text-muted-foreground">0</Badge>
                                 })()}
                             </div>
                         </div>
@@ -611,30 +611,30 @@ export default function TransactionDetailPage() {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="default" size="sm" onClick={() => setProofType('BUY')} className="min-h-9 flex-1 rounded-lg bg-blue-600 px-3 text-xs text-white hover:bg-blue-700">
+                                        <Button variant="default" size="sm" onClick={() => setProofType('BUY')} className="min-h-9 flex-1 rounded-lg bg-blue-600 px-3 text-xs text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
                                             <Eye className="mr-1.5 h-3 w-3" /> Lihat
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} min-h-9 rounded-lg border-blue-300 px-3 text-xs text-blue-700 hover:bg-blue-50`}>
+                            <Button variant="outline" size="sm" onClick={() => setProofType('BUY')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} min-h-9 rounded-lg border-blue-300 dark:border-blue-300 px-3 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:hover:text-blue-200`}>
                                 <Upload className="mr-1.5 h-3 w-3" /> {(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'BUY').length || (transaction.buyProofImageUrl ? 1 : 0); return count > 0 ? '' : 'Kelola' })()}
                             </Button>
                         </div>
                     </div>
-                    <div className="flex h-full flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:bg-blue-50/30 md:p-5">
+                    <div className="flex h-full flex-col justify-between rounded-lg border border-border bg-card p-4 transition hover:border-blue-200 hover:bg-blue-50/30 md:p-5 dark:hover:border-blue-800 dark:hover:bg-blue-950/40">
                         <div className="flex flex-col gap-2 mb-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">Bukti Lunas</p>
-                                    <p className="mt-1 text-xs leading-relaxed text-slate-500 [overflow-wrap:anywhere]">Dari Buyer</p>
+                                    <p className="text-base font-black leading-snug text-foreground [overflow-wrap:anywhere]">Bukti Lunas</p>
+                                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">Dari Buyer</p>
                                 </div>
                                 {(() => {
                                     const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
                                     if (count > 0) {
-                                        return <Badge variant="secondary" className="shrink-0 border-green-300 bg-green-100 text-[10px] font-medium text-green-700">{count}</Badge>
+                                        return <Badge variant="secondary" className="shrink-0 border-green-300 dark:border-green-300 bg-green-100 dark:bg-green-950/40 text-[10px] font-medium text-green-700 dark:text-green-300">{count}</Badge>
                                     }
-                                    return <Badge variant="outline" className="shrink-0 border-slate-300 text-[10px] text-slate-400">0</Badge>
+                                    return <Badge variant="outline" className="shrink-0 border-border text-[10px] text-muted-foreground">0</Badge>
                                 })()}
                             </div>
                         </div>
@@ -643,13 +643,13 @@ export default function TransactionDetailPage() {
                                 const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0)
                                 if (count > 0) {
                                     return (
-                                        <Button variant="default" size="sm" onClick={() => setProofType('SELL')} className="min-h-9 flex-1 rounded-lg bg-blue-600 px-3 text-xs text-white hover:bg-blue-700">
+                                        <Button variant="default" size="sm" onClick={() => setProofType('SELL')} className="min-h-9 flex-1 rounded-lg bg-blue-600 px-3 text-xs text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
                                             <Eye className="mr-1.5 h-3 w-3" /> Lihat
                                         </Button>
                                     )
                                 }
                             })()}
-                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} min-h-9 rounded-lg border-blue-300 px-3 text-xs text-blue-700 hover:bg-blue-50`}>
+                            <Button variant="outline" size="sm" onClick={() => setProofType('SELL')} className={`${(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'flex-1' })()} min-h-9 rounded-lg border-blue-300 dark:border-blue-300 px-3 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:hover:text-blue-200`}>
                                 <Upload className="mr-1.5 h-3 w-3" /> {(() => { const count = transaction.proofs?.filter((p: any) => p.proofType === 'SELL').length || (transaction.sellProofImageUrl ? 1 : 0); return count > 0 ? '' : 'Kelola' })()}
                             </Button>
                         </div>
@@ -658,10 +658,10 @@ export default function TransactionDetailPage() {
             </Card>
 
             {transaction.status === 'COMPLETED' && (
-                <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="rounded-lg border-border bg-card shadow-sm">
                     <CardHeader className="p-4 sm:p-6">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <CardTitle className="text-lg font-black text-slate-950">Pembayaran Bagi Hasil (Profit Sharing)</CardTitle>
+                            <CardTitle className="text-lg font-black text-foreground">Pembayaran Bagi Hasil (Profit Sharing)</CardTitle>
                             <AddPaymentDialog
                                 transactionId={transaction.id}
                                 investorId={transaction.unit.investorId}
@@ -673,21 +673,21 @@ export default function TransactionDetailPage() {
                         {transaction.paymentHistories && transaction.paymentHistories.length > 0 ? (
                             <div className="space-y-4">
                                 <div className="mb-4 grid gap-2 sm:grid-cols-3">
-                                    <div className="bg-blue-50 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-blue-800">Total Harus Dibayar</p>
-                                        <p className="text-xl font-bold text-blue-900 [overflow-wrap:anywhere]">
+                                    <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-lg">
+                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Total Harus Dibayar</p>
+                                        <p className="text-xl font-bold text-blue-900 dark:text-blue-300 [overflow-wrap:anywhere]">
                                             {formatCurrency(transaction.payment.investorShouldReceive)}
                                         </p>
                                     </div>
-                                    <div className="bg-green-50 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-green-800">Sudah Dibayar</p>
-                                        <p className="text-xl font-bold text-green-900 [overflow-wrap:anywhere]">
+                                    <div className="bg-green-50 dark:bg-green-950/40 p-4 rounded-lg">
+                                        <p className="text-sm font-medium text-green-800 dark:text-green-300">Sudah Dibayar</p>
+                                        <p className="text-xl font-bold text-green-900 dark:text-green-300 [overflow-wrap:anywhere]">
                                             {formatCurrency(transaction.payment.totalPaid)}
                                         </p>
                                     </div>
-                                    <div className="bg-orange-50 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-orange-800">Sisa</p>
-                                        <p className="text-xl font-bold text-orange-900 [overflow-wrap:anywhere]">
+                                    <div className="bg-orange-50 dark:bg-orange-950/40 p-4 rounded-lg">
+                                        <p className="text-sm font-medium text-orange-800 dark:text-orange-300">Sisa</p>
+                                        <p className="text-xl font-bold text-orange-900 dark:text-orange-300 [overflow-wrap:anywhere]">
                                             {formatCurrency(transaction.payment.remaining)}
                                         </p>
                                         <Badge className="mt-1" variant={transaction.payment.paymentStatus === 'PAID' ? 'default' : transaction.paymentStatus === 'PARTIAL' ? 'secondary' : 'destructive'}>
@@ -721,7 +721,7 @@ export default function TransactionDetailPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="ml-2 h-6 px-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                                                                className="ml-2 h-6 border border-border bg-muted px-2 text-xs text-foreground hover:bg-muted/80"
                                                                 onClick={() => setViewPaymentProof(payment.proofImageUrl)}
                                                             >
                                                                 📎 Lihat Bukti
