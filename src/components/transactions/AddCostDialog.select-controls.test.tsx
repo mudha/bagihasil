@@ -24,7 +24,7 @@ describe("AddCostDialog select layering contract", () => {
   it("documents the modal stacking gap and exact local override", () => {
     expect(dialogPrimitive).toContain("fixed inset-0 z-[100]")
     expect(dialogPrimitive).toContain("fixed top-[50%] left-[50%] z-[100]")
-    expect(selectPrimitive).toContain("relative z-50")
+    expect(selectPrimitive).toContain('portalLayer === "modal" ? "z-[110]" : "z-50"')
     expect(source.match(/<SelectContent className=\"z-\[110\]\">/g)).toHaveLength(2)
   })
 

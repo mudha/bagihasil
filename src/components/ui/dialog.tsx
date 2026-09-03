@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { PortalLayerProvider } from "@/components/ui/portal-layer"
 
 function Dialog({
   ...props
@@ -65,7 +66,7 @@ function DialogContent({
         )}
         {...props}
       >
-        {children}
+        <PortalLayerProvider>{children}</PortalLayerProvider>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
