@@ -72,12 +72,12 @@ export function ManagedCapitalSelfCard() {
     }, [fetchSummary])
 
     if (state.kind === "loading") {
-        return <Card aria-busy="true" className="border-teal-900/10 shadow-sm"><CardContent className="p-5"><div className="h-24 animate-pulse rounded-md bg-muted" aria-label="Memuat ringkasan modal kelolaan" /></CardContent></Card>
+        return <Card aria-busy="true" className="border-border shadow-sm"><CardContent className="p-5"><div className="h-24 animate-pulse rounded-md bg-muted" aria-label="Memuat ringkasan modal kelolaan" /></CardContent></Card>
     }
 
     if (state.kind === "error" || state.kind === "missing") {
         return (
-            <Card className="border-teal-900/10 shadow-sm">
+            <Card className="border-border shadow-sm">
                 <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
                     <p role="alert" className="text-sm text-muted-foreground">{state.kind === "error" ? state.message : getSelfManagedCapitalUnavailableLabel("missing")}</p>
                     <Button type="button" variant="outline" size="sm" onClick={() => void fetchSummary()}>
@@ -93,7 +93,7 @@ export function ManagedCapitalSelfCard() {
         <Card className="border-border bg-card shadow-sm">
             <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
-                    <CircleDollarSign className="h-5 w-5 text-teal-700" aria-hidden="true" />
+                    <CircleDollarSign className="h-5 w-5 text-teal-700 dark:text-teal-300" aria-hidden="true" />
                     Modal Kelolaan Saya
                 </CardTitle>
             </CardHeader>

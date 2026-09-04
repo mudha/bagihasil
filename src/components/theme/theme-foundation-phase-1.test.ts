@@ -278,8 +278,9 @@ describe("ThemeSwitcher hydration safety", () => {
     expect(themeSwitcherSource).toContain('role="radiogroup"')
   })
 
-  it("has 40px min touch target (h-10 w-10)", () => {
-    expect(themeSwitcherSource).toContain("h-10 w-10")
+  it("has 44px minimum touch targets and a layout-stable mounted placeholder", () => {
+    expect(themeSwitcherSource).toContain("h-11 w-11")
+    expect(themeSwitcherSource).toContain("h-[52px] w-[148px]")
   })
 
   it("has focus-visible ring for keyboard users", () => {

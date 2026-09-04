@@ -42,7 +42,7 @@ export function Navbar({ type = "admin" }: NavbarProps) {
     return (
         <div className={type === "admin"
             ? "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-card/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-4 lg:hidden dark:border-teal-200"
-            : "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-background/80 sm:p-4 lg:hidden"}>
+            : "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:border-border dark:bg-background/80 sm:p-4 lg:hidden"}>
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
@@ -58,7 +58,7 @@ export function Navbar({ type = "admin" }: NavbarProps) {
                         {type === "admin" ? (
                             <Sidebar compact onNavigate={() => setOpen(false)} />
                         ) : (
-                            <InvestorSidebar onNavigate={() => setOpen(false)} />
+                            <InvestorSidebar showThemeSwitcher={false} onNavigate={() => setOpen(false)} />
                         )}
                     </SheetContent>
                 </Sheet>
@@ -74,7 +74,7 @@ export function Navbar({ type = "admin" }: NavbarProps) {
                 </div>
                 <Avatar className={type === "admin" ? "h-9 w-9 border border-teal-100 shadow-sm dark:border-teal-950/50" : "h-9 w-9 border border-teal-100 shadow-sm dark:border-teal-950/50"}>
                     <AvatarImage src={session?.user?.image || ""} />
-                    <AvatarFallback className={type === "admin" ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"}>
+                    <AvatarFallback className={type === "admin" ? "bg-teal-100 text-teal-700" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"}>
                         {getInitials(session?.user?.name)}
                     </AvatarFallback>
                 </Avatar>

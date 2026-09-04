@@ -173,9 +173,11 @@ describe("Phase 2 immutable behavior boundaries", () => {
   it("preserves investor Navbar presentation while theming admin Navbar", () => {
     const source = readFileSync("src/components/layout/Navbar.tsx", "utf8")
     expect(source).toContain('type === "admin"')
+    expect(source).toContain('bg-card/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-4 lg:hidden dark:border-teal-200')
     // Phase 3: investor branch uses dark:bg-background/80 instead of dark:bg-gray-900/80
-    expect(source).toContain('bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-background/80')
+    expect(source).toContain('bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:border-border dark:bg-background/80')
     expect(source).toContain('"h-6 w-6 text-teal-950 dark:text-teal-100"')
+    expect(source).toContain('type === "admin" ? "bg-teal-100 text-teal-700"')
   })
   it("keeps shared investor image action at its original presentation", () => {
     const source = readFileSync("src/components/ui/view-image-dialog.tsx", "utf8")

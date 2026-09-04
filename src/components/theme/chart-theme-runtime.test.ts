@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { chartBarAltFill, chartBarFill, chartInvestorShareFill, chartManagerShareFill, chartProfitFill, chartUnitsSoldFill, getChartColors } from "../../lib/chart-theme"
+import { chartBarAltFill, chartBarFill, chartInvestorIncomeFill, chartInvestorRevenueFill, chartInvestorSalesFill, chartInvestorShareFill, chartManagerShareFill, chartProfitFill, chartUnitsSoldFill, getChartColors } from "../../lib/chart-theme"
 
 function rgb(hex: string): [number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16)
@@ -31,6 +31,12 @@ describe("chart theme runtime", () => {
     expect(chartInvestorShareFill(true)).toBe("#a3e635")
     expect(chartManagerShareFill(true)).toBe("#38bdf8")
     expect(chartUnitsSoldFill(true)).toBe("#fbbf24")
+    expect(chartInvestorIncomeFill(false)).toBe("#10b981")
+    expect(chartInvestorRevenueFill(false)).toBe("#0f9b8e")
+    expect(chartInvestorSalesFill(false)).toBe("#0ea5e9")
+    expect(chartInvestorIncomeFill(true)).toBe("#34d399")
+    expect(chartInvestorRevenueFill(true)).toBe("#2dd4bf")
+    expect(chartInvestorSalesFill(true)).toBe("#38bdf8")
   })
 
   it("keeps axis, tooltip, and legend text AA-readable on actual parents", () => {

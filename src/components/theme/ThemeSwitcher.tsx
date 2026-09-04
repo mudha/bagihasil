@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { Sun, Moon, Monitor } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 type ThemeOption = "light" | "dark" | "system"
 
@@ -12,7 +13,7 @@ const themes: { value: ThemeOption; icon: typeof Sun; label: string }[] = [
   { value: "system", icon: Monitor, label: "Sistem" },
 ]
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ inverse = false }: { inverse?: boolean }) {
   const { setTheme, theme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
@@ -23,7 +24,7 @@ export function ThemeSwitcher() {
   if (!mounted) {
     return (
       <span
-        className="inline-flex h-10 w-10 items-center justify-center"
+        className="inline-flex h-[52px] w-[148px] items-center justify-center"
         aria-hidden="true"
       >
         <Monitor className="size-4 opacity-0" />
@@ -34,13 +35,16 @@ export function ThemeSwitcher() {
   const currentTheme: ThemeOption =
     theme === "dark" || theme === "light" || theme === "system"
       ? theme
-      : "system"
+      : "light"
 
   return (
     <div
       role="radiogroup"
       aria-label="Ganti tema"
-      className="inline-flex gap-1 rounded-lg border border-border bg-muted p-1"
+      className={cn(
+        "inline-flex gap-1 rounded-lg border p-1",
+        inverse ? "border-white/15 bg-white/10" : "border-border bg-muted"
+      )}
     >
       {themes.map(({ value, icon: Icon, label }) => (
         <button
@@ -50,7 +54,13 @@ export function ThemeSwitcher() {
           aria-checked={currentTheme === value}
           aria-label={label}
           onClick={() => setTheme(value)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+          title={label}
+          className={cn(
+            "inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none",
+            inverse
+              ? "text-teal-100 hover:bg-white/10 hover:text-white focus-visible:ring-white/60 data-[state=on]:bg-white data-[state=on]:text-teal-950 data-[state=on]:shadow-sm"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+          )}
           data-state={currentTheme === value ? "on" : "off"}
         >
           <Icon className="size-4" />

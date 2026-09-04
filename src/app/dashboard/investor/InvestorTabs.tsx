@@ -66,15 +66,15 @@ function StatCard({
 }) {
     const toneClass = {
         teal: "bg-primary/10 text-primary",
-        lime: "bg-lime-100 text-lime-700",
-        sky: "bg-sky-100 text-sky-700",
-        amber: "bg-amber-100 text-amber-700",
+        lime: "bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300",
+        sky: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+        amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
     }[tone]
 
     return (
         <Card
             onClick={onClick}
-            className={`rounded-lg border-border bg-card shadow-sm transition ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg" : ""}`}
+            className={`rounded-lg border-border bg-card shadow-sm transition ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:border-teal-800" : ""}`}
         >
             <CardHeader className="flex flex-row items-start justify-between gap-3 p-4 pb-2">
                 <CardTitle className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground [overflow-wrap:anywhere]">
@@ -195,7 +195,7 @@ export function InvestorTabs({
                         <button
                             type="button"
                             onClick={() => setCalendarMode('masehi')}
-                            className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'masehi'
+                            className={`rounded-md px-4 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${calendarMode === 'masehi'
                                 ? 'bg-card text-primary shadow-sm'
                                 : 'text-muted-foreground hover:text-primary'
                                 }`}
@@ -205,7 +205,7 @@ export function InvestorTabs({
                         <button
                             type="button"
                             onClick={() => setCalendarMode('hijri')}
-                            className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'hijri'
+                            className={`rounded-md px-4 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${calendarMode === 'hijri'
                                 ? 'bg-card text-primary shadow-sm'
                                 : 'text-muted-foreground hover:text-primary'
                                 }`}

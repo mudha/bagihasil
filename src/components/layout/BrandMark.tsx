@@ -20,10 +20,10 @@ export function BrandMark({ compact = false, inverse = false, className }: Brand
             </div>
             {!compact && (
                 <div className="min-w-0">
-                    <p className={cn("truncate text-lg font-black leading-none tracking-tight", inverse ? "text-white" : "text-gray-950")}>
+                    <p className={cn("truncate text-lg font-black leading-none tracking-tight", inverse ? "text-white" : "text-gray-950 dark:text-foreground")}>
                         Mudha
                     </p>
-                    <p className={cn("mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.18em]", inverse ? "text-teal-100/80" : "text-teal-700")}>
+                    <p className={cn("mt-1 truncate text-[11px] font-semibold uppercase tracking-[0.18em]", inverse ? "text-teal-100/80" : "text-teal-700 dark:text-teal-300")}>
                         Profit Studio
                     </p>
                 </div>

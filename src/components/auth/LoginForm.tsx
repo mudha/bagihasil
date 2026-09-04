@@ -76,7 +76,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Username / Email</FormLabel>
                                     <FormControl>
-                                        <Input className="h-11 rounded-lg border-border bg-background" placeholder="username atau email" {...field} />
+                                        <Input className="h-11 rounded-lg border-border bg-background dark:[color-scheme:dark]" placeholder="username atau email" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -89,7 +89,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Password</FormLabel>
                                     <FormControl>
-                                        <Input className="h-11 rounded-lg border-border bg-background" type="password" placeholder="******" {...field} />
+                                        <Input className="h-11 rounded-lg border-border bg-background dark:[color-scheme:dark]" type="password" placeholder="******" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

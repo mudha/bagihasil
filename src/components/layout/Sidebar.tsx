@@ -138,9 +138,11 @@ export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
                 </div>
             </div>
             <div className="mt-auto shrink-0 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-                <div className="mb-2 flex justify-center">
-                    <ThemeSwitcher />
-                </div>
+                {!compact && (
+                    <div className="mb-2 flex justify-center">
+                        <ThemeSwitcher inverse />
+                    </div>
+                )}
                 <Button
                     onClick={signOutToLogin}
                     variant="ghost"

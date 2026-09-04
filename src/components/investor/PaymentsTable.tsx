@@ -137,8 +137,8 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                             </div>
 
                             <div className="flex items-center gap-2 border-y py-2">
-                                <DollarSign className="h-5 w-5 text-emerald-600" />
-                                <span className="text-xl font-black text-emerald-600 [overflow-wrap:anywhere]">
+                                <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                                <span className="text-xl font-black text-emerald-600 dark:text-emerald-300 [overflow-wrap:anywhere]">
                                     {formatCurrency(pay.amount)}
                                 </span>
                             </div>
@@ -208,7 +208,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                                     <TableCell className="max-w-[260px] whitespace-normal [overflow-wrap:anywhere]">
                                         {pay.transaction?.unit.name || "-"}
                                     </TableCell>
-                                    <TableCell className="font-bold text-emerald-600 [overflow-wrap:anywhere]">
+                                    <TableCell className="font-bold text-emerald-600 dark:text-emerald-300 [overflow-wrap:anywhere]">
                                         {formatCurrency(pay.amount)}
                                     </TableCell>
                                     <TableCell className="whitespace-normal [overflow-wrap:anywhere]">{pay.method}</TableCell>
