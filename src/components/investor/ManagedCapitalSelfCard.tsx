@@ -21,9 +21,9 @@ type SelfViewState =
 
 function Metric({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-md bg-slate-50 p-3">
+        <div className="rounded-md bg-muted p-3">
             <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className="mt-1 text-lg font-bold text-slate-950 [overflow-wrap:anywhere]">{value}</p>
+            <p className="mt-1 text-lg font-bold text-foreground [overflow-wrap:anywhere]">{value}</p>
         </div>
     )
 }
@@ -72,7 +72,7 @@ export function ManagedCapitalSelfCard() {
     }, [fetchSummary])
 
     if (state.kind === "loading") {
-        return <Card aria-busy="true" className="border-teal-900/10 shadow-sm"><CardContent className="p-5"><div className="h-24 animate-pulse rounded-md bg-slate-100" aria-label="Memuat ringkasan modal kelolaan" /></CardContent></Card>
+        return <Card aria-busy="true" className="border-teal-900/10 shadow-sm"><CardContent className="p-5"><div className="h-24 animate-pulse rounded-md bg-muted" aria-label="Memuat ringkasan modal kelolaan" /></CardContent></Card>
     }
 
     if (state.kind === "error" || state.kind === "missing") {
@@ -90,9 +90,9 @@ export function ManagedCapitalSelfCard() {
 
     const { summary } = state
     return (
-        <Card className="border-teal-900/10 bg-white shadow-sm">
+        <Card className="border-border bg-card shadow-sm">
             <CardHeader className="p-4 pb-2 sm:p-5 sm:pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-950">
+                <CardTitle className="flex items-center gap-2 text-lg font-black text-foreground">
                     <CircleDollarSign className="h-5 w-5 text-teal-700" aria-hidden="true" />
                     Modal Kelolaan Saya
                 </CardTitle>

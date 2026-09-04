@@ -15,12 +15,12 @@ function ProfileItem({
     icon: typeof User
 }) {
     return (
-        <div className="rounded-lg border border-teal-900/10 bg-slate-50 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+        <div className="rounded-lg border border-teal-900/10 bg-muted p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">
                 <Icon className="size-4 text-teal-600" />
                 {label}
             </div>
-            <p className="text-base font-black leading-relaxed text-slate-950 [overflow-wrap:anywhere]">{value}</p>
+            <p className="text-base font-black leading-relaxed text-foreground [overflow-wrap:anywhere]">{value}</p>
         </div>
     )
 }
@@ -35,7 +35,7 @@ export default async function InvestorProfilePage() {
         where: { userId: session.user.id }
     })
 
-    if (!investor) return <div className="rounded-lg border border-red-100 bg-white p-6 text-red-600 shadow-sm">Data Investor tidak ditemukan</div>
+    if (!investor) return <div className="rounded-lg border border-red-100 bg-card p-6 text-red-600 shadow-sm">Data Investor tidak ditemukan</div>
 
     return (
         <div className="space-y-5 pb-20">
@@ -50,9 +50,9 @@ export default async function InvestorProfilePage() {
                 </div>
             </section>
 
-            <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+            <Card className="rounded-lg border-border bg-card shadow-sm">
                 <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-lg font-black text-slate-950">Informasi Akun</CardTitle>
+                    <CardTitle className="text-lg font-black text-foreground">Informasi Akun</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-3 p-4 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0">
                     <ProfileItem label="Nama Lengkap" value={investor.name} icon={User} />

@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BrandMark } from "./BrandMark"
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher"
 
 interface NavbarProps {
     type?: "admin" | "investor"
@@ -41,14 +42,14 @@ export function Navbar({ type = "admin" }: NavbarProps) {
     return (
         <div className={type === "admin"
             ? "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-card/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-4 lg:hidden dark:border-teal-200"
-            : "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-gray-900/80 sm:p-4 lg:hidden"}>
+            : "sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-teal-900/10 bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-background/80 sm:p-4 lg:hidden"}>
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
                         <Button aria-label="Buka menu" variant="ghost" size="icon" className={type === "admin"
                             ? "-ml-2 h-11 w-11 shrink-0 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-950/40 lg:hidden"
-                            : "-ml-2 h-11 w-11 shrink-0 rounded-lg hover:bg-teal-50 lg:hidden"}>
-                            <Menu className={type === "admin" ? "h-6 w-6 text-teal-950 dark:text-teal-100" : "h-6 w-6 text-teal-950 dark:text-gray-200"} />
+                            : "-ml-2 h-11 w-11 shrink-0 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-950/40 lg:hidden"}>
+                            <Menu className={type === "admin" ? "h-6 w-6 text-teal-950 dark:text-teal-100" : "h-6 w-6 text-teal-950 dark:text-teal-100"} />
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="h-dvh w-[min(84vw,280px)] overflow-hidden overscroll-contain border-none bg-[#062f2d] p-0 text-white shadow-xl">
@@ -66,13 +67,14 @@ export function Navbar({ type = "admin" }: NavbarProps) {
             </div>
 
             <div className="flex items-center gap-2">
+                <ThemeSwitcher />
                 <div className="hidden sm:flex flex-col items-end mr-1">
                     <span className="text-sm font-medium leading-none">{session?.user?.name || "User"}</span>
                     <span className="text-xs text-muted-foreground capitalize">{(session?.user as any)?.role?.toLowerCase() || "Viewer"}</span>
                 </div>
-                <Avatar className={type === "admin" ? "h-9 w-9 border border-teal-100 shadow-sm dark:border-teal-950/50" : "h-9 w-9 border border-teal-100 shadow-sm"}>
+                <Avatar className={type === "admin" ? "h-9 w-9 border border-teal-100 shadow-sm dark:border-teal-950/50" : "h-9 w-9 border border-teal-100 shadow-sm dark:border-teal-950/50"}>
                     <AvatarImage src={session?.user?.image || ""} />
-                    <AvatarFallback className={type === "admin" ? "bg-teal-100 text-teal-700" : "bg-emerald-100 text-emerald-700"}>
+                    <AvatarFallback className={type === "admin" ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"}>
                         {getInitials(session?.user?.name)}
                     </AvatarFallback>
                 </Avatar>

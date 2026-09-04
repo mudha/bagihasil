@@ -28,13 +28,24 @@ const componentFiles = [
     "src/components/layout/Navbar.tsx",
 ]
 
-describe("Phase 2 — ThemeSwitcher unexposed in admin surfaces", () => {
-    it("ThemeSwitcher not imported in any admin surface", () => {
-        for (const path of [...dashboardFiles, ...componentFiles]) {
+describe("Phase 3 — ThemeSwitcher activated in admin surfaces", () => {
+    // Phase 3 intentionally places ThemeSwitcher in Sidebar and Navbar
+    const activatedAdminSurfaces = [
+        "src/components/layout/Sidebar.tsx",
+        "src/components/layout/Navbar.tsx",
+    ]
+    it("ThemeSwitcher imported in activated admin surfaces", () => {
+        for (const path of activatedAdminSurfaces) {
+            if (!existsSync(path)) continue
+            const source = readFileSync(path, "utf8")
+            expect(source).toContain("@/components/theme/ThemeSwitcher")
+        }
+    })
+    it("ThemeSwitcher not in admin page/layout/import surfaces", () => {
+        for (const path of dashboardFiles) {
             if (!existsSync(path)) continue
             const source = readFileSync(path, "utf8")
             expect(source).not.toContain("ThemeSwitcher")
-            expect(source).not.toContain("@/components/theme/ThemeSwitcher")
         }
     })
 })

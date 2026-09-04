@@ -15,10 +15,10 @@ interface InvestorSalesTrendChartProps {
 
 export function InvestorSalesTrendChart({ data, className }: InvestorSalesTrendChartProps) {
     return (
-        <Card className={`rounded-lg border-teal-900/10 bg-white shadow-sm ${className || ""}`}>
+        <Card className={`rounded-lg border-border bg-card shadow-sm ${className || ""}`}>
             <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base font-black text-slate-950">Tren Penjualan Unit</CardTitle>
-                <p className="text-sm text-slate-500">Unit selesai per periode</p>
+                <CardTitle className="text-base font-black text-foreground">Tren Penjualan Unit</CardTitle>
+                <p className="text-sm text-muted-foreground">Unit selesai per periode</p>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                 <div className="h-[260px] w-full sm:h-[320px]">

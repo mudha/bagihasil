@@ -60,7 +60,7 @@ export function LoginForm() {
     }
 
     return (
-        <Card className="relative w-full max-w-[380px] overflow-hidden rounded-lg border-white/80 bg-white/85 shadow-2xl shadow-teal-900/10 backdrop-blur">
+        <Card className="relative w-full max-w-[380px] overflow-hidden rounded-lg border-white/80 bg-white/85 dark:border-white/10 dark:bg-card/80 shadow-2xl shadow-teal-900/10 backdrop-blur">
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
             <CardHeader>
                 <CardTitle className="text-2xl">Selamat datang</CardTitle>
@@ -76,7 +76,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Username / Email</FormLabel>
                                     <FormControl>
-                                        <Input className="h-11 rounded-lg border-teal-900/10 bg-white" placeholder="username atau email" {...field} />
+                                        <Input className="h-11 rounded-lg border-border bg-background" placeholder="username atau email" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -89,7 +89,7 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Password</FormLabel>
                                     <FormControl>
-                                        <Input className="h-11 rounded-lg border-teal-900/10 bg-white" type="password" placeholder="******" {...field} />
+                                        <Input className="h-11 rounded-lg border-border bg-background" type="password" placeholder="******" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

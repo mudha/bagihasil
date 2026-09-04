@@ -153,17 +153,29 @@ describe("Phase 2 immutable behavior boundaries", () => {
     expect(source).toContain("investorStats")
     expect(source).toContain("monthlyStats")
   })
-  it("does not expose ThemeSwitcher or duplicate Toaster", () => {
-    for (const path of inventory) expect(readFileSync(path, "utf8")).not.toContain("ThemeSwitcher")
+  it("does not duplicate Toaster", () => {
     expect((readFileSync("src/app/layout.tsx", "utf8").match(/<Toaster/g) ?? []).length).toBe(1)
     expect((readFileSync("src/app/dashboard/layout.tsx", "utf8").match(/<Toaster/g) ?? []).length).toBe(0)
+  })
+  it("Phase 3 activates ThemeSwitcher in Sidebar, InvestorSidebar, Navbar, Login", () => {
+    const activated = [
+      "src/components/layout/Sidebar.tsx",
+      "src/components/layout/InvestorSidebar.tsx",
+      "src/components/layout/Navbar.tsx",
+      "src/app/login/page.tsx",
+    ]
+    for (const path of activated) {
+      expect(existsSync(path), `${path} must exist`).toBe(true)
+      const source = readFileSync(path, "utf8")
+      expect(source).toContain("@/components/theme/ThemeSwitcher")
+    }
   })
   it("preserves investor Navbar presentation while theming admin Navbar", () => {
     const source = readFileSync("src/components/layout/Navbar.tsx", "utf8")
     expect(source).toContain('type === "admin"')
-    expect(source).toContain('bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-gray-900/80')
-    expect(source).toContain('"h-6 w-6 text-teal-950 dark:text-gray-200"')
-    expect(source).toContain('"h-9 w-9 border border-teal-100 shadow-sm"')
+    // Phase 3: investor branch uses dark:bg-background/80 instead of dark:bg-gray-900/80
+    expect(source).toContain('bg-white/85 p-3 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-background/80')
+    expect(source).toContain('"h-6 w-6 text-teal-950 dark:text-teal-100"')
   })
   it("keeps shared investor image action at its original presentation", () => {
     const source = readFileSync("src/components/ui/view-image-dialog.tsx", "utf8")

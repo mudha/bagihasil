@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { LayoutDashboard, LogOut, User } from "lucide-react"
 import { BrandMark } from "./BrandMark"
 import { signOutToLogin } from "@/lib/sign-out"
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher"
 
 interface InvestorSidebarProps {
     className?: string
@@ -49,6 +50,9 @@ export function InvestorSidebar({ className, onNavigate }: InvestorSidebarProps)
                 </Link>
             </div>
             <div className="mt-auto shrink-0 border-t border-white/10 pt-4">
+                <div className="mb-3 flex justify-center">
+                    <ThemeSwitcher />
+                </div>
                 <Button
                     variant="ghost"
                     className="w-full justify-start gap-2 rounded-lg text-teal-100 hover:bg-white/10 hover:text-white"

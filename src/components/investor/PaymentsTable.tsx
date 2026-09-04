@@ -78,7 +78,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari unit atau catatan..."
-                        className="h-11 rounded-lg border-slate-200 bg-white pl-8 pr-10"
+                        className="h-11 rounded-lg border-border bg-card pl-8 pr-10"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -114,12 +114,12 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
             {/* Mobile Card View */}
             <div className="space-y-3 lg:hidden">
                 {sortedData.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border bg-muted py-8 text-center text-muted-foreground">
                         {searchQuery ? "Tidak ada hasil pencarian" : "Belum ada riwayat pembayaran"}
                     </div>
                 ) : (
                     sortedData.map(pay => (
-                        <div key={pay.id} className="space-y-3 rounded-lg border border-teal-900/10 bg-white p-4 shadow-sm">
+                        <div key={pay.id} className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-sm">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 mb-1">
@@ -128,7 +128,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
                                             {formatHijriFull(new Date(pay.paymentDate))}
                                         </span>
                                     </div>
-                                    <h3 className="text-base font-black leading-snug text-slate-950 [overflow-wrap:anywhere]">{pay.transaction?.unit.name || "-"}</h3>
+                                    <h3 className="text-base font-black leading-snug text-foreground [overflow-wrap:anywhere]">{pay.transaction?.unit.name || "-"}</h3>
                                 </div>
                                 <Badge variant="outline" className="shrink-0">
                                     <CreditCard className="h-3 w-3 mr-1" />
@@ -160,7 +160,7 @@ export function PaymentsTable({ data }: PaymentsTableProps) {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden overflow-x-auto rounded-lg border border-teal-900/10 bg-white lg:block">
+            <div className="hidden overflow-x-auto rounded-lg border border-border bg-card lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>

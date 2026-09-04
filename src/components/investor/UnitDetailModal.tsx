@@ -89,7 +89,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Unit Image */}
                         {data.unit?.imageUrl && (
-                            <div className="relative h-[280px] overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100 sm:h-[420px]">
+                            <div className="relative h-[280px] overflow-hidden rounded-lg border border-teal-900/10 bg-muted sm:h-[420px]">
                                 <Image
                                     src={data.unit.imageUrl}
                                     alt={data.unit.name}
@@ -101,8 +101,8 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                         )}
 
                         {/* Transaction Info */}
-                        <div className="grid grid-cols-1 gap-3 rounded-lg border border-teal-900/10 bg-slate-50 p-4 sm:grid-cols-2">
-                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
+                        <div className="grid grid-cols-1 gap-3 rounded-lg border border-teal-900/10 bg-muted p-4 sm:grid-cols-2">
+                            <div className="flex items-start gap-3 rounded-lg bg-card p-3">
                                 <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
                                 <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Tanggal Beli</p>
@@ -111,7 +111,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
+                            <div className="flex items-start gap-3 rounded-lg bg-card p-3">
                                 <Package className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
                                 <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Status Unit</p>
@@ -126,7 +126,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Financial Summary */}
                         <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-lg font-black text-slate-950">
+                            <h4 className="flex items-center gap-2 text-lg font-black text-foreground">
                                 <DollarSign className="h-5 w-5 text-teal-600" />
                                 Ringkasan Keuangan
                             </h4>

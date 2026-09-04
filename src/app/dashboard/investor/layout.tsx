@@ -22,7 +22,7 @@ export default async function InvestorLayout({
     }
 
     return (
-        <div className="flex min-h-dvh flex-col overflow-x-hidden bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] font-sans">
+        <div className="flex min-h-dvh flex-col overflow-x-hidden bg-background font-sans">
             <Navbar type="investor" />
             <div className="flex flex-1 min-h-0">
                 <InvestorSidebar className="hidden lg:flex" />

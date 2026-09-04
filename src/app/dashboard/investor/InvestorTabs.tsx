@@ -65,7 +65,7 @@ function StatCard({
     onClick?: () => void
 }) {
     const toneClass = {
-        teal: "bg-teal-100 text-teal-700",
+        teal: "bg-primary/10 text-primary",
         lime: "bg-lime-100 text-lime-700",
         sky: "bg-sky-100 text-sky-700",
         amber: "bg-amber-100 text-amber-700",
@@ -74,10 +74,10 @@ function StatCard({
     return (
         <Card
             onClick={onClick}
-            className={`rounded-lg border-teal-900/10 bg-white shadow-sm transition ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg" : ""}`}
+            className={`rounded-lg border-border bg-card shadow-sm transition ${onClick ? "cursor-pointer hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-lg" : ""}`}
         >
             <CardHeader className="flex flex-row items-start justify-between gap-3 p-4 pb-2">
-                <CardTitle className="text-xs font-black uppercase tracking-[0.14em] text-slate-500 [overflow-wrap:anywhere]">
+                <CardTitle className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground [overflow-wrap:anywhere]">
                     {title}
                 </CardTitle>
                 <div className={`grid size-10 shrink-0 place-items-center rounded-lg ${toneClass}`}>
@@ -85,8 +85,8 @@ function StatCard({
                 </div>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-                <div className="text-2xl font-black leading-tight text-slate-950 [overflow-wrap:anywhere]">{value}</div>
-                <p className="mt-2 text-xs leading-relaxed text-slate-500 [overflow-wrap:anywhere]">{helper}</p>
+                <div className="text-2xl font-black leading-tight text-foreground [overflow-wrap:anywhere]">{value}</div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">{helper}</p>
             </CardContent>
         </Card>
     )
@@ -162,7 +162,7 @@ export function InvestorTabs({
                 </div>
             </section>
 
-            <TabsList className="grid min-h-12 w-full grid-cols-3 rounded-lg border border-teal-900/10 bg-white p-1 shadow-sm lg:w-[460px]">
+            <TabsList className="grid min-h-12 w-full grid-cols-3 rounded-lg border border-border bg-card p-1 shadow-sm lg:w-[460px]">
                 <TabsTrigger value="dashboard" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Dashboard</TabsTrigger>
                 <TabsTrigger value="investments" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Investasi</TabsTrigger>
                 <TabsTrigger value="payments" className="rounded-md px-2 py-2 text-xs font-black sm:text-sm">Pembayaran</TabsTrigger>
@@ -179,9 +179,9 @@ export function InvestorTabs({
                     <StatCard title="Unit Terjual" value={`${stats.soldUnitsCount} Unit`} helper="Transaksi sudah selesai" icon={CheckCircle} tone="amber" onClick={handleSoldUnitsClick} />
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-lg border border-teal-900/10 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <Select value={monthsRange} onValueChange={onMonthsRangeChange}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-slate-200 sm:w-[200px]">
+                        <SelectTrigger className="h-11 w-full rounded-lg border-border sm:w-[200px]">
                             <SelectValue placeholder="Rentang Waktu" />
                         </SelectTrigger>
                         <SelectContent>
@@ -191,13 +191,13 @@ export function InvestorTabs({
                         </SelectContent>
                     </Select>
 
-                    <div className="grid grid-cols-2 items-center gap-1 rounded-lg bg-teal-50 p-1">
+                    <div className="grid grid-cols-2 items-center gap-1 rounded-lg bg-primary/5 p-1">
                         <button
                             type="button"
                             onClick={() => setCalendarMode('masehi')}
                             className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'masehi'
-                                ? 'bg-white text-teal-700 shadow-sm'
-                                : 'text-slate-500 hover:text-teal-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-primary'
                                 }`}
                         >
                             Masehi
@@ -206,8 +206,8 @@ export function InvestorTabs({
                             type="button"
                             onClick={() => setCalendarMode('hijri')}
                             className={`rounded-md px-4 py-2 text-sm font-black transition ${calendarMode === 'hijri'
-                                ? 'bg-white text-teal-700 shadow-sm'
-                                : 'text-slate-500 hover:text-teal-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-primary'
                                 }`}
                         >
                             Hijriyah
@@ -223,9 +223,9 @@ export function InvestorTabs({
             </TabsContent>
 
             <TabsContent value="investments" className="space-y-4">
-                <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="rounded-lg border-border bg-card shadow-sm">
                     <CardHeader className="p-4 sm:p-6">
-                        <CardTitle className="text-lg font-black text-slate-950">Daftar Unit Didanai</CardTitle>
+                        <CardTitle className="text-lg font-black text-foreground">Daftar Unit Didanai</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <InvestmentsTable data={investmentsData} defaultFilter={investmentFilter} />
@@ -234,9 +234,9 @@ export function InvestorTabs({
             </TabsContent>
 
             <TabsContent value="payments" className="space-y-4">
-                <Card className="rounded-lg border-teal-900/10 bg-white shadow-sm">
+                <Card className="rounded-lg border-border bg-card shadow-sm">
                     <CardHeader className="p-4 sm:p-6">
-                        <CardTitle className="text-lg font-black text-slate-950">Riwayat Pembayaran</CardTitle>
+                        <CardTitle className="text-lg font-black text-foreground">Riwayat Pembayaran</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                         <PaymentsTable data={paymentsData} />
