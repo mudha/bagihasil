@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useSession } from "next-auth/react"
 import { BrandMark } from "./BrandMark"
 import { signOutToLogin } from "@/lib/sign-out"
+import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher"
 
 const routes = [
     {
@@ -137,6 +138,11 @@ export function Sidebar({ onNavigate, compact = false }: SidebarProps) {
                 </div>
             </div>
             <div className="mt-auto shrink-0 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                {!compact && (
+                    <div className="mb-2 flex justify-center">
+                        <ThemeSwitcher inverse />
+                    </div>
+                )}
                 <Button
                     onClick={signOutToLogin}
                     variant="ghost"

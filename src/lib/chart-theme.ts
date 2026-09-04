@@ -89,3 +89,16 @@ export function chartManagerShareFill(isDark: boolean) {
 export function chartUnitsSoldFill(isDark: boolean) {
     return isDark ? "#fbbf24" : "#f59e0b"
 }
+
+/** Investor chart fills preserve the exact pre-Phase-3 Light colours. */
+export function chartInvestorIncomeFill(isDark: boolean) {
+    return isDark ? "#34d399" : "#10b981"
+}
+
+export function chartInvestorRevenueFill(isDark: boolean) {
+    return isDark ? "#2dd4bf" : "#0f9b8e"
+}
+
+export function chartInvestorSalesFill(isDark: boolean) {
+    return isDark ? "#38bdf8" : "#0ea5e9"
+}

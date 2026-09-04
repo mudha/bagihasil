@@ -1,8 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { InvestorSidebar } from "@/components/layout/InvestorSidebar"
-import { Navbar } from "@/components/layout/Navbar"
-
+import { InvestorShell } from "./InvestorShell"
 
 export default async function InvestorLayout({
     children,
@@ -21,19 +19,6 @@ export default async function InvestorLayout({
         // redirect("/dashboard") 
     }
 
-    return (
-        <div className="flex min-h-dvh flex-col overflow-x-hidden bg-[linear-gradient(180deg,#f0fdfa_0%,#f8fafc_34%,#ffffff_100%)] font-sans">
-            <Navbar type="investor" />
-            <div className="flex flex-1 min-h-0">
-                <InvestorSidebar className="hidden lg:flex" />
-                <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-8 touch-scroll">
-                    {children}
-                </main>
-            </div>
-
-        </div>
-    )
+    return <InvestorShell>{children}</InvestorShell>
 }
-
-
 

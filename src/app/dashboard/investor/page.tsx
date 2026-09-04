@@ -67,10 +67,10 @@ export default function InvestorDashboardPage() {
     if (loading) {
         return (
             <div className="space-y-5 pb-20">
-                <div className="h-64 animate-pulse rounded-lg bg-teal-900/10" />
+                <div className="h-64 animate-pulse rounded-lg bg-muted" />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     {[1, 2, 3, 4, 5].map((item) => (
-                        <div key={item} className="h-32 animate-pulse rounded-lg bg-slate-100" />
+                        <div key={item} className="h-32 animate-pulse rounded-lg bg-muted" />
                     ))}
                 </div>
             </div>

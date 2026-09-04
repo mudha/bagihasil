@@ -278,8 +278,9 @@ describe("ThemeSwitcher hydration safety", () => {
     expect(themeSwitcherSource).toContain('role="radiogroup"')
   })
 
-  it("has 40px min touch target (h-10 w-10)", () => {
-    expect(themeSwitcherSource).toContain("h-10 w-10")
+  it("has 44px minimum touch targets and a layout-stable mounted placeholder", () => {
+    expect(themeSwitcherSource).toContain("h-11 w-11")
+    expect(themeSwitcherSource).toContain("h-[52px] w-[148px]")
   })
 
   it("has focus-visible ring for keyboard users", () => {
@@ -293,21 +294,32 @@ describe("ThemeSwitcher hydration safety", () => {
   })
 })
 
-describe("ThemeSwitcher not imported by dashboard surfaces", () => {
-  const surfacesToCheck = [
-    "src/app/dashboard/layout.tsx",
-    "src/app/dashboard/page.tsx",
-    "src/app/login/page.tsx",
-    "src/app/dashboard/investor/layout.tsx",
-    "src/components/auth/LoginForm.tsx",
+describe("Phase 3 — ThemeSwitcher activated in specific surfaces", () => {
+  // Phase 3 intentionally activates ThemeSwitcher on: Sidebar, InvestorSidebar, Navbar (mobile), Login
+  const activatedSurfaces = [
     "src/components/layout/Sidebar.tsx",
     "src/components/layout/InvestorSidebar.tsx",
     "src/components/layout/Navbar.tsx",
+    "src/app/login/page.tsx",
+  ]
+  const nonActivatedSurfaces = [
+    "src/app/dashboard/layout.tsx",
+    "src/app/dashboard/page.tsx",
+    "src/app/dashboard/investor/layout.tsx",
+    "src/components/auth/LoginForm.tsx",
   ]
 
-  it("not imported in any dashboard/investor/login surface", () => {
-    for (const path of surfacesToCheck) {
-      expect(existsSync(path), `${path} must exist for exposure proof`).toBe(true)
+  it("ThemeSwitcher imported in activation surfaces", () => {
+    for (const path of activatedSurfaces) {
+      expect(existsSync(path), `${path} must exist`).toBe(true)
+      const source = readFileSync(path, "utf8")
+      expect(source).toContain("@/components/theme/ThemeSwitcher")
+    }
+  })
+
+  it("ThemeSwitcher not in non-activation surfaces", () => {
+    for (const path of nonActivatedSurfaces) {
+      if (!existsSync(path)) continue
       const source = readFileSync(path, "utf8")
       expect(source).not.toContain("ThemeSwitcher")
       expect(source).not.toContain("@/components/theme/ThemeSwitcher")

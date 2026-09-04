@@ -51,9 +51,9 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "ON_PROCESS":
-                return <Badge variant="default" className="bg-amber-100 text-amber-900 hover:bg-amber-100">Sedang Berjalan</Badge>
+                return <Badge variant="default" className="bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/35 dark:text-amber-200 dark:hover:bg-amber-900/45">Sedang Berjalan</Badge>
             case "COMPLETED":
-                return <Badge variant="default" className="bg-lime-100 text-lime-900 hover:bg-lime-100">Selesai</Badge>
+                return <Badge variant="default" className="bg-lime-100 text-lime-900 hover:bg-lime-100 dark:bg-lime-900/35 dark:text-lime-200 dark:hover:bg-lime-900/45">Selesai</Badge>
             default:
                 return <Badge variant="secondary">{status}</Badge>
         }
@@ -61,7 +61,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-teal-900/10 p-0">
+            <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-lg border-border p-0">
                 <DialogHeader>
                     <DialogTitle className="sr-only">Detail Investasi Unit</DialogTitle>
                 </DialogHeader>
@@ -89,7 +89,7 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Unit Image */}
                         {data.unit?.imageUrl && (
-                            <div className="relative h-[280px] overflow-hidden rounded-lg border border-teal-900/10 bg-slate-100 sm:h-[420px]">
+                            <div className="relative h-[280px] overflow-hidden rounded-lg border border-border bg-muted sm:h-[420px]">
                                 <Image
                                     src={data.unit.imageUrl}
                                     alt={data.unit.name}
@@ -101,9 +101,9 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                         )}
 
                         {/* Transaction Info */}
-                        <div className="grid grid-cols-1 gap-3 rounded-lg border border-teal-900/10 bg-slate-50 p-4 sm:grid-cols-2">
-                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
-                                <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
+                        <div className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-muted p-4 sm:grid-cols-2">
+                            <div className="flex items-start gap-3 rounded-lg bg-card p-3">
+                                <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-teal-600 dark:text-teal-300" />
                                 <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Tanggal Beli</p>
                                     <p className="font-semibold [overflow-wrap:anywhere]">
@@ -111,8 +111,8 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3 rounded-lg bg-white p-3">
-                                <Package className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
+                            <div className="flex items-start gap-3 rounded-lg bg-card p-3">
+                                <Package className="mt-0.5 h-5 w-5 shrink-0 text-teal-600 dark:text-teal-300" />
                                 <div className="min-w-0">
                                     <p className="text-sm text-muted-foreground">Status Unit</p>
                                     <p className="font-semibold">
@@ -126,33 +126,33 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Financial Summary */}
                         <div className="space-y-3">
-                            <h4 className="flex items-center gap-2 text-lg font-black text-slate-950">
-                                <DollarSign className="h-5 w-5 text-teal-600" />
+                            <h4 className="flex items-center gap-2 text-lg font-black text-foreground">
+                                <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-300" />
                                 Ringkasan Keuangan
                             </h4>
 
-                            <div className="space-y-2 rounded-lg border border-teal-900/10 p-4">
+                            <div className="space-y-2 rounded-lg border border-border p-4">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Harga Beli</span>
                                     <span className="font-semibold [overflow-wrap:anywhere]">{formatCurrency(data.buyPrice || 0)}</span>
                                 </div>
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Modal dari Anda</span>
-                                    <span className="font-semibold text-teal-700 [overflow-wrap:anywhere]">
+                                    <span className="font-semibold text-teal-700 dark:text-teal-300 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.initialInvestorCapital || data.buyPrice || 0)}
                                     </span>
                                 </div>
                                 {data.sellPrice > 0 && (
                                     <div className="flex flex-col gap-1 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-muted-foreground">Harga Jual</span>
-                                        <span className="font-semibold text-emerald-600 [overflow-wrap:anywhere]">
+                                        <span className="font-semibold text-emerald-600 dark:text-emerald-300 [overflow-wrap:anywhere]">
                                             {formatCurrency(data.sellPrice)}
                                         </span>
                                     </div>
                                 )}
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-muted-foreground">Total Biaya Operasional</span>
-                                    <span className="font-medium text-orange-600 [overflow-wrap:anywhere]">
+                                    <span className="font-medium text-orange-600 dark:text-orange-300 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.costs?.reduce((sum: number, c: any) => sum + c.amount, 0) || 0)}
                                     </span>
                                 </div>
@@ -161,26 +161,26 @@ export function UnitDetailModal({ open, onOpenChange, transactionId }: UnitDetai
 
                         {/* Profit Summary (if sold) */}
                         {data.sellPrice > 0 && (
-                            <div className="space-y-3 rounded-lg border border-lime-200 bg-lime-50 p-4">
-                                <h5 className="flex items-center gap-2 font-black text-lime-800">
+                            <div className="space-y-3 rounded-lg border border-lime-200 bg-lime-50 p-4 dark:border-lime-900/50 dark:bg-lime-950/30">
+                                <h5 className="flex items-center gap-2 font-black text-lime-800 dark:text-lime-200">
                                     <TrendingUp className="h-4 w-4" />
                                     Bagi Hasil
                                 </h5>
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="text-sm text-lime-800">Profit Bersih</span>
-                                    <span className="font-bold text-lime-900 [overflow-wrap:anywhere]">
+                                    <span className="text-sm text-lime-800 dark:text-lime-200">Profit Bersih</span>
+                                    <span className="font-bold text-lime-900 dark:text-lime-100 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.profitSharing?.netMargin || 0)}
                                     </span>
                                 </div>
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                    <span className="text-sm text-lime-800">
+                                    <span className="text-sm text-lime-800 dark:text-lime-200">
                                         Bagian Anda ({data.profitSharing?.investorSharePercentage ?? 50}%)
                                     </span>
-                                    <span className="font-bold text-lime-700 [overflow-wrap:anywhere]">
+                                    <span className="font-bold text-lime-700 dark:text-lime-300 [overflow-wrap:anywhere]">
                                         {formatCurrency(data.profitSharing?.investorProfitAmount || 0)}
                                     </span>
                                 </div>
-                                <div className="flex flex-col gap-1 text-xs text-lime-700 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-1 text-xs text-lime-700 dark:text-lime-300 sm:flex-row sm:items-center sm:justify-between">
                                     <span>Status Pembayaran</span>
                                     <span className="font-semibold">
                                         {data.payment?.paymentStatus === "PAID" ? "Lunas" :
