@@ -39,7 +39,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, ReceiptText, Wallet, TrendingUp } from "lucide-react"
+import { Plus, MoreHorizontal, Eye, FileText, CheckCircle, ArrowUp, ArrowDown, ArrowUpDown, Trash, Pencil, Scan, CheckCircle2, ReceiptText, Repeat, Wallet, TrendingUp } from "lucide-react"
 import { MultipleImageUpload } from "@/components/ui/multi-image-upload"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -826,8 +826,9 @@ function TransactionsPageContent() {
                                                                     <div className="flex items-center gap-2 w-full">
                                                                         <span>{unit.name} - {unit.plateNumber}</span>
                                                                         {duplicateInfo.isDuplicate && (
-                                                                            <Badge variant="outline" className="ml-auto text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-300">
-                                                                                🔄 Pembelian ke-{duplicateInfo.purchaseNumber}
+                                                                            <Badge variant="outline" className="ml-auto inline-flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                                                                                <Repeat className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                                                                Pembelian ke-{duplicateInfo.purchaseNumber}
                                                                             </Badge>
                                                                         )}
                                                                     </div>

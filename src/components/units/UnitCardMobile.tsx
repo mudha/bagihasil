@@ -10,7 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Eye, MoreHorizontal, Pencil, Trash } from "lucide-react"
+import { Eye, MoreHorizontal, Pencil, Repeat, Trash } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getInvestorInitials } from "@/lib/investor-initials"
 import { getTaxStatus } from "@/lib/unit-tax-status"
@@ -106,8 +106,9 @@ export function UnitCardMobile({
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                 <span className="[overflow-wrap:anywhere]">{unit.plateNumber}</span>
                                 {duplicateInfo.isBuyback ? (
-                                    <Badge variant="outline" className="text-[9px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300 py-0 h-4">
-                                        🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
+                                    <Badge variant="outline" className="inline-flex items-center gap-0.5 text-[9px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300 py-0 h-4">
+                                        <Repeat className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+                                        Buyback (Ke-{duplicateInfo.purchaseNumber})
                                     </Badge>
                                 ) : null}
                             </div>

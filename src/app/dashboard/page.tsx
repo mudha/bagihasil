@@ -18,8 +18,8 @@ import {
     FileSpreadsheet,
     FileText,
     Gauge,
+    HandCoins,
     Landmark,
-    PiggyBank,
     ReceiptText,
     TrendingUp,
     Wallet,
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                     value={formatCurrencyShort(stats.totalInvestorProfit)}
                     titleFull={formatCurrency(stats.totalInvestorProfit)}
                     helper="Bagi hasil"
-                    icon={PiggyBank}
+                    icon={HandCoins}
                     tone="amber"
                 />
                 <MetricCard

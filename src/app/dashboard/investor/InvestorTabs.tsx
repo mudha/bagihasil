@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { InvestmentsTable } from "@/components/investor/InvestmentsTable"
 import { PaymentsTable } from "@/components/investor/PaymentsTable"
 import { ManagedCapitalSelfCard } from "@/components/investor/ManagedCapitalSelfCard"
-import { CheckCircle, DollarSign, Package, Sparkles, TrendingUp, Wallet } from "lucide-react"
+import { CheckCircle, DollarSign, Package, TrendingUp, Wallet } from "lucide-react"
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 import { InvestorRevenueChart } from "./InvestorRevenueChart"
@@ -131,8 +131,7 @@ export function InvestorTabs({
                 <div className="absolute -bottom-24 left-8 size-56 rounded-full bg-lime-300/20 blur-3xl" />
                 <div className="relative grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end xl:p-8">
                     <div className="min-w-0">
-                        <div className="mb-4 inline-flex min-h-9 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-black uppercase tracking-[0.14em] text-lime-100">
-                            <Sparkles className="size-4" />
+                        <div className="mb-4 inline-flex min-h-9 items-center rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-black uppercase tracking-[0.14em] text-lime-100">
                             Investor portal
                         </div>
                         <h1 className="max-w-3xl text-3xl font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere] sm:text-5xl">

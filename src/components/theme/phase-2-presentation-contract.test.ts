@@ -64,8 +64,7 @@ const exactUnpairedWhitelist = new Set([
   "src/components/layout/Sidebar.tsx::mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-teal-50/55",
   "src/components/layout/Sidebar.tsx::w-full justify-start text-teal-50/70 hover:bg-white/10 hover:text-white",
   "src/components/transactions/AddPaymentDialog.tsx::border-b bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-6 sm:py-5 sm:pr-20",
-  "src/components/transactions/AddPaymentDialog.tsx::h-3 w-3 text-blue-500 animate-spin-slow",
-  "src/components/transactions/AddPaymentDialog.tsx::h-3 w-3 text-purple-400",
+  "src/components/transactions/AddPaymentDialog.tsx::h-3 w-3 text-blue-500 animate-spin motion-reduce:animate-none",
   "src/components/transactions/AddPaymentDialog.tsx::text-teal-50/75",
   "src/components/transactions/AddPaymentDialog.tsx::text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100",
   "src/components/transactions/AdminTransactionDetailDialog.tsx::bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-14 text-white sm:px-6 sm:py-5 sm:pr-16",
@@ -75,8 +74,7 @@ const exactUnpairedWhitelist = new Set([
   "src/components/transactions/AdminTransactionDetailDialog.tsx::max-w-2xl text-sm leading-relaxed text-teal-50/80",
   "src/components/transactions/AdminTransactionDetailDialog.tsx::text-2xl font-black tracking-tight text-white sm:text-3xl",
   "src/components/transactions/FinalizeTransactionDialog.tsx::border-b bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-900 px-4 py-4 pr-16 text-left text-white sm:px-6 sm:py-5 sm:pr-20",
-  "src/components/transactions/FinalizeTransactionDialog.tsx::h-3 w-3 text-blue-500 animate-spin-slow",
-  "src/components/transactions/FinalizeTransactionDialog.tsx::h-3 w-3 text-purple-400",
+  "src/components/transactions/FinalizeTransactionDialog.tsx::h-3 w-3 text-blue-500 animate-spin motion-reduce:animate-none",
   "src/components/transactions/FinalizeTransactionDialog.tsx::text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100",
   "src/components/ui/image-hover-preview.tsx::mt-2 rounded-lg border border-slate-900/10 bg-slate-950/90 px-3 py-2 text-xs text-white shadow-lg backdrop-blur",
   "src/components/ui/image-hover-preview.tsx::overflow-hidden rounded-xl border border-white/70 bg-slate-950 shadow-2xl shadow-slate-950/25 ring-1 ring-slate-950/10",
@@ -116,7 +114,7 @@ describe("Phase 2 complete admin presentation inventory", () => {
     expect(unpairedLiteralClasses()).toEqual([...exactUnpairedWhitelist].sort())
   })
   it("keeps the whitelist narrow, exact, and category-complete", () => {
-    expect(exactUnpairedWhitelist.size).toBe(58)
+    expect(exactUnpairedWhitelist.size).toBe(56)
     const items = [...exactUnpairedWhitelist]
     expect(items.every((item) => item.includes("::"))).toBe(true)
     expect(items.some((item) => item.includes("#062f2d") || item.includes("#073f3b"))).toBe(true) // brand shell

@@ -128,9 +128,11 @@ describe("Investors page — Mudha Operational pilot", () => {
     expect(page).toContain("formatRupiahOrNull")
   })
 
-  it("preserves capital warning display", () => {
+  it("preserves capital warning display without legacy emoji", () => {
     expect(page).toContain("ALLOCATION_EXCEEDS_MANAGED_BALANCE")
-    expect(page).toContain("⚠ Melebihi")
+    expect(page).toContain("<AlertTriangle")
+    expect(page).not.toContain("⚠ Melebihi")
+    expect(page).toContain("Melebihi")
   })
 
   it("preserves Belum diatur for UNSET status", () => {
