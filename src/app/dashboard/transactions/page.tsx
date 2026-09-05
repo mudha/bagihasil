@@ -826,7 +826,7 @@ function TransactionsPageContent() {
                                                                     <div className="flex items-center gap-2 w-full">
                                                                         <span>{unit.name} - {unit.plateNumber}</span>
                                                                         {duplicateInfo.isDuplicate && (
-                                                                            <Badge variant="outline" className="ml-auto inline-flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                                                                            <Badge variant="outline" className="ml-auto inline-flex items-center gap-1 text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-300">
                                                                                 <Repeat className="h-3 w-3 shrink-0" aria-hidden="true" />
                                                                                 Pembelian ke-{duplicateInfo.purchaseNumber}
                                                                             </Badge>
