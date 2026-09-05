@@ -1,38 +1,57 @@
-import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { createHash } from "node:crypto"
-import { dirname, relative, resolve, join } from "node:path"
+import { execFileSync, spawnSync } from "node:child_process"
+import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { dirname, join, relative, resolve } from "node:path"
 import { URL } from "node:url"
-import { spawnSync } from "node:child_process"
-import { evaluateMigrationGuards, type MigrationGuardInput, type ExecutionMode } from "../src/lib/production-migration-guards"
-import { verifyPostConditions, buildDeployEnv, type PostConditionInput } from "../src/lib/production-migration-postconditions"
+import { evaluateMigrationGuards, type ExecutionMode, type MigrationGuardInput } from "../src/lib/production-migration-guards"
+import {
+  buildDeployEnv,
+  normalizeCheckExpression,
+  verifyPostConditions,
+  type CheckInfo,
+  type EnumInfo,
+  type ForeignKeyInfo,
+  type IndexInfo,
+  type MigrationRecord,
+  type PostConditionInput,
+  type PostConditionResult,
+} from "../src/lib/production-migration-postconditions"
 
 export type AuditRecord = {
   timestampUtc: string; timestampWib: string; operationId: string; operator: string
-  mode: ExecutionMode
-  pr: number; head: string; migrationName: string; migrationChecksum: string
+  mode: ExecutionMode; pr: number; head: string; migrationName: string; migrationChecksum: string
   prismaVersion: string; backupIdentifier: string; backupChecksum: string
-  restoreVerified: boolean; offsiteVerified: boolean
-  identityFingerprint: string; guards: "PASS"
-  metadataBefore: unknown; metadataAfter: unknown; schemaDiff: "empty"
-  postConditions: unknown
-  status: "PASS" | "REQUIRES_READ_ONLY_INSPECTION"
-  deploy: "PASS_NOOP" | "PASS" | "FAIL"
+  restoreVerified: boolean; offsiteVerified: boolean; identityFingerprint: string; guards: "PASS"
+  metadataBefore: unknown; metadataAfter: unknown; schemaDiff: "empty"; postConditions: unknown
+  status: "PASS" | "REQUIRES_READ_ONLY_INSPECTION"; deploy: "PASS_NOOP" | "PASS" | "FAIL"
   verdict: "PASS" | "REQUIRES_READ_ONLY_INSPECTION"
 }
+
 type FixedSpawn = (command: string, args: string[], options: Record<string, unknown>) => { status: number | null; stdout?: string; stderr?: string; error?: Error }
+type InvariantFingerprints = Record<string, string>
 type RuntimeExpected = {
   mode: ExecutionMode
   pr: number; head: string; migration: { name: string; checksum: string }
   backup: { path: string; checksum: string; restoreList: string; offsiteVerified: boolean }
   approval: MigrationGuardInput["approval"]
   identityFingerprint: string; auditPath: string
-  mergeCommit?: string; expectedMainSha?: string
 }
+type ExecutionInput = MigrationGuardInput & {
+  databaseUrl: string
+  auditPath: string
+  audit: Record<string, unknown>
+  preDeploymentInvariants: InvariantFingerprints
+}
+type Observation = PostConditionResult & { evidence: Record<string, unknown> }
+
+const TARGET_MIGRATION = "20260830222005_loss_capital_ledger_foundation"
+const TARGET_CHECKSUM = "2de7d2e9ca11d799447f3e5a822655cbb6072316e88226ae7b81ff07858a3ad4"
+const MIGRATION_PATH = `prisma/migrations/${TARGET_MIGRATION}/migration.sql`
 
 export function redactAudit(value: unknown): unknown {
   if (typeof value === "string") return value.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]").replace(/(password|secret|token|key)=?[^\s,}]+/gi, "$1=[REDACTED]")
   if (Array.isArray(value)) return value.map(redactAudit)
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, /url|password|secret|token/i.test(k) ? "[REDACTED]" : redactAudit(v)]))
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, /url|password|secret|token/i.test(key) ? "[REDACTED]" : redactAudit(item)]))
   return value
 }
 
@@ -42,133 +61,239 @@ export function writeAudit(path: string, record: unknown) {
   chmodSync(path, 0o600)
 }
 
-export function executeFixedDeploy(input: MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown }, options: { spawn?: FixedSpawn; lockPath?: string } = {}): { code: number; output: string } {
+function command(commandName: string, args: string[], env?: Record<string, string>): string {
+  const result = spawnSync(commandName, args, {
+    encoding: "utf8",
+    env: env ? { PATH: process.env.PATH, NODE_ENV: "production", ...env } : { PATH: process.env.PATH, NODE_ENV: "production" },
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+  if (result.error || result.status !== 0) throw new Error("BLOCKED: authoritative evidence command failed")
+  return result.stdout.trim()
+}
+
+function commandSucceeds(commandName: string, args: string[]): boolean {
+  const result = spawnSync(commandName, args, { env: { PATH: process.env.PATH, NODE_ENV: "production" }, stdio: "ignore" })
+  return !result.error && result.status === 0
+}
+
+function sha256Bytes(bytes: Buffer | string) { return createHash("sha256").update(bytes).digest("hex") }
+function sha256File(path: string) { return sha256Bytes(readFileSync(path)) }
+function identityFingerprint(value: string) { return sha256Bytes(value).slice(0, 16) }
+
+function readOnlyEnv(databaseUrl: string): Record<string, string> {
+  const deploy = buildDeployEnv({ databaseUrl })
+  const parsed = new URL(deploy.env.DATABASE_URL)
+  const env: Record<string, string> = {
+    ...deploy.env,
+    PGHOST: parsed.hostname,
+    PGPORT: parsed.port || "5432",
+    PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)),
+    PGUSER: decodeURIComponent(parsed.username),
+    PGPASSWORD: decodeURIComponent(parsed.password),
+    PGCONNECT_TIMEOUT: parsed.searchParams.get("connect_timeout") ?? "10",
+    PGOPTIONS: `${deploy.env.PGOPTIONS} -c default_transaction_read_only=on`,
+  }
+  const sslmode = parsed.searchParams.get("sslmode")
+  if (sslmode) env.PGSSLMODE = sslmode
+  return env
+}
+
+function query(databaseUrl: string, sql: string): string {
+  return command("psql", ["-XAtq", "--set", "ON_ERROR_STOP=1", "--command", sql], readOnlyEnv(databaseUrl))
+}
+
+function jsonQuery<T>(databaseUrl: string, sql: string): T {
+  const value = query(databaseUrl, sql)
+  try { return JSON.parse(value) as T } catch { throw new Error("REQUIRES_READ_ONLY_INSPECTION: malformed database observation") }
+}
+
+function observeIdentity(databaseUrl: string): string {
+  return identityFingerprint(query(databaseUrl, "select current_database() || '|' || current_schema() || '|' || current_setting('server_version')"))
+}
+
+function quoteIdentifier(value: string): string {
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(value)) throw new Error("BLOCKED: unsafe catalog identifier")
+  return `"${value}"`
+}
+
+export function captureInvariantFingerprints(databaseUrl: string): InvariantFingerprints {
+  const tables = jsonQuery<string[]>(databaseUrl, `select coalesce(json_agg(table_name order by table_name), '[]'::json) from information_schema.columns where table_schema='public' and column_name='id' and table_name not in ('CapitalMovement','TransactionLoss','_prisma_migrations')`)
+  const fingerprints: InvariantFingerprints = {}
+  for (const table of tables) {
+    const identifier = quoteIdentifier(table)
+    fingerprints[table] = query(databaseUrl, `select count(*)::text || ':' || md5(coalesce(string_agg(md5(coalesce("id"::text,'')), '' order by "id"::text),'')) from ${identifier}`)
+  }
+  return fingerprints
+}
+
+function normalizeDefault(value: string | null): string | null {
+  if (value === null) return null
+  return value.replace(/::[a-z ]+$/i, "").replace(/^\((.*)\)$/, "$1").trim()
+}
+
+export function observePostConditions(databaseUrl: string, expectedIdentity: string, preDeploymentInvariants: InvariantFingerprints, migrationName = TARGET_MIGRATION, migrationChecksum = TARGET_CHECKSUM): Observation {
+  const identityMatches = observeIdentity(databaseUrl) === expectedIdentity
+  const migrationRecords = jsonQuery<MigrationRecord[]>(databaseUrl, `select coalesce(json_agg(json_build_object('name',migration_name,'checksum',checksum,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null,'appliedSteps',applied_steps_count) order by migration_name), '[]'::json) from _prisma_migrations`)
+  const enums = jsonQuery<EnumInfo[]>(databaseUrl, `select coalesce(json_agg(value order by value->>'name'), '[]'::json) from (select json_build_object('name',t.typname,'labels',json_agg(e.enumlabel order by e.enumsortorder)) value from pg_type t join pg_enum e on e.enumtypid=t.oid join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typname in ('LossResponsibility','LedgerTreatment','CapitalMovementType','CapitalMovementDirection','CapitalMovementSource') group by t.typname) q`)
+  const tables = jsonQuery<string[]>(databaseUrl, `select coalesce(json_agg(tablename order by tablename), '[]'::json) from pg_tables where schemaname='public' and tablename in ('CapitalMovement','TransactionLoss')`)
+  const columns = jsonQuery<Array<{ table: string; type: string; nullable: boolean; default: string | null }>>(databaseUrl, `select coalesce(json_agg(json_build_object('table',table_name,'type',data_type,'nullable',is_nullable='YES','default',column_default) order by table_name), '[]'::json) from information_schema.columns where table_schema='public' and (table_name,column_name) in (('Investor','capitalLedgerOpenedAt'),('Transaction','finalizationVersion'))`)
+  const checks = jsonQuery<CheckInfo[]>(databaseUrl, `select coalesce(json_agg(json_build_object('table',c.relname,'name',con.conname,'expression',pg_get_expr(con.conbin,con.conrelid)) order by c.relname,con.conname), '[]'::json) from pg_constraint con join pg_class c on c.oid=con.conrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and con.contype='c' and (c.relname in ('CapitalMovement','TransactionLoss') or con.conname='Transaction_finalizationVersion_nonnegative')`)
+  const foreignKeys = jsonQuery<ForeignKeyInfo[]>(databaseUrl, `select coalesce(json_agg(json_build_object('table',child.relname,'name',con.conname,'column',ca.attname,'referencedTable',parent.relname,'referencedColumn',pa.attname,'onDelete',case con.confdeltype when 'r' then 'RESTRICT' when 'c' then 'CASCADE' when 'n' then 'SET NULL' when 'd' then 'SET DEFAULT' when 'a' then 'NO ACTION' end,'onUpdate',case con.confupdtype when 'r' then 'RESTRICT' when 'c' then 'CASCADE' when 'n' then 'SET NULL' when 'd' then 'SET DEFAULT' when 'a' then 'NO ACTION' end) order by child.relname,con.conname), '[]'::json) from pg_constraint con join pg_class child on child.oid=con.conrelid join pg_class parent on parent.oid=con.confrelid join pg_namespace n on n.oid=child.relnamespace join pg_attribute ca on ca.attrelid=child.oid and ca.attnum=con.conkey[1] join pg_attribute pa on pa.attrelid=parent.oid and pa.attnum=con.confkey[1] where n.nspname='public' and con.contype='f' and child.relname in ('CapitalMovement','TransactionLoss') and array_length(con.conkey,1)=1 and array_length(con.confkey,1)=1`)
+  const indexes = jsonQuery<IndexInfo[]>(databaseUrl, `select coalesce(json_agg(value order by value->>'table',value->>'name'), '[]'::json) from (select json_build_object('table',t.relname,'name',i.relname,'columns',json_agg(a.attname order by k.ordinality),'primary',x.indisprimary,'unique',x.indisunique) value from pg_index x join pg_class t on t.oid=x.indrelid join pg_class i on i.oid=x.indexrelid join pg_namespace n on n.oid=t.relnamespace join lateral unnest(x.indkey) with ordinality k(attnum,ordinality) on true join pg_attribute a on a.attrelid=t.oid and a.attnum=k.attnum where n.nspname='public' and t.relname in ('CapitalMovement','TransactionLoss') group by t.relname,i.relname,x.indisprimary,x.indisunique) q`)
+  const postDeploymentInvariants = captureInvariantFingerprints(databaseUrl)
+  const statusOutput = command("node", ["./node_modules/prisma/build/index.js", "migrate", "status"], readOnlyEnv(databaseUrl))
+  const schemaDiffOutput = command("node", ["./node_modules/prisma/build/index.js", "migrate", "diff", "--from-schema-datasource", "prisma/schema.prisma", "--to-schema-datamodel", "prisma/schema.prisma", "--script"], readOnlyEnv(databaseUrl))
+
+  const column = (table: string) => {
+    const value = columns.find((item) => item.table === table)
+    if (!value) return { type: "missing", nullable: true, default: null }
+    return { type: value.type, nullable: value.nullable, default: normalizeDefault(value.default) }
+  }
+  const input: PostConditionInput = {
+    migrationName,
+    migrationChecksum,
+    identityMatches,
+    migrationRecords,
+    prismaStatusUpToDate: /database schema is up to date/i.test(statusOutput),
+    schemaDiffEmpty: /This is an empty migration/i.test(schemaDiffOutput),
+    enums,
+    tables,
+    investorCapitalLedgerOpenedAt: column("Investor"),
+    transactionFinalizationVersion: column("Transaction"),
+    checks: checks.map((check) => ({ ...check, expression: normalizeCheckExpression(check.expression) })),
+    foreignKeys,
+    indexes,
+    invariantFingerprintsMatch: JSON.stringify(preDeploymentInvariants) === JSON.stringify(postDeploymentInvariants),
+  }
+  const result = verifyPostConditions(input)
+  return {
+    ...result,
+    evidence: {
+      source: "runner-owned-live-read-only",
+      identityMatches: input.identityMatches,
+      migrationRecords: input.migrationRecords,
+      prismaStatusUpToDate: input.prismaStatusUpToDate,
+      schemaDiffEmpty: input.schemaDiffEmpty,
+      schemaContract: result.failures.filter((failure) => /enum|table|column|CHECK|foreign-key|index/.test(failure)).length === 0 ? "MATCH" : "MISMATCH",
+      invariantFingerprints: input.invariantFingerprintsMatch ? "MATCH" : "MISMATCH",
+      failures: result.failures,
+    },
+  }
+}
+
+function failureAudit(input: ExecutionInput, reason: string, evidence: unknown = null) {
+  writeAudit(input.auditPath, { ...input.audit, status: "REQUIRES_READ_ONLY_INSPECTION", deploy: "FAIL", verdict: "REQUIRES_READ_ONLY_INSPECTION", postConditions: evidence, failure: reason })
+}
+
+export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string; observe?: () => Observation } = {}): { code: number; output: string; deploy: "PASS" } {
   const failures = evaluateMigrationGuards(input)
   if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
-  if (!input.databaseUrl.startsWith("postgresql://") || input.databaseUrl.includes("?pgbouncer=true")) throw new Error("BLOCKED: direct PostgreSQL URL required")
   if (!input.auditPath || !relative(process.cwd(), resolve(input.auditPath)).startsWith("..")) throw new Error("BLOCKED: audit artifact must be outside repository")
+  const deployEnv = buildDeployEnv({ databaseUrl: input.databaseUrl })
+  if (deployEnv.inheritedPgoptionsRejected) throw new Error("BLOCKED: inherited PGOPTIONS is forbidden")
+  const parsed = new URL(deployEnv.env.DATABASE_URL)
+  if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) || /pooler|pooling/i.test(parsed.hostname) || parsed.searchParams.has("pgbouncer") || parsed.searchParams.has("pooler")) throw new Error("BLOCKED: direct non-local PostgreSQL URL required")
+
   const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
   const lock = openSync(lockPath, "a", 0o600)
   try {
     const runner = options.spawn ?? (spawnSync as unknown as FixedSpawn)
-    // Use bounded timeouts via PGOPTIONS (inherited env is rejected by buildDeployEnv)
-    const deployEnv = buildDeployEnv({ databaseUrl: input.databaseUrl })
-    const result = runner("flock", ["-n", lockPath, "--", "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"], {
-      env: deployEnv.env,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    })
-    if (result.error || result.status !== 0) throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
-    writeAudit(input.auditPath, input.audit)
-    return { code: 0, output: `${result.stdout ?? ""}${result.stderr ?? ""}`.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
+    const result = runner("flock", ["-n", lockPath, "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
+    if (result.error || result.status !== 0) {
+      failureAudit(input, "migrate deploy did not complete successfully")
+      throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
+    }
+    let observation: Observation
+    try {
+      observation = options.observe?.() ?? observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum)
+    } catch {
+      failureAudit(input, "live read-only postcondition observation failed")
+      throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
+    }
+    if (!observation.pass) {
+      failureAudit(input, "postconditions failed", observation.evidence)
+      throw new Error("REQUIRES_READ_ONLY_INSPECTION: postconditions failed")
+    }
+    writeAudit(input.auditPath, { ...input.audit, status: "PASS", deploy: "PASS", verdict: "PASS", postConditions: observation.evidence })
+    return { code: 0, deploy: "PASS", output: `${result.stdout ?? ""}${result.stderr ?? ""}`.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
   } finally { closeSync(lock) }
 }
 
-function command(command: string, args: string[], env?: Record<string, string>): string {
-  const result = spawnSync(command, args, { encoding: "utf8", env: env ? { PATH: process.env.PATH, NODE_ENV: "production", ...env } : { PATH: process.env.PATH, NODE_ENV: "production" }, stdio: ["ignore", "pipe", "pipe"] })
-  if (result.error || result.status !== 0) throw new Error("BLOCKED: authoritative evidence command failed")
-  return result.stdout.trim()
+function repositoryMigrations() {
+  return readdirSync(join(process.cwd(), "prisma/migrations"), { withFileTypes: true }).filter((item) => item.isDirectory()).map((item) => ({ name: item.name, checksum: sha256File(join(process.cwd(), "prisma/migrations", item.name, "migration.sql")) })).sort((a, b) => a.name.localeCompare(b.name))
 }
-function sha256File(path: string) { return createHash("sha256").update(readFileSync(path)).digest("hex") }
-function databaseEvidence(url: string, expectedIdentity: string) {
-  const parsed = new URL(url)
+
+function databaseEvidence(databaseUrl: string, expectedIdentity: string) {
+  const parsed = new URL(databaseUrl)
   const host = parsed.hostname.toLowerCase()
-  const q = (sql: string) => command("psql", [url, "-Atqc", sql], { DATABASE_URL: url, DIRECT_URL: url })
-  const identity = createHash("sha256").update(q("select current_database() || '|' || current_schema() || '|' || current_setting('server_version')")).digest("hex").slice(0, 16)
-  const names = q("select migration_name from _prisma_migrations order by finished_at").split("\n").filter(Boolean)
+  const records = jsonQuery<Array<{ name: string; finished: boolean; rolledBack: boolean }>>(databaseUrl, `select coalesce(json_agg(json_build_object('name',migration_name,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null) order by started_at), '[]'::json) from _prisma_migrations`)
+  const committed = repositoryMigrations()
+  const committedNames = new Set(committed.map((item) => item.name))
+  const appliedNames = new Set(records.filter((item) => item.finished && !item.rolledBack).map((item) => item.name))
+  const fingerprint = observeIdentity(databaseUrl)
   return {
-    target: { scheme: parsed.protocol.replace(":", ""), isDirect: !parsed.searchParams.has("pgbouncer") && !parsed.searchParams.has("pooler"), isProduction: identity === expectedIdentity, isDisposable: /localhost|127\.0\.0\.1|disposable|test|dev|preview/.test(host), isLocal: host === "localhost" || host === "127.0.0.1", isPreview: host.includes("preview"), isDevelopment: host.includes("dev"), isTest: host.includes("test"), identityFingerprint: identity },
-    metadata: { failed: Number(q("select count(*) from _prisma_migrations where finished_at is null and rolled_back_at is null")), rolledBack: Number(q("select count(*) from _prisma_migrations where rolled_back_at is not null")), unexpected: names.filter((name) => name !== "20260824000000_postgresql_baseline").length, previousMigration: names.at(-1) ?? "" },
-    pendingMigrations: readdirSync(join(process.cwd(), "prisma/migrations"), { withFileTypes: true }).filter((x) => x.isDirectory()).map((x) => ({ name: x.name, checksum: sha256File(join(process.cwd(), "prisma/migrations", x.name, "migration.sql")) })).filter((x) => x.name !== "20260824000000_postgresql_baseline"),
+    target: { scheme: parsed.protocol.replace(":", ""), isDirect: !/pooler|pooling/.test(host) && !parsed.searchParams.has("pgbouncer") && !parsed.searchParams.has("pooler"), isProduction: fingerprint === expectedIdentity, isDisposable: /localhost|127\.0\.0\.1|disposable|test|dev|preview/.test(host), isLocal: host === "localhost" || host === "127.0.0.1", isPreview: host.includes("preview"), isDevelopment: host.includes("dev"), isTest: host.includes("test"), identityFingerprint: fingerprint },
+    metadata: { failed: records.filter((item) => !item.finished && !item.rolledBack).length, rolledBack: records.filter((item) => item.rolledBack).length, unexpected: records.filter((item) => !committedNames.has(item.name)).length, previousMigration: records.filter((item) => item.finished && !item.rolledBack).at(-1)?.name ?? "" },
+    pendingMigrations: committed.filter((item) => !appliedNames.has(item.name)),
+    preDeploymentInvariants: captureInvariantFingerprints(databaseUrl),
   }
 }
 
-function collectOpenPrEvidence(expected: RuntimeExpected, databaseUrl: string): MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown } {
+function commonEvidence(expected: RuntimeExpected, databaseUrl: string) {
+  const lock = readFileSync(join(process.cwd(), "prisma/migrations/migration_lock.toml"), "utf8")
+  const packageVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/prisma/package.json"), "utf8")).version as string
+  const clientVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/@prisma/client/package.json"), "utf8")).version as string
+  const backupChecksum = sha256File(expected.backup.path)
+  const backup = { identifier: expected.backup.path.split("/").pop() ?? expected.backup.path, checksum: backupChecksum, restoreVerified: backupChecksum === expected.backup.checksum && (statSync(expected.backup.path).mode & 0o777) === 0o600 && statSync(expected.backup.restoreList).isFile(), offsiteVerified: expected.backup.offsiteVerified }
+  const db = databaseEvidence(databaseUrl, expected.identityFingerprint)
+  return { lock, packageVersion, clientVersion, backup, db }
+}
+
+function collectOpenPrEvidence(expected: RuntimeExpected, databaseUrl: string): ExecutionInput {
   const status = command("git", ["status", "--porcelain"])
   const head = command("git", ["rev-parse", "HEAD"])
   const branch = command("git", ["branch", "--show-current"])
   const remoteHead = command("git", ["rev-parse", `origin/${branch}`])
   const pr = JSON.parse(command("gh", ["pr", "view", String(expected.pr), "--json", "state,headRefOid,mergeable,reviewDecision,statusCheckRollup"])) as { state: string; headRefOid: string; mergeable: string; reviewDecision: string; statusCheckRollup: Array<{ state?: string; conclusion?: string }> }
-  const lock = readFileSync(join(process.cwd(), "prisma/migrations/migration_lock.toml"), "utf8")
-  const packageVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/prisma/package.json"), "utf8")).version as string
-  const clientVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/@prisma/client/package.json"), "utf8")).version as string
-  const backupChecksum = sha256File(expected.backup.path)
-  const backup = { identifier: expected.backup.path.split("/").pop() ?? expected.backup.path, checksum: backupChecksum, restoreVerified: backupChecksum === expected.backup.checksum && (statSync(expected.backup.path).mode & 0o777) === 0o600 && statSync(expected.backup.restoreList).isFile(), offsiteVerified: expected.backup.offsiteVerified }
-  const db = databaseEvidence(databaseUrl, expected.identityFingerprint)
-  const expectedApproval = expected.approval
+  const { lock, packageVersion, clientVersion, backup, db } = commonEvidence(expected, databaseUrl)
+  const migrationDiff = command("git", ["diff", "--name-status", "origin/main...HEAD", "--", "prisma/migrations"]).split("\n").filter(Boolean)
   const actual: MigrationGuardInput = {
-    mode: "open-pr",
-    workingTreeClean: status === "", localHead: head, expectedHead: expected.head, remoteHead: remoteHead,
-    prOpen: pr.state === "OPEN" && pr.headRefOid === head, expectedPr: expected.pr, prApproved: pr.reviewDecision === "APPROVED", mergeable: pr.mergeable === "MERGEABLE", checksPass: pr.statusCheckRollup.length > 0 && pr.statusCheckRollup.every((x) => x.state === "SUCCESS" || x.conclusion === "SUCCESS"),
+    mode: "open-pr", workingTreeClean: status === "", localHead: head, expectedHead: expected.head, remoteHead,
+    prOpen: pr.state === "OPEN" && pr.headRefOid === head, expectedPr: expected.pr, prApproved: pr.reviewDecision === "APPROVED", mergeable: pr.mergeable === "MERGEABLE", checksPass: pr.statusCheckRollup.length > 0 && pr.statusCheckRollup.every((item) => item.state === "SUCCESS" || item.conclusion === "SUCCESS" || item.conclusion === "SKIPPED"),
     provider: lock.includes('provider = "postgresql"') && readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8").includes('provider = "postgresql"') ? "postgresql" : "unknown", prismaVersion: packageVersion, clientVersion,
-    historyUnchanged: command("git", ["diff", "--name-status", "origin/main...HEAD", "--", "prisma/migrations"]).split("\n").filter(Boolean).every((line) => line === `A\tprisma/migrations/${expected.migration.name}/migration.sql`), pendingMigrations: db.pendingMigrations.filter((x) => x.name === expected.migration.name), expectedMigration: expected.migration,
-    backup, productionFlag: true, approval: expectedApproval, target: db.target, metadata: db.metadata, lockAvailable: true, sqlKind: "additive", customSql: false, auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
+    historyUnchanged: migrationDiff.length === 1 && migrationDiff[0] === `A\tprisma/migrations/${expected.migration.name}/migration.sql`, pendingMigrations: db.pendingMigrations, expectedMigration: expected.migration,
+    backup, productionFlag: true, approval: expected.approval, target: db.target, metadata: db.metadata, lockAvailable: true, sqlKind: "additive", customSql: false, auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
   }
-  return { ...actual, databaseUrl, auditPath: expected.auditPath, audit: { ...expectedApproval, guards: "PASS", identityFingerprint: db.target.identityFingerprint, backupChecksum: backup.checksum } }
+  return { ...actual, databaseUrl, auditPath: expected.auditPath, audit: { ...expected.approval, guards: "PASS", mode: "open-pr", identityFingerprint: db.target.identityFingerprint, backupChecksum: backup.checksum }, preDeploymentInvariants: db.preDeploymentInvariants }
 }
 
-function collectMergedMainEvidence(expected: RuntimeExpected, databaseUrl: string): MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown } {
+function collectMergedMainEvidence(expected: RuntimeExpected, databaseUrl: string): ExecutionInput {
+  command("git", ["fetch", "--no-tags", "origin", "main"])
   const status = command("git", ["status", "--porcelain"])
   const head = command("git", ["rev-parse", "HEAD"])
-  // For merged-main: local HEAD must match expected main
-  const lock = readFileSync(join(process.cwd(), "prisma/migrations/migration_lock.toml"), "utf8")
-  const packageVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/prisma/package.json"), "utf8")).version as string
-  const clientVersion = JSON.parse(readFileSync(join(process.cwd(), "node_modules/@prisma/client/package.json"), "utf8")).version as string
-
-  // Verify introducing PR is MERGED (not closed-unmerged)
-  const pr = JSON.parse(command("gh", ["pr", "view", String(expected.pr), "--json", "state,mergedAt,mergeCommit,headRefOid,mergeable,reviewDecision,statusCheckRollup"])) as {
-    state: string; mergedAt: string | null; mergeCommit: { oid: string } | null; headRefOid: string
-    mergeable: string; reviewDecision: string; statusCheckRollup: Array<{ state?: string; conclusion?: string }>
-  }
-  if (pr.state !== "MERGED") throw new Error("BLOCKED: introducing PR is not in MERGED state")
-  if (!pr.mergedAt) throw new Error("BLOCKED: introducing PR has no merge timestamp")
-  const mergeCommitOid = pr.mergeCommit?.oid
-  if (!mergeCommitOid) throw new Error("BLOCKED: introducing PR has no merge commit")
-
-  // Verify merge commit is ancestor of current HEAD
-  const mergeAncestorCheck = command("git", ["merge-base", "--is-ancestor", mergeCommitOid, head])
-  const mergeLineageAncestor = mergeAncestorCheck === "" // exit code 0 = is ancestor
-
-  // Verify migration blob SHA unchanged since merge
-  const migrationPath = join("prisma", "migrations", expected.migration.name, "migration.sql")
-  const migrationBlobSha = sha256File(resolve(migrationPath))
-
-  const backupChecksum = sha256File(expected.backup.path)
-  const backup = { identifier: expected.backup.path.split("/").pop() ?? expected.backup.path, checksum: backupChecksum, restoreVerified: backupChecksum === expected.backup.checksum && (statSync(expected.backup.path).mode & 0o777) === 0o600 && statSync(expected.backup.restoreList).isFile(), offsiteVerified: expected.backup.offsiteVerified }
-  const db = databaseEvidence(databaseUrl, expected.identityFingerprint)
-  const expectedApproval = expected.approval
-
+  const remoteMain = command("git", ["rev-parse", "origin/main"])
+  const pr = JSON.parse(command("gh", ["pr", "view", String(expected.pr), "--json", "state,mergedAt,mergeCommit"])) as { state: string; mergedAt: string | null; mergeCommit: { oid: string } | null }
+  const mergeCommit = pr.mergeCommit?.oid ?? ""
+  const currentChecksum = sha256File(resolve(MIGRATION_PATH))
+  const atMergeChecksum = mergeCommit && commandSucceeds("git", ["cat-file", "-e", `${mergeCommit}:${MIGRATION_PATH}`])
+    ? sha256Bytes(execFileSync("git", ["show", `${mergeCommit}:${MIGRATION_PATH}`], { cwd: process.cwd(), stdio: ["ignore", "pipe", "ignore"] }))
+    : ""
+  const { lock, packageVersion, clientVersion, backup, db } = commonEvidence(expected, databaseUrl)
   const actual: MigrationGuardInput = {
-    mode: "merged-main",
-    workingTreeClean: status === "", localHead: head, expectedHead: expected.head,
-    remoteHead: head, // In merged-main, remoteHead is not checked
-    prOpen: false, // Must be false for merged-main
-    expectedPr: expected.pr,
-    prApproved: false, // Not checked in merged-main
-    mergeable: false, // Not checked in merged-main
-    checksPass: false, // Not checked in merged-main
-    provider: lock.includes('provider = "postgresql"') && readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8").includes('provider = "postgresql"') ? "postgresql" : "unknown",
-    prismaVersion: packageVersion, clientVersion,
-    historyUnchanged: command("git", ["diff", "--name-status", "origin/main...HEAD", "--", "prisma/migrations"]).split("\n").filter(Boolean).every((line) => line === `A\tprisma/migrations/${expected.migration.name}/migration.sql`),
-    pendingMigrations: db.pendingMigrations.filter((x) => x.name === expected.migration.name),
-    expectedMigration: expected.migration,
-    backup, productionFlag: true, approval: expectedApproval,
-    target: db.target, metadata: db.metadata, lockAvailable: true,
-    sqlKind: "additive", customSql: false,
-    auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
-    // merged-main specific
-    prMerged: true,
-    prMergeCommit: mergeCommitOid,
-    mergeLineageAncestor,
-    migrationBlobSha256: migrationBlobSha,
-    currentMainSha: head,
+    mode: "merged-main", workingTreeClean: status === "", localHead: head, expectedHead: expected.head, remoteHead: "",
+    prOpen: false, expectedPr: expected.pr, prApproved: false, mergeable: false, checksPass: false,
+    provider: lock.includes('provider = "postgresql"') && readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8").includes('provider = "postgresql"') ? "postgresql" : "unknown", prismaVersion: packageVersion, clientVersion,
+    historyUnchanged: currentChecksum === atMergeChecksum, pendingMigrations: db.pendingMigrations, expectedMigration: expected.migration,
+    backup, productionFlag: true, approval: expected.approval, target: db.target, metadata: db.metadata, lockAvailable: true, sqlKind: "additive", customSql: false, auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
+    prMerged: pr.state === "MERGED" && Boolean(pr.mergedAt), prMergeCommit: mergeCommit, mergeLineageAncestor: Boolean(mergeCommit) && commandSucceeds("git", ["merge-base", "--is-ancestor", mergeCommit, head]), migrationBlobSha256: currentChecksum, migrationBlobSha256AtMerge: atMergeChecksum, currentMainSha: head, remoteMainSha: remoteMain,
   }
-  return { ...actual, databaseUrl, auditPath: expected.auditPath, audit: { ...expectedApproval, guards: "PASS", mode: "merged-main", identityFingerprint: db.target.identityFingerprint, backupChecksum: backup.checksum } }
+  return { ...actual, databaseUrl, auditPath: expected.auditPath, audit: { ...expected.approval, guards: "PASS", mode: "merged-main", identityFingerprint: db.target.identityFingerprint, backupChecksum: backup.checksum, introducingPr: 92, mergeCommit }, preDeploymentInvariants: db.preDeploymentInvariants }
 }
 
-export function collectAuthoritativeEvidence(expected: RuntimeExpected, databaseUrl: string): MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown } {
+export function collectAuthoritativeEvidence(expected: RuntimeExpected, databaseUrl: string): ExecutionInput {
   if (expected.mode === "merged-main") return collectMergedMainEvidence(expected, databaseUrl)
-  return collectOpenPrEvidence(expected, databaseUrl)
+  if (expected.mode === "open-pr") return collectOpenPrEvidence(expected, databaseUrl)
+  throw new Error("BLOCKED: execution mode must be explicit")
 }
 
 export function runCli(argv = process.argv.slice(2)) {

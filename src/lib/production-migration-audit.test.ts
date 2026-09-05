@@ -3,7 +3,6 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { executeFixedDeploy, redactAudit, writeAudit } from "../../scripts/production-migration-runner"
-import type { MigrationGuardInput } from "./production-migration-guards"
 
 describe("production migration audit safety", () => {
   it("redacts URLs and secret-like fields", () => {
@@ -36,13 +35,43 @@ describe("production migration audit safety", () => {
       approval: { operationId: "op-runner-1", pr: 68, head: "head", migrationName: "20260901000000_add_note", migrationChecksum: "sum", identityFingerprint: "prod", backupIdentifier: "backup.gpg", backupChecksum: "backupsum", issuedAt: "2026-08-24T00:00:00Z", expiresAt: "2027-01-01T00:00:00Z" },
       target: { scheme: "postgresql", isDirect: true, isProduction: true, isDisposable: false, isLocal: false, isPreview: false, isDevelopment: false, isTest: false, identityFingerprint: "prod" },
       metadata: { failed: 0, rolledBack: 0, unexpected: 0, previousMigration: "20260824000000_postgresql_baseline" }, lockAvailable: true, sqlKind: "additive" as const, customSql: false, auditPathOwnerOnly: true,
-      databaseUrl: "postgresql://hidden", auditPath: join(dir, "audit.json"), audit: { url: "postgresql://hidden" },
-    } satisfies MigrationGuardInput & { databaseUrl: string; auditPath: string; audit: unknown }
+      databaseUrl: "postgresql://hidden", auditPath: join(dir, "audit.json"), audit: { url: "postgresql://hidden" }, preDeploymentInvariants: {},
+    } satisfies Parameters<typeof executeFixedDeploy>[0]
     const calls: string[][] = []
-    const result = executeFixedDeploy(input, { lockPath: join(dir, "lock"), spawn: (command, args) => { calls.push([command, ...args]); return { status: 0, stdout: "No pending migrations to apply.", stderr: "" } } })
+    const result = executeFixedDeploy(input, {
+      lockPath: join(dir, "lock"),
+      spawn: (command, args, options) => {
+        calls.push([command, ...args])
+        expect((options.env as Record<string, string>).PGOPTIONS).toBe("-c lock_timeout=3000 -c statement_timeout=30000")
+        expect(options.timeout).toBe(120_000)
+        expect(options.killSignal).toBe("SIGTERM")
+        return { status: 0, stdout: "No pending migrations to apply.", stderr: "" }
+      },
+      observe: () => ({ pass: true, failures: [], evidence: { source: "runner-owned-live-read-only" } }),
+    })
     expect(result.code).toBe(0)
-    expect(calls[0]).toEqual(["flock", "-n", join(dir, "lock"), "--", "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"])
+    expect(calls[0]).toEqual(["flock", "-n", join(dir, "lock"), "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"])
     expect(readFileSync(join(dir, "audit.json"), "utf8")).not.toContain("postgresql://")
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it("writes failure audit, never PASS, when live postconditions fail after deploy exit 0", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bagihasil-runner-negative-"))
+    const auditPath = join(dir, "audit.json")
+    const input = {
+      workingTreeClean: true, localHead: "head", expectedHead: "head", remoteHead: "head", prOpen: true, expectedPr: 68, prApproved: true, mergeable: true, checksPass: true,
+      provider: "postgresql", prismaVersion: "5.22.0", clientVersion: "5.22.0", historyUnchanged: true,
+      pendingMigrations: [{ name: "20260901000000_add_note", checksum: "sum" }], expectedMigration: { name: "20260901000000_add_note", checksum: "sum" }, mode: "open-pr" as const,
+      backup: { identifier: "backup.gpg", checksum: "backupsum", restoreVerified: true, offsiteVerified: true }, productionFlag: true,
+      approval: { operationId: "op-runner-2", pr: 68, head: "head", migrationName: "20260901000000_add_note", migrationChecksum: "sum", identityFingerprint: "prod", backupIdentifier: "backup.gpg", backupChecksum: "backupsum", issuedAt: new Date(Date.now() - 60000).toISOString(), expiresAt: new Date(Date.now() + 3600000).toISOString() },
+      target: { scheme: "postgresql", isDirect: true, isProduction: true, isDisposable: false, isLocal: false, isPreview: false, isDevelopment: false, isTest: false, identityFingerprint: "prod" },
+      metadata: { failed: 0, rolledBack: 0, unexpected: 0, previousMigration: "20260824000000_postgresql_baseline" }, lockAvailable: true, sqlKind: "additive" as const, customSql: false, auditPathOwnerOnly: true,
+      databaseUrl: "postgresql://hidden", auditPath, audit: {}, preDeploymentInvariants: {},
+    }
+    expect(() => executeFixedDeploy(input, { lockPath: join(dir, "lock"), spawn: () => ({ status: 0 }), observe: () => ({ pass: false, failures: ["schema mismatch"], evidence: { source: "runner-owned-live-read-only" } }) })).toThrow("REQUIRES_READ_ONLY_INSPECTION")
+    const audit = JSON.parse(readFileSync(auditPath, "utf8"))
+    expect(audit.verdict).toBe("REQUIRES_READ_ONLY_INSPECTION")
+    expect(audit.verdict).not.toBe("PASS")
     rmSync(dir, { recursive: true, force: true })
   })
 })

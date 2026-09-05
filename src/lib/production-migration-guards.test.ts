@@ -72,6 +72,7 @@ function baseMergedMain(overrides: Partial<MigrationGuardInput> = {}): Migration
       identityFingerprint: "fp1",
       backupIdentifier: "backup.dump.gpg",
       backupChecksum: "abc123",
+      mergeCommit: "c".repeat(40),
       issuedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 3600000).toISOString(),
     },
@@ -86,7 +87,9 @@ function baseMergedMain(overrides: Partial<MigrationGuardInput> = {}): Migration
     prMergeCommit: "c".repeat(40),
     mergeLineageAncestor: true,
     migrationBlobSha256: "cs2",
+    migrationBlobSha256AtMerge: "cs2",
     currentMainSha: mainSha,
+    remoteMainSha: mainSha,
     ...overrides,
   }
 }
@@ -150,6 +153,12 @@ describe("evaluateMigrationGuards", () => {
     it("rejects when migrationBlobSha256 differs", () => {
       expect(evaluateMigrationGuards(baseMergedMain({ migrationBlobSha256: "wrong" }))).toContain("migration file changed since merge")
     })
+    it("rejects when migration bytes at the introducing merge differ", () => {
+      expect(evaluateMigrationGuards(baseMergedMain({ migrationBlobSha256AtMerge: "wrong" }))).toContain("migration file at introducing merge does not match expected checksum")
+    })
+    it("rejects when fetched origin/main differs from current main", () => {
+      expect(evaluateMigrationGuards(baseMergedMain({ remoteMainSha: "x".repeat(40) }))).toContain("fetched origin/main does not match current main")
+    })
     it("rejects when currentMainSha differs from localHead", () => {
       expect(evaluateMigrationGuards(baseMergedMain({ currentMainSha: "x".repeat(40) }))).toContain("current main SHA does not match local HEAD")
     })
@@ -167,6 +176,15 @@ describe("evaluateMigrationGuards", () => {
     it("rejects missing offsite backup verification", () => {
       const failures = evaluateMigrationGuards(baseMergedMain({ backup: { identifier: "b", checksum: "c", restoreVerified: true, offsiteVerified: false } }))
       expect(failures).toContain("offsite backup copy not verified")
+    })
+    it("rejects missing, multiple, wrong, or unexpected pending migrations", () => {
+      expect(evaluateMigrationGuards(baseMergedMain({ pendingMigrations: [] }))).toContain("pending migration list mismatch")
+      expect(evaluateMigrationGuards(baseMergedMain({ pendingMigrations: [...baseMergedMain().pendingMigrations, { name: "unexpected", checksum: "x" }] }))).toContain("pending migration list mismatch")
+      expect(evaluateMigrationGuards(baseMergedMain({ pendingMigrations: [{ name: "wrong", checksum: "cs2" }] }))).toContain("pending migration list mismatch")
+    })
+    it("binds approval to the exact GitHub merge commit", () => {
+      expect(evaluateMigrationGuards(baseMergedMain({ approval: { ...baseMergedMain().approval!, mergeCommit: "d".repeat(40) } }))).toContain("approval binding invalid")
+      expect(evaluateMigrationGuards(baseMergedMain({ prMergeCommit: "d".repeat(40) }))).toContain("approval binding invalid")
     })
     it("does NOT require prOpen/prApproved/mergeable/checksPass", () => {
       const failures = evaluateMigrationGuards(baseMergedMain({ prOpen: false, prApproved: false, mergeable: false, checksPass: false, remoteHead: "z".repeat(40) }))
