@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form"
 import { SingleImageUpload } from "@/components/ui/single-image-upload"
 import { toast } from "sonner"
-import { Pencil, Sparkles } from "lucide-react"
+import { Loader2, Pencil } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const editSchema = z.object({
@@ -223,12 +223,11 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess, triggerCl
                         </span>
                         {isAnalyzingRef.current ? (
                             <span className="text-xs font-medium text-blue-600 dark:text-blue-400 animate-pulse flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-full border border-blue-100">
-                                <Sparkles className="h-3 w-3 text-blue-500 dark:text-blue-400 animate-spin-slow" />
+                                <Loader2 className="h-3 w-3 text-blue-500 dark:text-blue-400 animate-spin motion-reduce:animate-none" />
                                 AI Menganalisis...
                             </span>
                         ) : (
-                            <span className="text-[10px] items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:flex">
-                                <Sparkles className="h-3 w-3 text-purple-400 dark:text-purple-300" />
+                            <span className="text-[10px] items-center text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:inline-flex">
                                 AI Powered
                             </span>
                         )}
@@ -266,7 +265,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess, triggerCl
                                                 )}
                                             />
                                             {isAnalyzingRef.current && (
-                                                <Sparkles className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
+                                                <Loader2 className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse motion-reduce:animate-none dark:text-blue-300" />
                                             )}
                                         </div>
                                         <FormMessage />
@@ -292,7 +291,7 @@ export function EditTransactionDetailsDialog({ transaction, onSuccess, triggerCl
                                             )}
                                         />
                                         {isAnalyzingRef.current && (
-                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
+                                            <Loader2 className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse motion-reduce:animate-none dark:text-blue-300" />
                                         )}
                                     </div>
                                     <FormMessage />

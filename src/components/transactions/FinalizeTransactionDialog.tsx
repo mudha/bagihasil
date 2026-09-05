@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form"
 import { MultipleImageUpload, UploadedImage } from "@/components/ui/multiple-image-upload"
 import { toast } from "sonner"
-import { DollarSign, Sparkles } from "lucide-react"
+import { DollarSign, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { validateImageFile } from "@/lib/image-utils"
 import { sellSchema } from "./finalize-transaction-schema"
@@ -241,12 +241,11 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                         </span>
                         {isAnalyzingRef.current ? (
                             <span className="text-xs font-medium text-blue-600 animate-pulse flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
-                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
+                                <Loader2 className="h-3 w-3 text-blue-500 animate-spin motion-reduce:animate-none" />
                                 AI Menganalisis...
                             </span>
                         ) : (
-                            <span className="text-[10px] items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:flex">
-                                <Sparkles className="h-3 w-3 text-purple-400" />
+                            <span className="text-[10px] items-center text-muted-foreground bg-muted/50 px-2 py-1 rounded-full border border-border hidden sm:inline-flex">
                                 AI Powered
                             </span>
                         )}
@@ -270,7 +269,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                             )}
                                         />
                                         {isAnalyzingRef.current && (
-                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
+                                            <Loader2 className="h-4 w-4 text-blue-400 absolute right-8 top-1/2 -translate-y-1/2 animate-pulse motion-reduce:animate-none dark:text-blue-300" />
                                         )}
                                     </div>
                                     <FormMessage />
@@ -294,7 +293,7 @@ export function FinalizeTransactionDialog({ transactionId, onSuccess, defaultSha
                                             )}
                                         />
                                         {isAnalyzingRef.current && (
-                                            <Sparkles className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse dark:text-blue-300" />
+                                            <Loader2 className="h-4 w-4 text-blue-400 absolute right-3 top-1/2 -translate-y-1/2 animate-pulse motion-reduce:animate-none dark:text-blue-300" />
                                         )}
                                     </div>
                                     <FormMessage />

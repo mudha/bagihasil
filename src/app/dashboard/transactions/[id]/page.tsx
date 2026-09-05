@@ -25,6 +25,7 @@ import {
     FileText,
     ImageIcon,
     Pencil,
+    Paperclip,
     Plus,
     Trash2,
     TrendingUp,
@@ -724,7 +725,8 @@ export default function TransactionDetailPage() {
                                                                 className="ml-2 h-6 border border-border bg-muted px-2 text-xs text-foreground hover:bg-muted/80"
                                                                 onClick={() => setViewPaymentProof(payment.proofImageUrl)}
                                                             >
-                                                                📎 Lihat Bukti
+                                                                <Paperclip className="mr-1 inline h-3.5 w-3.5 align-[-1px]" aria-hidden="true" />
+                                                                Lihat Bukti
                                                             </Button>
                                                         )}
                                                     </TableCell>

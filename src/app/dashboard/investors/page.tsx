@@ -347,7 +347,7 @@ function CapitalSummaryCell({
                 <div className="text-sm">
                     <span className="font-medium">{formatRupiahOrNull(summary.availableManagedCapital)}</span>
                     {summary.warnings.some(w => w.code === "ALLOCATION_EXCEEDS_MANAGED_BALANCE") && (
-                        <span className="ml-1 inline-flex items-center rounded-full border border-[var(--mudha-status-danger-border)] bg-[var(--mudha-status-danger-bg)] px-1.5 py-0 text-[10px] font-medium text-[var(--mudha-status-danger-text)]">⚠ Melebihi</span>
+                        <span className="ml-1 inline-flex items-center rounded-full border border-[var(--mudha-status-danger-border)] bg-[var(--mudha-status-danger-bg)] px-1.5 py-0 text-[10px] font-medium text-[var(--mudha-status-danger-text)]"><AlertTriangle className="mr-0.5 h-3 w-3 shrink-0" aria-hidden="true" /> Melebihi</span>
                     )}
                     {summary.warnings.length > 0 && (
                         <div className="mt-1 space-y-1" role="alert" aria-label="Peringatan ringkasan modal">

@@ -35,7 +35,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Wrench } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash, ArrowUp, ArrowDown, ArrowUpDown, Car, CheckCircle2, Loader2, Repeat, Scan, Wrench } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -905,7 +905,17 @@ function UnitsPageContent() {
                                                             disabled={stnkImages.length === 0 || isScanningStnk}
                                                             className="h-9 shrink-0"
                                                         >
-                                                            {isScanningStnk ? "Scanning..." : "✨ Scan AI"}
+                                                            {isScanningStnk ? (
+                                                                <>
+                                                                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                                                                    Scanning...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Scan className="h-4 w-4" aria-hidden="true" />
+                                                                    Scan AI
+                                                                </>
+                                                            )}
                                                         </Button>
                                                     </div>
                                                         <MultipleImageUpload
@@ -1542,8 +1552,9 @@ function UnitsPageContent() {
                                         {(() => {
                                             const duplicateInfo = getDuplicateInfo(units, unit)
                                             return duplicateInfo.isBuyback ? (
-                                                <Badge variant="outline" className="text-[10px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300">
-                                                    🔄 Buyback (Ke-{duplicateInfo.purchaseNumber})
+                                                <Badge variant="outline" className="inline-flex items-center gap-1 text-[10px] bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-300">
+                                                    <Repeat className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                                    Buyback (Ke-{duplicateInfo.purchaseNumber})
                                                 </Badge>
                                             ) : null
                                         })()}

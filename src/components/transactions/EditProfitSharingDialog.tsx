@@ -87,7 +87,7 @@ export function EditProfitSharingDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2" aria-label="Edit pembagian bagi hasil">
                     <Pencil className="h-4 w-4 text-green-700 dark:text-green-300" />
                 </Button>
             </DialogTrigger>

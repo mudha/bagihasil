@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Sparkles } from "lucide-react"
 import { MultipleImageUpload, ImageFileWithDescription } from "@/components/ui/multi-image-upload"
 import { getCostTypeLabel } from "@/lib/cost-types"
 
@@ -126,7 +125,6 @@ export function ManageCostProofsDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         Kelola Bukti Biaya: {getCostTypeLabel(cost.costType)}
-                        <Sparkles className="h-4 w-4 text-purple-400 dark:text-purple-300" />
                     </DialogTitle>
                 </DialogHeader>
 
