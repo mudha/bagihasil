@@ -48,6 +48,54 @@ const TARGET_MIGRATION = "20260830222005_loss_capital_ledger_foundation"
 const TARGET_CHECKSUM = "2de7d2e9ca11d799447f3e5a822655cbb6072316e88226ae7b81ff07858a3ad4"
 const MIGRATION_PATH = `prisma/migrations/${TARGET_MIGRATION}/migration.sql`
 
+/**
+ * Regex sempit yang menerima whitespace valid (spasi/tab) di antara token
+ * `provider`, `=`, dan nilai `"postgresql"` / `'postgresql'`.
+ * Anchor `^` dengan flag `m` memastikan `provider` hanya cocok di awal baris
+ * (dengan whitespace leading), sehingga komentar TOML (`# provider = ...`)
+ * atau komentar Prisma (`// provider = ...`) tidak membuat provider lain lolos.
+ * Word boundary `\b` tidak digunakan karena `^\s*` sudah lebih spesifik.
+ * Tidak menerima provider lain.
+ */
+const POSTGRESQL_PROVIDER_RE = /^\s*provider\s*=\s*["']postgresql["']/m
+
+/**
+ * Deteksi provider PostgreSQL dari isi migration_lock.toml dan schema.prisma.
+ * Kedua sumber harus menyatakan PostgreSQL; jika salah satu bukan
+ * PostgreSQL, kembalikan "unknown" (fail-closed).
+ *
+ * - migration_lock.toml: baris `provider = "postgresql"` (TOML)
+ * - schema.prisma: baris `provider  = "postgresql"` (Prisma DSL, whitespace bebas)
+ *
+ * Tidak menerima provider lain, komentar palsu di luar konteks provider,
+ * atau kecocokan lintas blok yang tidak relevan.
+ */
+export function detectProvider(lockContent: string, schemaContent: string): "postgresql" | "unknown" {
+  const lockOk = POSTGRESQL_PROVIDER_RE.test(lockContent)
+  const schemaOk = POSTGRESQL_PROVIDER_RE.test(schemaContent)
+  return lockOk && schemaOk ? "postgresql" : "unknown"
+}
+
+/**
+ * Build a minimal environment for child `gh` / `git` commands so they can
+ * read host authentication config (gh config at ~/.config/gh/hosts.yml or
+ * GH_CONFIG_DIR; git credential helper) without inheriting the full process
+ * environment or any database/secret variables.
+ *
+ * Only passes config-location variables — never DATABASE_URL, DIRECT_URL,
+ * PGPASSWORD, tokens, or other secrets that the gh/git command does not need.
+ */
+export function buildGitCommandEnv(): Record<string, string> {
+  const env: Record<string, string> = { PATH: process.env.PATH ?? "", NODE_ENV: "production" }
+  // gh reads config from $GH_CONFIG_DIR, then $XDG_CONFIG_HOME/gh, then $HOME/.config/gh
+  if (process.env.HOME) env.HOME = process.env.HOME
+  if (process.env.XDG_CONFIG_HOME) env.XDG_CONFIG_HOME = process.env.XDG_CONFIG_HOME
+  if (process.env.GH_CONFIG_DIR) env.GH_CONFIG_DIR = process.env.GH_CONFIG_DIR
+  // git may need HOME for ~/.gitconfig and credential helpers
+  // GH_TOKEN / GITHUB_TOKEN are not forwarded — gh uses hosts.yml by default
+  return env
+}
+
 export function redactAudit(value: unknown): unknown {
   if (typeof value === "string") return value.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]").replace(/(password|secret|token|key)=?[^\s,}]+/gi, "$1=[REDACTED]")
   if (Array.isArray(value)) return value.map(redactAudit)
@@ -62,17 +110,24 @@ export function writeAudit(path: string, record: unknown) {
 }
 
 function command(commandName: string, args: string[], env?: Record<string, string>): string {
+  const baseEnv = isGitOrGhCommand(commandName) ? buildGitCommandEnv() : { PATH: process.env.PATH ?? "", NODE_ENV: "production" }
+  const mergedEnv = env ? { ...baseEnv, ...env } : baseEnv
   const result = spawnSync(commandName, args, {
     encoding: "utf8",
-    env: env ? { PATH: process.env.PATH, NODE_ENV: "production", ...env } : { PATH: process.env.PATH, NODE_ENV: "production" },
+    env: mergedEnv as NodeJS.ProcessEnv,
     stdio: ["ignore", "pipe", "pipe"],
   })
   if (result.error || result.status !== 0) throw new Error("BLOCKED: authoritative evidence command failed")
   return result.stdout.trim()
 }
 
+function isGitOrGhCommand(commandName: string): boolean {
+  return commandName === "gh" || commandName === "git"
+}
+
 function commandSucceeds(commandName: string, args: string[]): boolean {
-  const result = spawnSync(commandName, args, { env: { PATH: process.env.PATH, NODE_ENV: "production" }, stdio: "ignore" })
+  const baseEnv = isGitOrGhCommand(commandName) ? buildGitCommandEnv() : { PATH: process.env.PATH ?? "", NODE_ENV: "production" }
+  const result = spawnSync(commandName, args, { env: baseEnv as NodeJS.ProcessEnv, stdio: "ignore" })
   return !result.error && result.status === 0
 }
 
@@ -260,7 +315,7 @@ function collectOpenPrEvidence(expected: RuntimeExpected, databaseUrl: string): 
   const actual: MigrationGuardInput = {
     mode: "open-pr", workingTreeClean: status === "", localHead: head, expectedHead: expected.head, remoteHead,
     prOpen: pr.state === "OPEN" && pr.headRefOid === head, expectedPr: expected.pr, prApproved: pr.reviewDecision === "APPROVED", mergeable: pr.mergeable === "MERGEABLE", checksPass: pr.statusCheckRollup.length > 0 && pr.statusCheckRollup.every((item) => item.state === "SUCCESS" || item.conclusion === "SUCCESS" || item.conclusion === "SKIPPED"),
-    provider: lock.includes('provider = "postgresql"') && readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8").includes('provider = "postgresql"') ? "postgresql" : "unknown", prismaVersion: packageVersion, clientVersion,
+    provider: detectProvider(lock, readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8")), prismaVersion: packageVersion, clientVersion,
     historyUnchanged: migrationDiff.length === 1 && migrationDiff[0] === `A\tprisma/migrations/${expected.migration.name}/migration.sql`, pendingMigrations: db.pendingMigrations, expectedMigration: expected.migration,
     backup, productionFlag: true, approval: expected.approval, target: db.target, metadata: db.metadata, lockAvailable: true, sqlKind: "additive", customSql: false, auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
   }
@@ -282,7 +337,7 @@ function collectMergedMainEvidence(expected: RuntimeExpected, databaseUrl: strin
   const actual: MigrationGuardInput = {
     mode: "merged-main", workingTreeClean: status === "", localHead: head, expectedHead: expected.head, remoteHead: "",
     prOpen: false, expectedPr: expected.pr, prApproved: false, mergeable: false, checksPass: false,
-    provider: lock.includes('provider = "postgresql"') && readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8").includes('provider = "postgresql"') ? "postgresql" : "unknown", prismaVersion: packageVersion, clientVersion,
+    provider: detectProvider(lock, readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8")), prismaVersion: packageVersion, clientVersion,
     historyUnchanged: currentChecksum === atMergeChecksum, pendingMigrations: db.pendingMigrations, expectedMigration: expected.migration,
     backup, productionFlag: true, approval: expected.approval, target: db.target, metadata: db.metadata, lockAvailable: true, sqlKind: "additive", customSql: false, auditPathOwnerOnly: relative(process.cwd(), resolve(expected.auditPath)).startsWith(".."),
     prMerged: pr.state === "MERGED" && Boolean(pr.mergedAt), prMergeCommit: mergeCommit, mergeLineageAncestor: Boolean(mergeCommit) && commandSucceeds("git", ["merge-base", "--is-ancestor", mergeCommit, head]), migrationBlobSha256: currentChecksum, migrationBlobSha256AtMerge: atMergeChecksum, currentMainSha: head, remoteMainSha: remoteMain,
