@@ -155,10 +155,16 @@
   }
 }
 
-/* Disable native pull-to-refresh/overscroll on mobile to allow custom implementation */
+/* Disable native pull-to-refresh/overscroll on touch devices to allow custom implementation */
+@media (pointer: coarse) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
 html,
 body {
-  overscroll-behavior-y: none;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
