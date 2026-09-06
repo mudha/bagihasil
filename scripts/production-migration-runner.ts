@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
+import { tmpdir } from "node:os"
 import { URL } from "node:url"
 import { evaluateMigrationGuards, type ExecutionMode, type MigrationGuardInput } from "../src/lib/production-migration-guards"
 import {
   buildDeployEnv,
   normalizeCheckExpression,
   verifyPostConditions,
+  BASELINE_MIGRATION,
   type CheckInfo,
   type EnumInfo,
   type ForeignKeyInfo,
@@ -252,7 +254,35 @@ function failureAudit(input: ExecutionInput, reason: string, evidence: unknown =
   writeAudit(input.auditPath, { ...input.audit, status: "REQUIRES_READ_ONLY_INSPECTION", deploy: "FAIL", verdict: "REQUIRES_READ_ONLY_INSPECTION", postConditions: evidence, failure: reason })
 }
 
-export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string; observe?: () => Observation; captureBaseline?: (databaseUrl: string) => MigrationRecord | null } = {}): { code: number; output: string; deploy: "PASS" } {
+/**
+ * Validate a pre-deploy baseline snapshot before allowing migration spawn.
+ * Checks name, checksum, finished, rolled-back, and applied-steps invariant.
+ * Throws BLOCKED on any mismatch so deploy never proceeds.
+ */
+export function validatePreDeployBaseline(record: MigrationRecord): void {
+  if (record.name !== BASELINE_MIGRATION.name) throw new Error("BLOCKED: baseline pre-deploy name mismatch")
+  if (record.checksum !== BASELINE_MIGRATION.checksum) throw new Error("BLOCKED: baseline pre-deploy checksum mismatch")
+  if (!record.finished) throw new Error("BLOCKED: baseline pre-deploy is not finished")
+  if (record.rolledBack) throw new Error("BLOCKED: baseline pre-deploy is rolled back")
+  const valid = record.appliedSteps === 0 || record.appliedSteps >= 1
+  if (!valid) throw new Error("BLOCKED: baseline pre-deploy applied_steps_count is invalid")
+}
+
+/**
+ * Run the full critical section: guards → capture baseline → validate →
+ * deploy → postcondition → audit.
+ *
+ * Designed to be called EITHER from the production flock subprocess
+ * (via --critical-section flag) OR directly from unit tests with
+ * optional captureBaseline / observe seams.
+ *
+ * Lock is held by the caller (the flock subprocess wrapper).
+ */
+export function executeCriticalSection(
+  input: ExecutionInput,
+  seams?: { captureBaseline?: (databaseUrl: string) => MigrationRecord | null; observe?: () => Observation },
+): void {
+  // --- Guards (cheap, no DB) ---
   const failures = evaluateMigrationGuards(input)
   if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
   if (!input.auditPath || !relative(process.cwd(), resolve(input.auditPath)).startsWith("..")) throw new Error("BLOCKED: audit artifact must be outside repository")
@@ -261,33 +291,86 @@ export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: Fix
   const parsed = new URL(deployEnv.env.DATABASE_URL)
   if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) || /pooler|pooling/i.test(parsed.hostname) || parsed.searchParams.has("pgbouncer") || parsed.searchParams.has("pooler")) throw new Error("BLOCKED: direct non-local PostgreSQL URL required")
 
-  // Capture baseline snapshot BEFORE deploy for pre/post stability verification.
-  const captureFn = options.captureBaseline ?? captureBaselineRecord
+  // --- 1. Capture baseline (inside lock, read-only) ---
+  const captureFn = seams?.captureBaseline ?? captureBaselineRecord
   const baselinePreDeploy = captureFn(deployEnv.env.DATABASE_URL)
+  if (baselinePreDeploy === null) {
+    failureAudit(input, "baseline pre-deploy snapshot missing or duplicate")
+    throw new Error("BLOCKED: baseline pre-deploy snapshot missing or duplicate")
+  }
+  validatePreDeployBaseline(baselinePreDeploy)
 
+  // --- 2. Deploy (guarded by flock in production path) ---
+  const result = spawnSync("node", ["./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env as unknown as NodeJS.ProcessEnv, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
+  if (result.error || result.status !== 0) {
+    failureAudit(input, "migrate deploy did not complete successfully")
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
+  }
+
+  // --- 3. Postcondition observation (still inside lock) ---
+  let observation: Observation
+  try {
+    const observeFn = seams?.observe ?? (() => observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum, baselinePreDeploy))
+    observation = observeFn()
+  } catch {
+    failureAudit(input, "live read-only postcondition observation failed")
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
+  }
+  if (!observation.pass) {
+    failureAudit(input, "postconditions failed", observation.evidence)
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: postconditions failed")
+  }
+
+  // --- 4. Audit ---
+  writeAudit(input.auditPath, { ...input.audit, status: "PASS", deploy: "PASS", verdict: "PASS", postConditions: observation.evidence })
+}
+
+
+/**
+ * Production deploy wrapper.
+ * Runs the full critical section inside a flock subprocess so that the
+ * exclusive lock covers: baseline capture → validate → deploy → postcondition → audit.
+ *
+ * Accepts only spawn (process control) and lockPath (test isolation) —
+ * does NOT accept captureBaseline or observe overrides.
+ */
+export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string } = {}): { code: number; output: string; deploy: "PASS" } {
   const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
   const lock = openSync(lockPath, "a", 0o600)
+
+  // Serialise input for the flock subprocess (temp file, owner-only).
+  const inputTmp = join(tmpdir(), `bagihasil-cs-${process.pid}.json`)
+  writeFileSync(inputTmp, JSON.stringify(input), { mode: 0o600 })
+
   try {
     const runner = options.spawn ?? (spawnSync as unknown as FixedSpawn)
-    const result = runner("flock", ["-n", lockPath, "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
+    const runnerPath = resolve(__dirname, "production-migration-runner.ts")
+    const result = runner("flock", ["-n", lockPath, "npx", "tsx", runnerPath, "--critical-section", inputTmp], {
+      env: { ...process.env },
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 120_000,
+      killSignal: "SIGTERM",
+    })
+
     if (result.error || result.status !== 0) {
-      failureAudit(input, "migrate deploy did not complete successfully")
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
+      const stderr = result.stderr ?? ""
+      const blocked = stderr.match(/BLOCKED: .+/)?.[0]
+      const inspection = stderr.match(/REQUIRES_READ_ONLY_INSPECTION: .+/)?.[0]
+      if (blocked) throw new Error(blocked)
+      if (inspection) throw new Error(inspection)
+      // flock itself failed (lock not available) → no subprocess output
+      if (result.status !== 0 && !stderr.trim()) {
+        throw new Error("BLOCKED: execution lock not available")
+      }
+      throw new Error("REQUIRES_READ_ONLY_INSPECTION: critical section failed")
     }
-    let observation: Observation
-    try {
-      observation = options.observe?.() ?? observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum, baselinePreDeploy)
-    } catch {
-      failureAudit(input, "live read-only postcondition observation failed")
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
-    }
-    if (!observation.pass) {
-      failureAudit(input, "postconditions failed", observation.evidence)
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: postconditions failed")
-    }
-    writeAudit(input.auditPath, { ...input.audit, status: "PASS", deploy: "PASS", verdict: "PASS", postConditions: observation.evidence })
-    return { code: 0, deploy: "PASS", output: `${result.stdout ?? ""}${result.stderr ?? ""}`.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
-  } finally { closeSync(lock) }
+
+    return { code: 0, deploy: "PASS", output: (result.stdout ?? "").replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
+  } finally {
+    try { unlinkSync(inputTmp) } catch { /* best-effort cleanup */ }
+    closeSync(lock)
+  }
 }
 
 function repositoryMigrations() {
@@ -368,6 +451,24 @@ export function collectAuthoritativeEvidence(expected: RuntimeExpected, database
 }
 
 export function runCli(argv = process.argv.slice(2)) {
+  // Handle --critical-section flag (called by flock subprocess)
+  if (argv.includes("--critical-section")) {
+    const idx = argv.indexOf("--critical-section")
+    const inputPath = argv[idx + 1]
+    if (!inputPath) throw new Error("BLOCKED: --critical-section requires a JSON input path")
+    const input = JSON.parse(readFileSync(resolve(inputPath), "utf8")) as ExecutionInput
+    try {
+      executeCriticalSection(input)
+    } catch (error) {
+      // Write only the message (no stack trace) to stderr for the parent to parse
+      process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n")
+      process.exitCode = 1
+      return
+    }
+    return
+  }
+
+  // Normal CLI flow
   const evidenceFlag = argv.indexOf("--evidence")
   const execute = argv.includes("--execute")
   if (evidenceFlag < 0 || !argv[evidenceFlag + 1]) throw new Error("usage: --evidence <expected-json> [--execute]")

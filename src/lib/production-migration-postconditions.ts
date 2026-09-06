@@ -26,7 +26,7 @@ export type PostConditionInput = {
 
 export type PostConditionResult = { pass: boolean; failures: string[] }
 
-const BASELINE = {
+export const BASELINE_MIGRATION = {
   name: "20260824000000_postgresql_baseline",
   checksum: "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd",
 }
@@ -96,8 +96,8 @@ export function normalizeCheckExpression(value: string): string {
  */
 function isResolveAdoptedBaseline(record: MigrationRecord): boolean {
   return (
-    record.name === BASELINE.name &&
-    record.checksum === BASELINE.checksum &&
+    record.name === BASELINE_MIGRATION.name &&
+    record.checksum === BASELINE_MIGRATION.checksum &&
     record.finished === true &&
     record.rolledBack === false &&
     record.appliedSteps === 0
@@ -110,8 +110,8 @@ export function verifyPostConditions(input: PostConditionInput): PostConditionRe
 
   // --- Migration record validation ---
   // Separate baseline from non-baseline records.
-  const baselineRecords = input.migrationRecords.filter((r) => r.name === BASELINE.name)
-  const nonBaselineRecords = input.migrationRecords.filter((r) => r.name !== BASELINE.name)
+  const baselineRecords = input.migrationRecords.filter((r) => r.name === BASELINE_MIGRATION.name)
+  const nonBaselineRecords = input.migrationRecords.filter((r) => r.name !== BASELINE_MIGRATION.name)
 
   // Baseline: must exist exactly once.
   if (baselineRecords.length !== 1) {
@@ -123,8 +123,8 @@ export function verifyPostConditions(input: PostConditionInput): PostConditionRe
     //  2. Normal: appliedSteps >= 1 (the baseline was applied normally)
     const resolveAdopted = isResolveAdoptedBaseline(baseline)
     const normalBaseline =
-      baseline.name === BASELINE.name &&
-      baseline.checksum === BASELINE.checksum &&
+      baseline.name === BASELINE_MIGRATION.name &&
+      baseline.checksum === BASELINE_MIGRATION.checksum &&
       baseline.finished === true &&
       baseline.rolledBack === false &&
       baseline.appliedSteps >= 1
@@ -143,9 +143,9 @@ export function verifyPostConditions(input: PostConditionInput): PostConditionRe
   } else {
     // Validate the pre-deploy baseline snapshot itself.
     const pre = input.baselinePreDeploy
-    if (pre.name !== BASELINE.name) {
+    if (pre.name !== BASELINE_MIGRATION.name) {
       failures.push("baseline pre-deploy name mismatch")
-    } else if (pre.checksum !== BASELINE.checksum) {
+    } else if (pre.checksum !== BASELINE_MIGRATION.checksum) {
       failures.push("baseline pre-deploy checksum mismatch")
     } else if (!pre.finished) {
       failures.push("baseline pre-deploy is not finished")
