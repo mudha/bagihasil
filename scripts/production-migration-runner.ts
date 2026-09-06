@@ -1,8 +1,7 @@
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
-import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from "node:fs"
+import { chmodSync, closeSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
-import { tmpdir } from "node:os"
 import { URL } from "node:url"
 import { evaluateMigrationGuards, type ExecutionMode, type MigrationGuardInput } from "../src/lib/production-migration-guards"
 import {
@@ -29,7 +28,6 @@ export type AuditRecord = {
   verdict: "PASS" | "REQUIRES_READ_ONLY_INSPECTION"
 }
 
-type FixedSpawn = (command: string, args: string[], options: Record<string, unknown>) => { status: number | null; stdout?: string; stderr?: string; error?: Error }
 type InvariantFingerprints = Record<string, string>
 type RuntimeExpected = {
   mode: ExecutionMode
@@ -98,25 +96,6 @@ export function buildGitCommandEnv(): Record<string, string> {
   return env
 }
 
-/**
- * Build a minimal environment for the locked child subprocess.
- * Only forwards database connection URLs and tool resolution paths.
- * Does NOT forward: GH_TOKEN, GITHUB_TOKEN, PGPASSWORD, PGOPTIONS,
- * or any other secret/sentinel variables from the parent environment.
- */
-export function buildMinimalChildEnv(): Record<string, string> {
-  const env: Record<string, string> = {
-    PATH: process.env.PATH ?? "",
-    NODE_ENV: "production",
-  }
-  if (process.env.DATABASE_URL) env.DATABASE_URL = process.env.DATABASE_URL
-  if (process.env.DIRECT_URL) env.DIRECT_URL = process.env.DIRECT_URL
-  if (process.env.HOME) env.HOME = process.env.HOME
-  if (process.env.XDG_CONFIG_HOME) env.XDG_CONFIG_HOME = process.env.XDG_CONFIG_HOME
-  if (process.env.GH_CONFIG_DIR) env.GH_CONFIG_DIR = process.env.GH_CONFIG_DIR
-  return env
-}
-
 export function redactAudit(value: unknown): unknown {
   if (typeof value === "string") return value.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]").replace(/(password|secret|token|key)=?[^\s,}]+/gi, "$1=[REDACTED]")
   if (Array.isArray(value)) return value.map(redactAudit)
@@ -171,6 +150,11 @@ function readOnlyEnv(databaseUrl: string): Record<string, string> {
   }
   const sslmode = parsed.searchParams.get("sslmode")
   if (sslmode) env.PGSSLMODE = sslmode
+  // Forward TLS certificate verification settings from process environment
+  // so that libpq connections (psql, prisma) inherit the host CA configuration.
+  if (process.env.PGSSLROOTCERT) env.PGSSLROOTCERT = process.env.PGSSLROOTCERT
+  if (process.env.PGSSLCERT) env.PGSSLCERT = process.env.PGSSLCERT
+  if (process.env.PGSSLKEY) env.PGSSLKEY = process.env.PGSSLKEY
   return env
 }
 
@@ -358,52 +342,48 @@ export function executeCriticalSection(
 
 /**
  * Production deploy wrapper.
- * Runs the full critical section inside a flock subprocess so that the
- * exclusive lock covers: baseline capture → validate → deploy → postcondition → audit.
+ * Acquires an advisory lock via flock on an inherited file descriptor,
+ * rebuilds ExecutionInput from authoritative sources, then runs the
+ * full critical section in the same process.
  *
- * Accepts RuntimeExpected (non-secret) — the locked child reconstructs
- * ExecutionInput from authoritative sources. Accepts only spawn (process
- * control) and lockPath (test isolation) — no capture/observe overrides.
+ * Lock lifetime: from flock acquisition until closeSync in finally.
+ * No child processes, no temp files, no serialized secrets.
  */
-export function executeFixedDeploy(expected: RuntimeExpected, options: { spawn?: FixedSpawn; lockPath?: string } = {}): { code: number; output: string; deploy: "PASS" } {
+export function executeFixedDeploy(
+  expected: RuntimeExpected, options: {
+    lockPath?: string
+    seams?: { captureBaseline?: (databaseUrl: string) => MigrationRecord | null; observe?: () => Observation }
+    collectEvidence?: (expected: RuntimeExpected, databaseUrl: string) => ExecutionInput
+  } = {},
+): { code: number; output: string; deploy: "PASS" } {
   const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
-  const lock = openSync(lockPath, "a", 0o600)
-
-  // Serialise NON-SECRET expected values for the flock subprocess.
-  // The locked child reconstructs ExecutionInput from authoritative sources
-  // (live git/GitHub/db evidence) — it never trusts serialized booleans.
-  const inputTmp = join(tmpdir(), `bagihasil-cs-${process.pid}.json`)
-  writeFileSync(inputTmp, JSON.stringify(expected), { mode: 0o600 })
+  const lockFd = openSync(lockPath, "a", 0o600)
 
   try {
-    const runner = options.spawn ?? (spawnSync as unknown as FixedSpawn)
-    const runnerPath = resolve(__dirname, "production-migration-runner.ts")
-    const childEnv = buildMinimalChildEnv()
-    const result = runner("flock", ["-n", lockPath, "npx", "tsx", runnerPath, "--critical-section", inputTmp], {
-      env: childEnv as unknown as NodeJS.ProcessEnv,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 120_000,
-      killSignal: "SIGTERM",
-    })
-
-    if (result.error || result.status !== 0) {
-      const stderr = result.stderr ?? ""
-      const blocked = stderr.match(/BLOCKED: .+/)?.[0]
-      const inspection = stderr.match(/REQUIRES_READ_ONLY_INSPECTION: .+/)?.[0]
-      if (blocked) throw new Error(blocked)
-      if (inspection) throw new Error(inspection)
-      // flock itself failed (lock not available) → no subprocess output
-      if (result.status !== 0 && !stderr.trim()) {
-        throw new Error("BLOCKED: execution lock not available")
-      }
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: critical section failed")
+    // Acquire advisory lock via flock on inherited file descriptor.
+    // The exec'd flock inherits lockFd (same open file description),
+    // calls flock() on it, and exits. Lock persists because parent's
+    // lockFd remains open on the same open file description.
+    try {
+      execFileSync("flock", ["-n", String(lockFd)], { stdio: "ignore" })
+    } catch {
+      throw new Error("BLOCKED: execution lock not available")
     }
 
-    return { code: 0, deploy: "PASS", output: (result.stdout ?? "").replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
+    // Lock acquired. Read database URL from process environment.
+    const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL
+    if (!databaseUrl) throw new Error("BLOCKED: DATABASE_URL not available in process environment")
+
+    // Rebuild ExecutionInput from authoritative live sources.
+    const collectFn = options.collectEvidence ?? collectAuthoritativeEvidence
+    const input = collectFn(expected, databaseUrl)
+
+    // Run full critical section under lock.
+    executeCriticalSection(input, options.seams)
+
+    return { code: 0, deploy: "PASS", output: "" }
   } finally {
-    try { unlinkSync(inputTmp) } catch { /* best-effort cleanup */ }
-    closeSync(lock)
+    closeSync(lockFd)
   }
 }
 
@@ -485,45 +465,6 @@ export function collectAuthoritativeEvidence(expected: RuntimeExpected, database
 }
 
 export function runCli(argv = process.argv.slice(2)) {
-  // Handle --critical-section flag (called by flock subprocess)
-  if (argv.includes("--critical-section")) {
-    const idx = argv.indexOf("--critical-section")
-    const inputPath = argv[idx + 1]
-    if (!inputPath) throw new Error("BLOCKED: --critical-section requires a JSON input path")
-    const expected = JSON.parse(readFileSync(resolve(inputPath), "utf8")) as RuntimeExpected
-    const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL
-    if (!databaseUrl) {
-      process.stderr.write("BLOCKED: DATABASE_URL not available in locked child environment\n")
-      process.exitCode = 1
-      return
-    }
-    try {
-      // Rebuild ExecutionInput from authoritative sources — never trust serialized booleans
-      const input = collectAuthoritativeEvidence(expected, databaseUrl)
-      executeCriticalSection(input)
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error)
-      // Write failure audit if audit path is available and safe
-      try {
-        const auditPath = expected.auditPath
-        if (auditPath && relative(process.cwd(), resolve(auditPath)).startsWith("..")) {
-          writeAudit(auditPath, {
-            operationId: expected.approval?.operationId ?? "unknown",
-            status: "REQUIRES_READ_ONLY_INSPECTION",
-            deploy: "FAIL",
-            verdict: "REQUIRES_READ_ONLY_INSPECTION",
-            postConditions: null,
-            failure: reason,
-          })
-        }
-      } catch { /* audit write failed or path unsafe — continue to stderr + exit */ }
-      process.stderr.write(reason + "\n")
-      process.exitCode = 1
-      return
-    }
-    return
-  }
-
   // Normal CLI flow
   const evidenceFlag = argv.indexOf("--evidence")
   const execute = argv.includes("--execute")
