@@ -10,6 +10,8 @@ export type PostConditionInput = {
   migrationChecksum: string
   identityMatches: boolean
   migrationRecords: MigrationRecord[]
+  /** Snapshot of the baseline record captured before deploy (read-only, exact fields). Null when pre-deploy capture is unavailable. */
+  baselinePreDeploy: MigrationRecord | null
   prismaStatusUpToDate: boolean
   schemaDiffEmpty: boolean
   enums: EnumInfo[]
@@ -24,7 +26,7 @@ export type PostConditionInput = {
 
 export type PostConditionResult = { pass: boolean; failures: string[] }
 
-const BASELINE = {
+export const BASELINE_MIGRATION = {
   name: "20260824000000_postgresql_baseline",
   checksum: "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd",
 }
@@ -86,16 +88,102 @@ export function normalizeCheckExpression(value: string): string {
   return value.toLowerCase().replace(/::[a-z ]+/g, "").replace(/[()\"]/g, " ").replace(/\s+/g, " ").trim()
 }
 
+/**
+ * Determine whether a migration record represents the resolve-adopted baseline.
+ * A resolve-adopted baseline (via `prisma migrate resolve --applied`) has
+ * `applied_steps_count = 0` instead of the normal `>= 1`. This is valid
+ * ONLY when every field matches the known baseline contract exactly.
+ */
+function isResolveAdoptedBaseline(record: MigrationRecord): boolean {
+  return (
+    record.name === BASELINE_MIGRATION.name &&
+    record.checksum === BASELINE_MIGRATION.checksum &&
+    record.finished === true &&
+    record.rolledBack === false &&
+    record.appliedSteps === 0
+  )
+}
+
 export function verifyPostConditions(input: PostConditionInput): PostConditionResult {
   const failures: string[] = []
   if (!input.identityMatches) failures.push("postcondition target identity differs from deploy target")
 
-  const expectedRecords = [
-    { name: BASELINE.name, checksum: BASELINE.checksum, finished: true, rolledBack: false, appliedSteps: 1 },
-    { name: input.migrationName, checksum: input.migrationChecksum, finished: true, rolledBack: false, appliedSteps: 1 },
-  ]
-  if (canonical(input.migrationRecords) !== canonical(expectedRecords)) failures.push("migration records are not the exact successful committed history")
-  if (input.migrationRecords.filter((record) => record.name === input.migrationName).length !== 1) failures.push("migration record count is not 1")
+  // --- Migration record validation ---
+  // Separate baseline from non-baseline records.
+  const baselineRecords = input.migrationRecords.filter((r) => r.name === BASELINE_MIGRATION.name)
+  const nonBaselineRecords = input.migrationRecords.filter((r) => r.name !== BASELINE_MIGRATION.name)
+
+  // Baseline: must exist exactly once.
+  if (baselineRecords.length !== 1) {
+    failures.push("baseline migration record is not exactly one")
+  } else {
+    const baseline = baselineRecords[0]
+    // The baseline is acceptable in two forms:
+    //  1. Resolve-adopted: appliedSteps=0 (the baseline was adopted via `prisma migrate resolve --applied`)
+    //  2. Normal: appliedSteps >= 1 (the baseline was applied normally)
+    const resolveAdopted = isResolveAdoptedBaseline(baseline)
+    const normalBaseline =
+      baseline.name === BASELINE_MIGRATION.name &&
+      baseline.checksum === BASELINE_MIGRATION.checksum &&
+      baseline.finished === true &&
+      baseline.rolledBack === false &&
+      baseline.appliedSteps >= 1
+    if (!resolveAdopted && !normalBaseline) {
+      failures.push("baseline migration record does not match resolve-adopted or normal baseline contract")
+    }
+  }
+
+  // --- Baseline pre/post stability ---
+  if (input.baselinePreDeploy === null) {
+    // Cannot prove baseline stability when pre-deploy snapshot is missing.
+    // Fail closed when baseline exists post-deploy (it must have existed before).
+    if (baselineRecords.length === 1) {
+      failures.push("baseline pre-deploy snapshot missing, cannot prove stability")
+    }
+  } else {
+    // Validate the pre-deploy baseline snapshot itself.
+    const pre = input.baselinePreDeploy
+    if (pre.name !== BASELINE_MIGRATION.name) {
+      failures.push("baseline pre-deploy name mismatch")
+    } else if (pre.checksum !== BASELINE_MIGRATION.checksum) {
+      failures.push("baseline pre-deploy checksum mismatch")
+    } else if (!pre.finished) {
+      failures.push("baseline pre-deploy is not finished")
+    } else if (pre.rolledBack) {
+      failures.push("baseline pre-deploy is rolled back")
+    } else if (pre.appliedSteps < 0) {
+      failures.push("baseline pre-deploy applied_steps_count is negative")
+    } else if (baselineRecords.length === 1) {
+      // Compare stable fields between pre and post.
+      const post = baselineRecords[0]
+      const changed: string[] = []
+      if (pre.name !== post.name) changed.push("name")
+      if (pre.checksum !== post.checksum) changed.push("checksum")
+      if (pre.finished !== post.finished) changed.push("finished")
+      if (pre.rolledBack !== post.rolledBack) changed.push("rolledBack")
+      if (pre.appliedSteps !== post.appliedSteps) changed.push("appliedSteps")
+      if (changed.length > 0) {
+        failures.push(`baseline record changed between pre and post deploy (${changed.join(", ")})`)
+      }
+    }
+    // If baselineRecords.length !== 1, the earlier block already pushed a failure.
+  }
+
+  // Target migration: strict checks, no exceptions.
+  const targetRecords = nonBaselineRecords.filter((r) => r.name === input.migrationName)
+  if (targetRecords.length !== 1) {
+    failures.push("target migration record count is not exactly one")
+  } else {
+    const target = targetRecords[0]
+    if (target.checksum !== input.migrationChecksum) failures.push("target migration checksum mismatch")
+    if (!target.finished) failures.push("target migration is not finished")
+    if (target.rolledBack) failures.push("target migration is rolled back")
+    if (target.appliedSteps < 1) failures.push("target migration applied_steps_count must be >= 1")
+  }
+
+  // Unexpected records: anything not baseline and not the target.
+  const unexpectedRecords = nonBaselineRecords.filter((r) => r.name !== input.migrationName)
+  if (unexpectedRecords.length > 0) failures.push("unexpected migration records found")
   if (!input.prismaStatusUpToDate) failures.push("Prisma migration status is not up to date")
   if (!input.schemaDiffEmpty) failures.push("canonical Prisma schema diff is not empty")
 

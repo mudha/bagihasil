@@ -8,6 +8,7 @@ import {
   buildDeployEnv,
   normalizeCheckExpression,
   verifyPostConditions,
+  BASELINE_MIGRATION,
   type CheckInfo,
   type EnumInfo,
   type ForeignKeyInfo,
@@ -27,7 +28,6 @@ export type AuditRecord = {
   verdict: "PASS" | "REQUIRES_READ_ONLY_INSPECTION"
 }
 
-type FixedSpawn = (command: string, args: string[], options: Record<string, unknown>) => { status: number | null; stdout?: string; stderr?: string; error?: Error }
 type InvariantFingerprints = Record<string, string>
 type RuntimeExpected = {
   mode: ExecutionMode
@@ -150,6 +150,11 @@ function readOnlyEnv(databaseUrl: string): Record<string, string> {
   }
   const sslmode = parsed.searchParams.get("sslmode")
   if (sslmode) env.PGSSLMODE = sslmode
+  // Forward TLS certificate verification settings from process environment
+  // so that libpq connections (psql, prisma) inherit the host CA configuration.
+  if (process.env.PGSSLROOTCERT) env.PGSSLROOTCERT = process.env.PGSSLROOTCERT
+  if (process.env.PGSSLCERT) env.PGSSLCERT = process.env.PGSSLCERT
+  if (process.env.PGSSLKEY) env.PGSSLKEY = process.env.PGSSLKEY
   return env
 }
 
@@ -186,7 +191,18 @@ function normalizeDefault(value: string | null): string | null {
   return value.replace(/::[a-z ]+$/i, "").replace(/^\((.*)\)$/, "$1").trim()
 }
 
-export function observePostConditions(databaseUrl: string, expectedIdentity: string, preDeploymentInvariants: InvariantFingerprints, migrationName = TARGET_MIGRATION, migrationChecksum = TARGET_CHECKSUM): Observation {
+/**
+ * Capture a single baseline migration record from the database (read-only).
+ * Returns the full MigrationRecord for the baseline, or null if missing/duplicate.
+ * This is meant to be called BEFORE deploy to establish a pre-deploy snapshot.
+ */
+const BASELINE_CAPTURE_SQL = `select coalesce(json_agg(json_build_object('name',migration_name,'checksum',checksum,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null,'appliedSteps',applied_steps_count) order by migration_name), '[]'::json) from _prisma_migrations where migration_name = '20260824000000_postgresql_baseline'`
+export function captureBaselineRecord(databaseUrl: string): MigrationRecord | null {
+  const records = jsonQuery<MigrationRecord[]>(databaseUrl, BASELINE_CAPTURE_SQL)
+  return records.length === 1 ? records[0] : null
+}
+
+export function observePostConditions(databaseUrl: string, expectedIdentity: string, preDeploymentInvariants: InvariantFingerprints, migrationName = TARGET_MIGRATION, migrationChecksum = TARGET_CHECKSUM, baselinePreDeploy: MigrationRecord | null = null): Observation {
   const identityMatches = observeIdentity(databaseUrl) === expectedIdentity
   const migrationRecords = jsonQuery<MigrationRecord[]>(databaseUrl, `select coalesce(json_agg(json_build_object('name',migration_name,'checksum',checksum,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null,'appliedSteps',applied_steps_count) order by migration_name), '[]'::json) from _prisma_migrations`)
   const enums = jsonQuery<EnumInfo[]>(databaseUrl, `select coalesce(json_agg(value order by value->>'name'), '[]'::json) from (select json_build_object('name',t.typname,'labels',json_agg(e.enumlabel order by e.enumsortorder)) value from pg_type t join pg_enum e on e.enumtypid=t.oid join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typname in ('LossResponsibility','LedgerTreatment','CapitalMovementType','CapitalMovementDirection','CapitalMovementSource') group by t.typname) q`)
@@ -209,6 +225,7 @@ export function observePostConditions(databaseUrl: string, expectedIdentity: str
     migrationChecksum,
     identityMatches,
     migrationRecords,
+    baselinePreDeploy,
     prismaStatusUpToDate: /database schema is up to date/i.test(statusOutput),
     schemaDiffEmpty: /This is an empty migration/i.test(schemaDiffOutput),
     enums,
@@ -240,7 +257,36 @@ function failureAudit(input: ExecutionInput, reason: string, evidence: unknown =
   writeAudit(input.auditPath, { ...input.audit, status: "REQUIRES_READ_ONLY_INSPECTION", deploy: "FAIL", verdict: "REQUIRES_READ_ONLY_INSPECTION", postConditions: evidence, failure: reason })
 }
 
-export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string; observe?: () => Observation } = {}): { code: number; output: string; deploy: "PASS" } {
+/**
+ * Validate a pre-deploy baseline snapshot before allowing migration spawn.
+ * Checks name, checksum, finished, rolled-back, and applied-steps invariant.
+ * Throws BLOCKED on any mismatch so deploy never proceeds.
+ */
+export function validatePreDeployBaseline(record: MigrationRecord): void {
+  if (record.name !== BASELINE_MIGRATION.name) throw new Error("BLOCKED: baseline pre-deploy name mismatch")
+  if (record.checksum !== BASELINE_MIGRATION.checksum) throw new Error("BLOCKED: baseline pre-deploy checksum mismatch")
+  if (!record.finished) throw new Error("BLOCKED: baseline pre-deploy is not finished")
+  if (record.rolledBack) throw new Error("BLOCKED: baseline pre-deploy is rolled back")
+  const valid = record.appliedSteps === 0 || record.appliedSteps >= 1
+  if (!valid) throw new Error("BLOCKED: baseline pre-deploy applied_steps_count is invalid")
+}
+
+/**
+ * Run the full critical section: guards → capture baseline → validate →
+ * deploy → postcondition → audit.
+ *
+ * Production calls this only through executeFixedDeploy() after
+ * acquireLock() succeeds. Unit tests may call it directly with optional
+ * captureBaseline / observe seams.
+ *
+ * In production, the caller holds the inherited-FD flock until this
+ * function returns or throws, then releases it in finally.
+ */
+export function executeCriticalSection(
+  input: ExecutionInput,
+  seams?: { captureBaseline?: (databaseUrl: string) => MigrationRecord | null; observe?: () => Observation },
+): void {
+  // --- Guards (cheap, no DB) ---
   const failures = evaluateMigrationGuards(input)
   if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
   if (!input.auditPath || !relative(process.cwd(), resolve(input.auditPath)).startsWith("..")) throw new Error("BLOCKED: audit artifact must be outside repository")
@@ -249,29 +295,103 @@ export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: Fix
   const parsed = new URL(deployEnv.env.DATABASE_URL)
   if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) || /pooler|pooling/i.test(parsed.hostname) || parsed.searchParams.has("pgbouncer") || parsed.searchParams.has("pooler")) throw new Error("BLOCKED: direct non-local PostgreSQL URL required")
 
-  const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
-  const lock = openSync(lockPath, "a", 0o600)
+  // --- 1. Capture baseline (inside lock, read-only) ---
+  const captureFn = seams?.captureBaseline ?? captureBaselineRecord
+  let baselinePreDeploy: MigrationRecord | null
   try {
-    const runner = options.spawn ?? (spawnSync as unknown as FixedSpawn)
-    const result = runner("flock", ["-n", lockPath, "node", "./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
-    if (result.error || result.status !== 0) {
-      failureAudit(input, "migrate deploy did not complete successfully")
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
-    }
-    let observation: Observation
+    baselinePreDeploy = captureFn(deployEnv.env.DATABASE_URL)
+  } catch (error) {
+    failureAudit(input, `baseline capture failed: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
+  }
+  if (baselinePreDeploy === null) {
+    failureAudit(input, "baseline pre-deploy snapshot missing or duplicate")
+    throw new Error("BLOCKED: baseline pre-deploy snapshot missing or duplicate")
+  }
+  try {
+    validatePreDeployBaseline(baselinePreDeploy)
+  } catch (error) {
+    failureAudit(input, `baseline validation failed: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
+  }
+
+  // --- 2. Deploy (guarded by flock in production path) ---
+  const result = spawnSync("node", ["./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env as unknown as NodeJS.ProcessEnv, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
+  if (result.error || result.status !== 0) {
+    failureAudit(input, "migrate deploy did not complete successfully")
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: migrate deploy did not complete successfully")
+  }
+
+  // --- 3. Postcondition observation (still inside lock) ---
+  let observation: Observation
+  try {
+    const observeFn = seams?.observe ?? (() => observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum, baselinePreDeploy))
+    observation = observeFn()
+  } catch {
+    failureAudit(input, "live read-only postcondition observation failed")
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
+  }
+  if (!observation.pass) {
+    failureAudit(input, "postconditions failed", observation.evidence)
+    throw new Error("REQUIRES_READ_ONLY_INSPECTION: postconditions failed")
+  }
+
+  // --- 4. Audit ---
+  writeAudit(input.auditPath, { ...input.audit, status: "PASS", deploy: "PASS", verdict: "PASS", postConditions: observation.evidence })
+}
+
+
+/**
+ * Acquire advisory flock on inherited file descriptor.
+ * Maps parent's lockFd to child's fd 3 via stdio array,
+ * so flock locks the same open-file-description the parent holds.
+ */
+export function acquireLock(lockFd: number): void {
+  execFileSync("flock", ["-n", "3"], { stdio: ["ignore", "ignore", "ignore", lockFd] })
+}
+
+/**
+ * Production deploy wrapper.
+ * Acquires an advisory lock via flock on an inherited file descriptor,
+ * rebuilds ExecutionInput from authoritative sources, then runs the
+ * full critical section in the same process.
+ *
+ * Lock lifetime: from acquireLock() until closeSync in finally.
+ * No child processes, no temp files, no serialized secrets.
+ */
+export function executeFixedDeploy(
+  expected: RuntimeExpected, options: {
+    lockPath?: string
+    seams?: { captureBaseline?: (databaseUrl: string) => MigrationRecord | null; observe?: () => Observation }
+    collectEvidence?: (expected: RuntimeExpected, databaseUrl: string) => ExecutionInput
+  } = {},
+): { code: number; output: string; deploy: "PASS" } {
+  const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
+  const lockFd = openSync(lockPath, "a", 0o600)
+
+  try {
+    // Acquire advisory lock via flock on inherited FD (child fd 3 = parent lockFd).
     try {
-      observation = options.observe?.() ?? observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum)
+      acquireLock(lockFd)
     } catch {
-      failureAudit(input, "live read-only postcondition observation failed")
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
+      throw new Error("BLOCKED: execution lock not available")
     }
-    if (!observation.pass) {
-      failureAudit(input, "postconditions failed", observation.evidence)
-      throw new Error("REQUIRES_READ_ONLY_INSPECTION: postconditions failed")
-    }
-    writeAudit(input.auditPath, { ...input.audit, status: "PASS", deploy: "PASS", verdict: "PASS", postConditions: observation.evidence })
-    return { code: 0, deploy: "PASS", output: `${result.stdout ?? ""}${result.stderr ?? ""}`.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]") }
-  } finally { closeSync(lock) }
+
+    // Lock acquired. Read database URL from process environment.
+    const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL
+    if (!databaseUrl) throw new Error("BLOCKED: DATABASE_URL not available in process environment")
+
+    // Rebuild ExecutionInput from authoritative live sources.
+    const collectFn = options.collectEvidence ?? collectAuthoritativeEvidence
+    const input = collectFn(expected, databaseUrl)
+
+    // Run full critical section under lock.
+    executeCriticalSection(input, options.seams)
+
+    return { code: 0, deploy: "PASS", output: "" }
+  } finally {
+    closeSync(lockFd)
+  }
 }
 
 function repositoryMigrations() {
@@ -352,17 +472,24 @@ export function collectAuthoritativeEvidence(expected: RuntimeExpected, database
 }
 
 export function runCli(argv = process.argv.slice(2)) {
+  // Normal CLI flow
   const evidenceFlag = argv.indexOf("--evidence")
   const execute = argv.includes("--execute")
   if (evidenceFlag < 0 || !argv[evidenceFlag + 1]) throw new Error("usage: --evidence <expected-json> [--execute]")
   const expected = JSON.parse(readFileSync(resolve(argv[evidenceFlag + 1]), "utf8")) as RuntimeExpected
-  const databaseUrl = process.env.DIRECT_URL
-  if (!databaseUrl || process.env.DATABASE_URL !== databaseUrl) throw new Error("BLOCKED: DATABASE_URL and DIRECT_URL must match explicitly")
-  const input = collectAuthoritativeEvidence(expected, databaseUrl)
-  const failures = evaluateMigrationGuards(input)
-  if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
-  if (!execute) return { mode: "preflight", result: "PASS", failures: [] }
-  return executeFixedDeploy(input)
+
+  if (!execute) {
+    // Preflight: collect and evaluate without deploying
+    const databaseUrl = process.env.DIRECT_URL
+    if (!databaseUrl || process.env.DATABASE_URL !== databaseUrl) throw new Error("BLOCKED: DATABASE_URL and DIRECT_URL must match explicitly")
+    const input = collectAuthoritativeEvidence(expected, databaseUrl)
+    const failures = evaluateMigrationGuards(input)
+    if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
+    return { mode: "preflight", result: "PASS", failures: [] }
+  }
+
+  // Deploy: acquire flock, rebuild ExecutionInput from authoritative sources, run critical section
+  return executeFixedDeploy(expected)
 }
 
 if (process.argv[1]?.endsWith("production-migration-runner.ts")) {
