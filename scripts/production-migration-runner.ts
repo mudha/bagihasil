@@ -98,6 +98,25 @@ export function buildGitCommandEnv(): Record<string, string> {
   return env
 }
 
+/**
+ * Build a minimal environment for the locked child subprocess.
+ * Only forwards database connection URLs and tool resolution paths.
+ * Does NOT forward: GH_TOKEN, GITHUB_TOKEN, PGPASSWORD, PGOPTIONS,
+ * or any other secret/sentinel variables from the parent environment.
+ */
+export function buildMinimalChildEnv(): Record<string, string> {
+  const env: Record<string, string> = {
+    PATH: process.env.PATH ?? "",
+    NODE_ENV: "production",
+  }
+  if (process.env.DATABASE_URL) env.DATABASE_URL = process.env.DATABASE_URL
+  if (process.env.DIRECT_URL) env.DIRECT_URL = process.env.DIRECT_URL
+  if (process.env.HOME) env.HOME = process.env.HOME
+  if (process.env.XDG_CONFIG_HOME) env.XDG_CONFIG_HOME = process.env.XDG_CONFIG_HOME
+  if (process.env.GH_CONFIG_DIR) env.GH_CONFIG_DIR = process.env.GH_CONFIG_DIR
+  return env
+}
+
 export function redactAudit(value: unknown): unknown {
   if (typeof value === "string") return value.replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[REDACTED_URL]").replace(/(password|secret|token|key)=?[^\s,}]+/gi, "$1=[REDACTED]")
   if (Array.isArray(value)) return value.map(redactAudit)
@@ -293,12 +312,23 @@ export function executeCriticalSection(
 
   // --- 1. Capture baseline (inside lock, read-only) ---
   const captureFn = seams?.captureBaseline ?? captureBaselineRecord
-  const baselinePreDeploy = captureFn(deployEnv.env.DATABASE_URL)
+  let baselinePreDeploy: MigrationRecord | null
+  try {
+    baselinePreDeploy = captureFn(deployEnv.env.DATABASE_URL)
+  } catch (error) {
+    failureAudit(input, `baseline capture failed: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
+  }
   if (baselinePreDeploy === null) {
     failureAudit(input, "baseline pre-deploy snapshot missing or duplicate")
     throw new Error("BLOCKED: baseline pre-deploy snapshot missing or duplicate")
   }
-  validatePreDeployBaseline(baselinePreDeploy)
+  try {
+    validatePreDeployBaseline(baselinePreDeploy)
+  } catch (error) {
+    failureAudit(input, `baseline validation failed: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
+  }
 
   // --- 2. Deploy (guarded by flock in production path) ---
   const result = spawnSync("node", ["./node_modules/prisma/build/index.js", "migrate", "deploy"], { env: deployEnv.env as unknown as NodeJS.ProcessEnv, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000, killSignal: "SIGTERM" })
@@ -331,22 +361,26 @@ export function executeCriticalSection(
  * Runs the full critical section inside a flock subprocess so that the
  * exclusive lock covers: baseline capture → validate → deploy → postcondition → audit.
  *
- * Accepts only spawn (process control) and lockPath (test isolation) —
- * does NOT accept captureBaseline or observe overrides.
+ * Accepts RuntimeExpected (non-secret) — the locked child reconstructs
+ * ExecutionInput from authoritative sources. Accepts only spawn (process
+ * control) and lockPath (test isolation) — no capture/observe overrides.
  */
-export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string } = {}): { code: number; output: string; deploy: "PASS" } {
+export function executeFixedDeploy(expected: RuntimeExpected, options: { spawn?: FixedSpawn; lockPath?: string } = {}): { code: number; output: string; deploy: "PASS" } {
   const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
   const lock = openSync(lockPath, "a", 0o600)
 
-  // Serialise input for the flock subprocess (temp file, owner-only).
+  // Serialise NON-SECRET expected values for the flock subprocess.
+  // The locked child reconstructs ExecutionInput from authoritative sources
+  // (live git/GitHub/db evidence) — it never trusts serialized booleans.
   const inputTmp = join(tmpdir(), `bagihasil-cs-${process.pid}.json`)
-  writeFileSync(inputTmp, JSON.stringify(input), { mode: 0o600 })
+  writeFileSync(inputTmp, JSON.stringify(expected), { mode: 0o600 })
 
   try {
     const runner = options.spawn ?? (spawnSync as unknown as FixedSpawn)
     const runnerPath = resolve(__dirname, "production-migration-runner.ts")
+    const childEnv = buildMinimalChildEnv()
     const result = runner("flock", ["-n", lockPath, "npx", "tsx", runnerPath, "--critical-section", inputTmp], {
-      env: { ...process.env },
+      env: childEnv as unknown as NodeJS.ProcessEnv,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 120_000,
@@ -456,12 +490,34 @@ export function runCli(argv = process.argv.slice(2)) {
     const idx = argv.indexOf("--critical-section")
     const inputPath = argv[idx + 1]
     if (!inputPath) throw new Error("BLOCKED: --critical-section requires a JSON input path")
-    const input = JSON.parse(readFileSync(resolve(inputPath), "utf8")) as ExecutionInput
+    const expected = JSON.parse(readFileSync(resolve(inputPath), "utf8")) as RuntimeExpected
+    const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL
+    if (!databaseUrl) {
+      process.stderr.write("BLOCKED: DATABASE_URL not available in locked child environment\n")
+      process.exitCode = 1
+      return
+    }
     try {
+      // Rebuild ExecutionInput from authoritative sources — never trust serialized booleans
+      const input = collectAuthoritativeEvidence(expected, databaseUrl)
       executeCriticalSection(input)
     } catch (error) {
-      // Write only the message (no stack trace) to stderr for the parent to parse
-      process.stderr.write((error instanceof Error ? error.message : String(error)) + "\n")
+      const reason = error instanceof Error ? error.message : String(error)
+      // Write failure audit if audit path is available and safe
+      try {
+        const auditPath = expected.auditPath
+        if (auditPath && relative(process.cwd(), resolve(auditPath)).startsWith("..")) {
+          writeAudit(auditPath, {
+            operationId: expected.approval?.operationId ?? "unknown",
+            status: "REQUIRES_READ_ONLY_INSPECTION",
+            deploy: "FAIL",
+            verdict: "REQUIRES_READ_ONLY_INSPECTION",
+            postConditions: null,
+            failure: reason,
+          })
+        }
+      } catch { /* audit write failed or path unsafe — continue to stderr + exit */ }
+      process.stderr.write(reason + "\n")
       process.exitCode = 1
       return
     }
@@ -473,13 +529,19 @@ export function runCli(argv = process.argv.slice(2)) {
   const execute = argv.includes("--execute")
   if (evidenceFlag < 0 || !argv[evidenceFlag + 1]) throw new Error("usage: --evidence <expected-json> [--execute]")
   const expected = JSON.parse(readFileSync(resolve(argv[evidenceFlag + 1]), "utf8")) as RuntimeExpected
-  const databaseUrl = process.env.DIRECT_URL
-  if (!databaseUrl || process.env.DATABASE_URL !== databaseUrl) throw new Error("BLOCKED: DATABASE_URL and DIRECT_URL must match explicitly")
-  const input = collectAuthoritativeEvidence(expected, databaseUrl)
-  const failures = evaluateMigrationGuards(input)
-  if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
-  if (!execute) return { mode: "preflight", result: "PASS", failures: [] }
-  return executeFixedDeploy(input)
+
+  if (!execute) {
+    // Preflight: collect and evaluate without deploying
+    const databaseUrl = process.env.DIRECT_URL
+    if (!databaseUrl || process.env.DATABASE_URL !== databaseUrl) throw new Error("BLOCKED: DATABASE_URL and DIRECT_URL must match explicitly")
+    const input = collectAuthoritativeEvidence(expected, databaseUrl)
+    const failures = evaluateMigrationGuards(input)
+    if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
+    return { mode: "preflight", result: "PASS", failures: [] }
+  }
+
+  // Deploy: locked child rebuilds ExecutionInput from authoritative sources under flock
+  return executeFixedDeploy(expected)
 }
 
 if (process.argv[1]?.endsWith("production-migration-runner.ts")) {
