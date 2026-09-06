@@ -1,9 +1,9 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync } from "node:fs"
+import { closeSync, mkdtempSync, openSync, readdirSync, readFileSync, rmSync, statSync, unlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { execFileSync, spawnSync } from "node:child_process"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { executeCriticalSection, executeFixedDeploy, redactAudit, runCli, writeAudit, validatePreDeployBaseline } from "../../scripts/production-migration-runner"
+import { acquireLock, executeCriticalSection, executeFixedDeploy, redactAudit, runCli, writeAudit, validatePreDeployBaseline } from "../../scripts/production-migration-runner"
 import type { MigrationRecord } from "../../src/lib/production-migration-postconditions"
 
 // Mock spawnSync + execFileSync globally so unit tests never run real psql/prisma/flock.
@@ -203,10 +203,10 @@ describe("executeFixedDeploy — same-process lock", () => {
     }
   }
 
-  it("acquires flock via execFileSync on inherited FD", () => {
+  it("acquires flock via acquireLock with inherited FD stdio mapping", () => {
     const dir = mkdtempSync(join(tmpdir(), "bagihasil-lock-"))
-    const execCalls: any[][] = []
-    vi.mocked(execFileSync).mockImplementation((cmd: any, args: any) => { execCalls.push([cmd, ...(args as string[])]); return "" })
+    const execCalls: any[] = []
+    vi.mocked(execFileSync).mockImplementation((cmd: any, args: any, opts: any) => { execCalls.push({ cmd, args: [...(args as string[])], stdio: opts?.stdio }); return "" })
 
     withDbUrl(() => executeFixedDeploy(runtimeExpected(dir), {
       lockPath: join(dir, "lock"),
@@ -214,10 +214,10 @@ describe("executeFixedDeploy — same-process lock", () => {
       seams: { captureBaseline: () => VALID_BASELINE, observe: () => ({ pass: true, failures: [], evidence: {} }) },
     }))
 
-    const flockCalls = execCalls.filter(([cmd]) => cmd === "flock")
+    const flockCalls = execCalls.filter((c) => c.cmd === "flock")
     expect(flockCalls.length).toBe(1)
-    expect(flockCalls[0][1]).toBe("-n")
-    expect(Number(flockCalls[0][2])).toBeGreaterThan(0)
+    expect(flockCalls[0].args).toEqual(["-n", "3"])
+    expect(flockCalls[0].stdio).toEqual(["ignore", "ignore", "ignore", expect.any(Number)])
     rmSync(dir, { recursive: true, force: true })
   })
 
@@ -300,21 +300,46 @@ describe("--critical-section removed — no unlocked mutation entry point", () =
     expect(() => runCli(["--critical-section", "/tmp/fake.json"])).toThrow()
   })
 })
+describe("acquireLock — exact stdio mapping", () => {
+  it("calls execFileSync('flock', ['-n', '3'], { stdio: ['ignore', 'ignore', 'ignore', lockFd] })", () => {
+    const dir = mkdtempSync(join(tmpdir(), "bagihasil-acquire-"))
+    const lockPath = join(dir, "lock")
+    const lockFd = openSync(lockPath, "a", 0o600)
+    const execCalls: any[] = []
+    vi.mocked(execFileSync).mockImplementation((cmd: any, args: any, opts: any) => {
+      execCalls.push({ cmd, args, stdio: opts?.stdio })
+      return ""
+    })
+
+    acquireLock(lockFd)
+
+    expect(execCalls).toHaveLength(1)
+    expect(execCalls[0].cmd).toBe("flock")
+    expect(execCalls[0].args).toEqual(["-n", "3"])
+    expect(execCalls[0].stdio).toEqual(["ignore", "ignore", "ignore", lockFd])
+    closeSync(lockFd)
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
 
 describe.runIf(realExecFileSync() !== null)("same-process flock Linux integration", () => {
-  it("flock -n on file path acquires, conflict detection, and release", () => {
+  it("inherited-FD flock contention proves lock lifetime", () => {
     const real = realExecFileSync()!
-    const lockPath = join(tmpdir(), `bagihasil-flock-${process.pid}.lock`)
+    const lockPath = join(tmpdir(), `bagihasil-flock-fd-${process.pid}.lock`)
+    const lockFd = openSync(lockPath, "a", 0o600)
 
     try {
-      // 1. Acquire lock on file path — runs `true` which exits immediately, lock held until flock exits
-      expect(() => real("flock", ["-n", lockPath, "true"])).not.toThrow()
+      // 1. Acquire lock via inherited FD (same mechanism as production)
+      real("flock", ["-n", "3"], { stdio: ["ignore", "ignore", "ignore", lockFd] })
 
-      // 2. Verify file was created by flock
-      statSync(lockPath)
+      // 2. Lock is held. Contender via file path should fail.
+      expect(() => real("flock", ["-n", lockPath, "true"])).toThrow()
 
-      // 3. Re-acquire after release — should succeed
-      expect(() => real("flock", ["-n", lockPath, "true"])).not.toThrow()
+      // 3. Release lock by closing parent FD
+      closeSync(lockFd)
+
+      // 4. Now contender should succeed
+      real("flock", ["-n", lockPath, "true"])
     } finally { try { unlinkSync(lockPath) } catch {} }
   })
 })

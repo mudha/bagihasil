@@ -341,12 +341,21 @@ export function executeCriticalSection(
 
 
 /**
+ * Acquire advisory flock on inherited file descriptor.
+ * Maps parent's lockFd to child's fd 3 via stdio array,
+ * so flock locks the same open-file-description the parent holds.
+ */
+export function acquireLock(lockFd: number): void {
+  execFileSync("flock", ["-n", "3"], { stdio: ["ignore", "ignore", "ignore", lockFd] })
+}
+
+/**
  * Production deploy wrapper.
  * Acquires an advisory lock via flock on an inherited file descriptor,
  * rebuilds ExecutionInput from authoritative sources, then runs the
  * full critical section in the same process.
  *
- * Lock lifetime: from flock acquisition until closeSync in finally.
+ * Lock lifetime: from acquireLock() until closeSync in finally.
  * No child processes, no temp files, no serialized secrets.
  */
 export function executeFixedDeploy(
@@ -360,12 +369,9 @@ export function executeFixedDeploy(
   const lockFd = openSync(lockPath, "a", 0o600)
 
   try {
-    // Acquire advisory lock via flock on inherited file descriptor.
-    // The exec'd flock inherits lockFd (same open file description),
-    // calls flock() on it, and exits. Lock persists because parent's
-    // lockFd remains open on the same open file description.
+    // Acquire advisory lock via flock on inherited FD (child fd 3 = parent lockFd).
     try {
-      execFileSync("flock", ["-n", String(lockFd)], { stdio: "ignore" })
+      acquireLock(lockFd)
     } catch {
       throw new Error("BLOCKED: execution lock not available")
     }
@@ -481,7 +487,7 @@ export function runCli(argv = process.argv.slice(2)) {
     return { mode: "preflight", result: "PASS", failures: [] }
   }
 
-  // Deploy: locked child rebuilds ExecutionInput from authoritative sources under flock
+  // Deploy: acquire flock, rebuild ExecutionInput from authoritative sources, run critical section
   return executeFixedDeploy(expected)
 }
 
