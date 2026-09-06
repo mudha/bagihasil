@@ -47,6 +47,7 @@ describe("production migration audit safety", () => {
         expect(options.killSignal).toBe("SIGTERM")
         return { status: 0, stdout: "No pending migrations to apply.", stderr: "" }
       },
+      captureBaseline: () => ({ name: "20260824000000_postgresql_baseline", checksum: "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd", finished: true, rolledBack: false, appliedSteps: 0 }),
       observe: () => ({ pass: true, failures: [], evidence: { source: "runner-owned-live-read-only" } }),
     })
     expect(result.code).toBe(0)
@@ -68,7 +69,7 @@ describe("production migration audit safety", () => {
       metadata: { failed: 0, rolledBack: 0, unexpected: 0, previousMigration: "20260824000000_postgresql_baseline" }, lockAvailable: true, sqlKind: "additive" as const, customSql: false, auditPathOwnerOnly: true,
       databaseUrl: "postgresql://hidden", auditPath, audit: {}, preDeploymentInvariants: {},
     }
-    expect(() => executeFixedDeploy(input, { lockPath: join(dir, "lock"), spawn: () => ({ status: 0 }), observe: () => ({ pass: false, failures: ["schema mismatch"], evidence: { source: "runner-owned-live-read-only" } }) })).toThrow("REQUIRES_READ_ONLY_INSPECTION")
+    expect(() => executeFixedDeploy(input, { lockPath: join(dir, "lock"), spawn: () => ({ status: 0 }), captureBaseline: () => ({ name: "20260824000000_postgresql_baseline", checksum: "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd", finished: true, rolledBack: false, appliedSteps: 0 }), observe: () => ({ pass: false, failures: ["schema mismatch"], evidence: { source: "runner-owned-live-read-only" } }) })).toThrow("REQUIRES_READ_ONLY_INSPECTION")
     const audit = JSON.parse(readFileSync(auditPath, "utf8"))
     expect(audit.verdict).toBe("REQUIRES_READ_ONLY_INSPECTION")
     expect(audit.verdict).not.toBe("PASS")

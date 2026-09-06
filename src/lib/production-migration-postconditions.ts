@@ -10,6 +10,8 @@ export type PostConditionInput = {
   migrationChecksum: string
   identityMatches: boolean
   migrationRecords: MigrationRecord[]
+  /** Snapshot of the baseline record captured before deploy (read-only, exact fields). Null when pre-deploy capture is unavailable. */
+  baselinePreDeploy: MigrationRecord | null
   prismaStatusUpToDate: boolean
   schemaDiffEmpty: boolean
   enums: EnumInfo[]
@@ -129,6 +131,42 @@ export function verifyPostConditions(input: PostConditionInput): PostConditionRe
     if (!resolveAdopted && !normalBaseline) {
       failures.push("baseline migration record does not match resolve-adopted or normal baseline contract")
     }
+  }
+
+  // --- Baseline pre/post stability ---
+  if (input.baselinePreDeploy === null) {
+    // Cannot prove baseline stability when pre-deploy snapshot is missing.
+    // Fail closed when baseline exists post-deploy (it must have existed before).
+    if (baselineRecords.length === 1) {
+      failures.push("baseline pre-deploy snapshot missing, cannot prove stability")
+    }
+  } else {
+    // Validate the pre-deploy baseline snapshot itself.
+    const pre = input.baselinePreDeploy
+    if (pre.name !== BASELINE.name) {
+      failures.push("baseline pre-deploy name mismatch")
+    } else if (pre.checksum !== BASELINE.checksum) {
+      failures.push("baseline pre-deploy checksum mismatch")
+    } else if (!pre.finished) {
+      failures.push("baseline pre-deploy is not finished")
+    } else if (pre.rolledBack) {
+      failures.push("baseline pre-deploy is rolled back")
+    } else if (pre.appliedSteps < 0) {
+      failures.push("baseline pre-deploy applied_steps_count is negative")
+    } else if (baselineRecords.length === 1) {
+      // Compare stable fields between pre and post.
+      const post = baselineRecords[0]
+      const changed: string[] = []
+      if (pre.name !== post.name) changed.push("name")
+      if (pre.checksum !== post.checksum) changed.push("checksum")
+      if (pre.finished !== post.finished) changed.push("finished")
+      if (pre.rolledBack !== post.rolledBack) changed.push("rolledBack")
+      if (pre.appliedSteps !== post.appliedSteps) changed.push("appliedSteps")
+      if (changed.length > 0) {
+        failures.push(`baseline record changed between pre and post deploy (${changed.join(", ")})`)
+      }
+    }
+    // If baselineRecords.length !== 1, the earlier block already pushed a failure.
   }
 
   // Target migration: strict checks, no exceptions.

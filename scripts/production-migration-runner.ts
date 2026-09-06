@@ -186,7 +186,18 @@ function normalizeDefault(value: string | null): string | null {
   return value.replace(/::[a-z ]+$/i, "").replace(/^\((.*)\)$/, "$1").trim()
 }
 
-export function observePostConditions(databaseUrl: string, expectedIdentity: string, preDeploymentInvariants: InvariantFingerprints, migrationName = TARGET_MIGRATION, migrationChecksum = TARGET_CHECKSUM): Observation {
+/**
+ * Capture a single baseline migration record from the database (read-only).
+ * Returns the full MigrationRecord for the baseline, or null if missing/duplicate.
+ * This is meant to be called BEFORE deploy to establish a pre-deploy snapshot.
+ */
+const BASELINE_CAPTURE_SQL = `select coalesce(json_agg(json_build_object('name',migration_name,'checksum',checksum,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null,'appliedSteps',applied_steps_count) order by migration_name), '[]'::json) from _prisma_migrations where migration_name = '20260824000000_postgresql_baseline'`
+export function captureBaselineRecord(databaseUrl: string): MigrationRecord | null {
+  const records = jsonQuery<MigrationRecord[]>(databaseUrl, BASELINE_CAPTURE_SQL)
+  return records.length === 1 ? records[0] : null
+}
+
+export function observePostConditions(databaseUrl: string, expectedIdentity: string, preDeploymentInvariants: InvariantFingerprints, migrationName = TARGET_MIGRATION, migrationChecksum = TARGET_CHECKSUM, baselinePreDeploy: MigrationRecord | null = null): Observation {
   const identityMatches = observeIdentity(databaseUrl) === expectedIdentity
   const migrationRecords = jsonQuery<MigrationRecord[]>(databaseUrl, `select coalesce(json_agg(json_build_object('name',migration_name,'checksum',checksum,'finished',finished_at is not null,'rolledBack',rolled_back_at is not null,'appliedSteps',applied_steps_count) order by migration_name), '[]'::json) from _prisma_migrations`)
   const enums = jsonQuery<EnumInfo[]>(databaseUrl, `select coalesce(json_agg(value order by value->>'name'), '[]'::json) from (select json_build_object('name',t.typname,'labels',json_agg(e.enumlabel order by e.enumsortorder)) value from pg_type t join pg_enum e on e.enumtypid=t.oid join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typname in ('LossResponsibility','LedgerTreatment','CapitalMovementType','CapitalMovementDirection','CapitalMovementSource') group by t.typname) q`)
@@ -209,6 +220,7 @@ export function observePostConditions(databaseUrl: string, expectedIdentity: str
     migrationChecksum,
     identityMatches,
     migrationRecords,
+    baselinePreDeploy,
     prismaStatusUpToDate: /database schema is up to date/i.test(statusOutput),
     schemaDiffEmpty: /This is an empty migration/i.test(schemaDiffOutput),
     enums,
@@ -240,7 +252,7 @@ function failureAudit(input: ExecutionInput, reason: string, evidence: unknown =
   writeAudit(input.auditPath, { ...input.audit, status: "REQUIRES_READ_ONLY_INSPECTION", deploy: "FAIL", verdict: "REQUIRES_READ_ONLY_INSPECTION", postConditions: evidence, failure: reason })
 }
 
-export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string; observe?: () => Observation } = {}): { code: number; output: string; deploy: "PASS" } {
+export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: FixedSpawn; lockPath?: string; observe?: () => Observation; captureBaseline?: (databaseUrl: string) => MigrationRecord | null } = {}): { code: number; output: string; deploy: "PASS" } {
   const failures = evaluateMigrationGuards(input)
   if (failures.length) throw new Error(`BLOCKED: ${failures.join("; ")}`)
   if (!input.auditPath || !relative(process.cwd(), resolve(input.auditPath)).startsWith("..")) throw new Error("BLOCKED: audit artifact must be outside repository")
@@ -248,6 +260,10 @@ export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: Fix
   if (deployEnv.inheritedPgoptionsRejected) throw new Error("BLOCKED: inherited PGOPTIONS is forbidden")
   const parsed = new URL(deployEnv.env.DATABASE_URL)
   if (["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) || /pooler|pooling/i.test(parsed.hostname) || parsed.searchParams.has("pgbouncer") || parsed.searchParams.has("pooler")) throw new Error("BLOCKED: direct non-local PostgreSQL URL required")
+
+  // Capture baseline snapshot BEFORE deploy for pre/post stability verification.
+  const captureFn = options.captureBaseline ?? captureBaselineRecord
+  const baselinePreDeploy = captureFn(deployEnv.env.DATABASE_URL)
 
   const lockPath = options.lockPath ?? "/tmp/bagihasil-production-migration.lock"
   const lock = openSync(lockPath, "a", 0o600)
@@ -260,7 +276,7 @@ export function executeFixedDeploy(input: ExecutionInput, options: { spawn?: Fix
     }
     let observation: Observation
     try {
-      observation = options.observe?.() ?? observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum)
+      observation = options.observe?.() ?? observePostConditions(deployEnv.env.DATABASE_URL, input.target.identityFingerprint, input.preDeploymentInvariants, input.expectedMigration.name, input.expectedMigration.checksum, baselinePreDeploy)
     } catch {
       failureAudit(input, "live read-only postcondition observation failed")
       throw new Error("REQUIRES_READ_ONLY_INSPECTION: live read-only postcondition observation failed")
