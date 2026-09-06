@@ -31,6 +31,17 @@ const unitSchema = z.object({
 
 const MAX_RETRY = 5
 
+function isUnitCodeConflict(error: unknown): boolean {
+    if (!error || typeof error !== "object" || !("code" in error) || error.code !== "P2002") return false
+
+    const target = "meta" in error && error.meta && typeof error.meta === "object" && "target" in error.meta
+        ? error.meta.target
+        : undefined
+
+    if (Array.isArray(target)) return target.includes("code")
+    return typeof target === "string" && /(^|[^a-z])code([^a-z]|$)/i.test(target)
+}
+
 /**
  * Generate the next unique unit code for a given investor prefix.
  * Reads existing codes, finds the max suffix, and increments.
@@ -140,27 +151,29 @@ export async function POST(req: Request) {
                 lastError = err
 
                 // P2002 = unique constraint violation → race lost, retry with next code
-                if (err?.code === "P2002" && attempt < MAX_RETRY) {
+                if (isUnitCodeConflict(err) && attempt < MAX_RETRY) {
                     continue
                 }
 
-                // Non-retryable error
-                console.error("Error creating unit:", err)
-                if (err instanceof z.ZodError) {
-                    return NextResponse.json({ error: err.issues }, { status: 400 })
+                if (isUnitCodeConflict(err)) {
+                    break
                 }
-                return NextResponse.json({
-                    error: err.message || "Internal Server Error",
-                    details: err.code
-                }, { status: 500 })
+
+                // Non-code conflicts and all other errors are not retryable.
+                console.error("Error creating unit:", err)
+                return NextResponse.json(
+                    { error: "Internal Server Error" },
+                    { status: 500, headers: { "Cache-Control": "private, no-store" } }
+                )
             }
         }
 
         // Exhausted all retries
         console.error("Unit code allocation exhausted after retries:", lastError)
-        return NextResponse.json({
-            error: "Gagal membuat kode unit unik setelah beberapa percobaan. Silakan coba lagi."
-        }, { status: 509 })
+        return NextResponse.json(
+            { error: "Kode unit sedang digunakan oleh proses lain. Silakan coba lagi." },
+            { status: 409, headers: { "Cache-Control": "private, no-store" } }
+        )
     } catch (error: any) {
         console.error("Error creating unit:", error)
         if (error instanceof z.ZodError) {

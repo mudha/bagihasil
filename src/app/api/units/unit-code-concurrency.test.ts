@@ -14,8 +14,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 // ─── Mock setup ───────────────────────────────────────────────
 const mockFindMany = vi.fn()
 const mockFindUnique = vi.fn()
+const mockInvestorFindUnique = vi.fn()
 const mockCreate = vi.fn()
 const mockLogActivity = vi.fn()
+const mockAuth = vi.fn()
 
 vi.mock("@/lib/prisma", () => ({
     prisma: {
@@ -25,13 +27,13 @@ vi.mock("@/lib/prisma", () => ({
             create: mockCreate,
         },
         investor: {
-            findUnique: vi.fn(),
+            findUnique: mockInvestorFindUnique,
         },
     },
 }))
 
 vi.mock("@/lib/auth", () => ({
-    auth: vi.fn(),
+    auth: mockAuth,
 }))
 
 vi.mock("@/lib/activity-logger", () => ({
@@ -98,6 +100,9 @@ async function createUnitWithRetry(code: string, maxRetry = 5) {
 // ─── Tests ────────────────────────────────────────────────────
 beforeEach(() => {
     vi.clearAllMocks()
+    mockAuth.mockResolvedValue({ user: { role: "ADMIN" } })
+    mockInvestorFindUnique.mockResolvedValue({ name: "Wiwin Yuli Widiastuti" })
+    mockLogActivity.mockResolvedValue(undefined)
 })
 
 describe("Unit code generation — TOCTOU race analysis (old flow)", () => {
@@ -177,6 +182,85 @@ describe("Unit code generation — server-authoritative POST (new flow)", () => 
             "Connection refused"
         )
         expect(mockCreate).toHaveBeenCalledOnce()
+    })
+})
+
+describe("Production POST handler contracts", () => {
+    const request = () => new Request("http://localhost/api/units", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            investorId: "investor-wiwin",
+            name: "XMAX",
+            plateNumber: "B 1234 XYZ",
+            code: "CLIENT-SHOULD-BE-IGNORED",
+        }),
+    })
+
+    it("uses the actual investor prefix, ignores client code, and preserves the response", async () => {
+        mockFindMany.mockResolvedValue([{ code: "UNT-WIW-0013" }])
+        mockCreate.mockImplementation(async ({ data }) => ({ id: "u1", ...data }))
+        const { POST } = await import("./route")
+
+        const response = await POST(request())
+        const body = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(body.code).toBe("UNT-WIW-0014")
+        expect(mockInvestorFindUnique).toHaveBeenCalledWith({ where: { id: "investor-wiwin" }, select: { name: true } })
+        expect(mockCreate.mock.calls[0][0].data.code).not.toBe("CLIENT-SHOULD-BE-IGNORED")
+        expect(mockLogActivity).toHaveBeenCalledOnce()
+    })
+
+    it("regenerates a fresh code after a code-field P2002", async () => {
+        mockFindMany
+            .mockResolvedValueOnce([{ code: "UNT-WIW-0013" }])
+            .mockResolvedValueOnce([{ code: "UNT-WIW-0013" }, { code: "UNT-WIW-0014" }])
+        mockCreate
+            .mockRejectedValueOnce(Object.assign(new Error("conflict"), { code: "P2002", meta: { target: ["code"] } }))
+            .mockImplementationOnce(async ({ data }) => ({ id: "u2", ...data }))
+        const { POST } = await import("./route")
+
+        const response = await POST(request())
+        const body = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(mockCreate.mock.calls.map(call => call[0].data.code)).toEqual(["UNT-WIW-0014", "UNT-WIW-0015"])
+        expect(body.code).toBe("UNT-WIW-0015")
+        expect(mockLogActivity).toHaveBeenCalledOnce()
+    })
+
+    it("does not retry P2002 for another unique field and hides Prisma details", async () => {
+        mockFindMany.mockResolvedValue([])
+        mockCreate.mockRejectedValueOnce(Object.assign(new Error("Unique constraint failed on plateNumber"), {
+            code: "P2002", meta: { target: ["plateNumber"] },
+        }))
+        const { POST } = await import("./route")
+
+        const response = await POST(request())
+        const body = await response.json()
+
+        expect(response.status).toBe(500)
+        expect(mockCreate).toHaveBeenCalledOnce()
+        expect(body).toEqual({ error: "Internal Server Error" })
+        expect(JSON.stringify(body)).not.toMatch(/P2002|plateNumber|Prisma/i)
+        expect(response.headers.get("cache-control")).toBe("private, no-store")
+        expect(mockLogActivity).not.toHaveBeenCalled()
+    })
+
+    it("returns standard 409 after bounded code-conflict exhaustion", async () => {
+        mockFindMany.mockResolvedValue([])
+        mockCreate.mockRejectedValue(Object.assign(new Error("conflict"), { code: "P2002", meta: { target: ["code"] } }))
+        const { POST } = await import("./route")
+
+        const response = await POST(request())
+        const body = await response.json()
+
+        expect(response.status).toBe(409)
+        expect(mockCreate).toHaveBeenCalledTimes(6)
+        expect(body.error).toContain("Silakan coba lagi")
+        expect(response.headers.get("cache-control")).toBe("private, no-store")
+        expect(mockLogActivity).not.toHaveBeenCalled()
     })
 })
 
