@@ -15,13 +15,16 @@ import { captureInvariantFingerprints, observePostConditions } from "../../scrip
 const MIGRATION = "20260830222005_loss_capital_ledger_foundation"
 const CHECKSUM = "2de7d2e9ca11d799447f3e5a822655cbb6072316e88226ae7b81ff07858a3ad4"
 
+const BASELINE_NAME = "20260824000000_postgresql_baseline"
+const BASELINE_CHECKSUM = "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd"
+
 function baseInput(overrides: Partial<PostConditionInput> = {}): PostConditionInput {
   return {
     migrationName: MIGRATION,
     migrationChecksum: CHECKSUM,
     identityMatches: true,
     migrationRecords: [
-      { name: "20260824000000_postgresql_baseline", checksum: "7d3db2caa21892dc0324044a2ee27ef66a3fbc0b033e5fec5c0e25181468f3bd", finished: true, rolledBack: false, appliedSteps: 1 },
+      { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
       { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
     ],
     prismaStatusUpToDate: true,
@@ -39,19 +42,191 @@ function baseInput(overrides: Partial<PostConditionInput> = {}): PostConditionIn
 }
 
 describe("verifyPostConditions exact ledger contract", () => {
-  it("passes exact runner-owned observations", () => {
+  // ── Criterion 1: Baseline exact, resolve-adopted (steps=0), unchanged → PASS ──
+  it("accepts resolve-adopted baseline (appliedSteps=0) with correct name/checksum/finished/unrolledBack", () => {
     expect(verifyPostConditions(baseInput())).toEqual({ pass: true, failures: [] })
   })
 
-  it("rejects duplicate, unfinished, rolled-back, wrong-checksum, and unexpected migration records", () => {
-    const base = baseInput()
-    expect(verifyPostConditions({ ...base, migrationRecords: [...base.migrationRecords, base.migrationRecords[1]] }).pass).toBe(false)
-    expect(verifyPostConditions({ ...base, migrationRecords: base.migrationRecords.map((r) => r.name === MIGRATION ? { ...r, finished: false } : r) }).pass).toBe(false)
-    expect(verifyPostConditions({ ...base, migrationRecords: base.migrationRecords.map((r) => r.name === MIGRATION ? { ...r, rolledBack: true } : r) }).pass).toBe(false)
-    expect(verifyPostConditions({ ...base, migrationRecords: base.migrationRecords.map((r) => r.name === MIGRATION ? { ...r, checksum: "wrong" } : r) }).pass).toBe(false)
-    expect(verifyPostConditions({ ...base, migrationRecords: [...base.migrationRecords, { name: "unexpected", checksum: "x", finished: true, rolledBack: false, appliedSteps: 1 }] }).pass).toBe(false)
+  // ── Criterion 1b: Baseline normal (steps>=1) also accepted ──
+  it("accepts normal baseline (appliedSteps=1) with correct name/checksum/finished/unrolledBack", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    expect(verifyPostConditions(input)).toEqual({ pass: true, failures: [] })
   })
 
+  // ── Criterion 2: Baseline checksum wrong → FAIL ──
+  it("rejects baseline with wrong checksum", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: "wrong_checksum", finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("baseline migration record does not match resolve-adopted or normal baseline contract")
+  })
+
+  // ── Criterion 3: Baseline unfinished → FAIL ──
+  it("rejects baseline with finished=false", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: false, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("baseline migration record does not match resolve-adopted or normal baseline contract")
+  })
+
+  // ── Criterion 3b: Baseline rolled back → FAIL ──
+  it("rejects baseline with rolledBack=true", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: true, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("baseline migration record does not match resolve-adopted or normal baseline contract")
+  })
+
+  // ── Criterion 5: Non-baseline migration with appliedSteps=0 → FAIL ──
+  it("rejects target migration with appliedSteps=0", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration applied_steps_count must be >= 1")
+  })
+
+  // ── Criterion 6: Target migration exact, steps >= 1 → PASS ──
+  it("accepts target migration with exact checksum, finished, not rolled back, steps >= 1", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 2 },
+      ],
+    })
+    expect(verifyPostConditions(input)).toEqual({ pass: true, failures: [] })
+  })
+
+  // ── Criterion 7a: Target missing → FAIL ──
+  it("rejects when target migration record is missing", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration record count is not exactly one")
+  })
+
+  // ── Criterion 7b: Target wrong checksum → FAIL ──
+  it("rejects target migration with wrong checksum", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: "wrong", finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration checksum mismatch")
+  })
+
+  // ── Criterion 7c: Target unfinished → FAIL ──
+  it("rejects target migration with finished=false", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: false, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration is not finished")
+  })
+
+  // ── Criterion 7d: Target rolled back → FAIL ──
+  it("rejects target migration with rolledBack=true", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: true, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration is rolled back")
+  })
+
+  // ── Criterion 7e: Target duplicate → FAIL ──
+  it("rejects duplicate target migration records", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("target migration record count is not exactly one")
+  })
+
+  // ── Criterion 7f: Unexpected migration → FAIL ──
+  it("rejects unexpected migration records", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+        { name: "unexpected_migration", checksum: "x", finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("unexpected migration records found")
+  })
+
+  // ── Baseline missing → FAIL ──
+  it("rejects when baseline record is missing", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("baseline migration record is not exactly one")
+  })
+
+  // ── Baseline duplicate → FAIL ──
+  it("rejects duplicate baseline records", () => {
+    const input = baseInput({
+      migrationRecords: [
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: BASELINE_NAME, checksum: BASELINE_CHECKSUM, finished: true, rolledBack: false, appliedSteps: 0 },
+        { name: MIGRATION, checksum: CHECKSUM, finished: true, rolledBack: false, appliedSteps: 1 },
+      ],
+    })
+    const result = verifyPostConditions(input)
+    expect(result.pass).toBe(false)
+    expect(result.failures).toContain("baseline migration record is not exactly one")
+  })
+
+  // ── Target mismatch, non-clean Prisma status, invariant mismatch ──
   it("rejects target mismatch, non-clean Prisma status, and invariant mismatch", () => {
     expect(verifyPostConditions(baseInput({ identityMatches: false })).pass).toBe(false)
     expect(verifyPostConditions(baseInput({ prismaStatusUpToDate: false })).pass).toBe(false)
@@ -59,6 +234,7 @@ describe("verifyPostConditions exact ledger contract", () => {
     expect(verifyPostConditions(baseInput({ invariantFingerprintsMatch: false })).pass).toBe(false)
   })
 
+  // ── Schema contract: wrong named enum/table/column definitions → FAIL ──
   it("rejects wrong named enum/table/column definitions", () => {
     expect(verifyPostConditions(baseInput({ enums: LEDGER_SCHEMA_CONTRACT.enums.slice(1) })).pass).toBe(false)
     expect(verifyPostConditions(baseInput({ enums: LEDGER_SCHEMA_CONTRACT.enums.map((value, i) => i === 0 ? { ...value, labels: ["WRONG"] } : value) })).pass).toBe(false)
@@ -67,6 +243,7 @@ describe("verifyPostConditions exact ledger contract", () => {
     expect(verifyPostConditions(baseInput({ transactionFinalizationVersion: { type: "integer", nullable: true, default: "1" } })).pass).toBe(false)
   })
 
+  // ── Same-count CHECK/FK/index substitutions → FAIL ──
   it("rejects same-count CHECK/FK/index substitutions", () => {
     const checks = LEDGER_SCHEMA_CONTRACT.checks.map((value, i) => i === 0 ? { ...value, expression: "finalizationversion >= 1" } : value)
     const foreignKeys = LEDGER_SCHEMA_CONTRACT.foreignKeys.map((value, i) => i === 0 ? { ...value, onDelete: "CASCADE" } : value)

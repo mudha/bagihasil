@@ -86,16 +86,66 @@ export function normalizeCheckExpression(value: string): string {
   return value.toLowerCase().replace(/::[a-z ]+/g, "").replace(/[()\"]/g, " ").replace(/\s+/g, " ").trim()
 }
 
+/**
+ * Determine whether a migration record represents the resolve-adopted baseline.
+ * A resolve-adopted baseline (via `prisma migrate resolve --applied`) has
+ * `applied_steps_count = 0` instead of the normal `>= 1`. This is valid
+ * ONLY when every field matches the known baseline contract exactly.
+ */
+function isResolveAdoptedBaseline(record: MigrationRecord): boolean {
+  return (
+    record.name === BASELINE.name &&
+    record.checksum === BASELINE.checksum &&
+    record.finished === true &&
+    record.rolledBack === false &&
+    record.appliedSteps === 0
+  )
+}
+
 export function verifyPostConditions(input: PostConditionInput): PostConditionResult {
   const failures: string[] = []
   if (!input.identityMatches) failures.push("postcondition target identity differs from deploy target")
 
-  const expectedRecords = [
-    { name: BASELINE.name, checksum: BASELINE.checksum, finished: true, rolledBack: false, appliedSteps: 1 },
-    { name: input.migrationName, checksum: input.migrationChecksum, finished: true, rolledBack: false, appliedSteps: 1 },
-  ]
-  if (canonical(input.migrationRecords) !== canonical(expectedRecords)) failures.push("migration records are not the exact successful committed history")
-  if (input.migrationRecords.filter((record) => record.name === input.migrationName).length !== 1) failures.push("migration record count is not 1")
+  // --- Migration record validation ---
+  // Separate baseline from non-baseline records.
+  const baselineRecords = input.migrationRecords.filter((r) => r.name === BASELINE.name)
+  const nonBaselineRecords = input.migrationRecords.filter((r) => r.name !== BASELINE.name)
+
+  // Baseline: must exist exactly once.
+  if (baselineRecords.length !== 1) {
+    failures.push("baseline migration record is not exactly one")
+  } else {
+    const baseline = baselineRecords[0]
+    // The baseline is acceptable in two forms:
+    //  1. Resolve-adopted: appliedSteps=0 (the baseline was adopted via `prisma migrate resolve --applied`)
+    //  2. Normal: appliedSteps >= 1 (the baseline was applied normally)
+    const resolveAdopted = isResolveAdoptedBaseline(baseline)
+    const normalBaseline =
+      baseline.name === BASELINE.name &&
+      baseline.checksum === BASELINE.checksum &&
+      baseline.finished === true &&
+      baseline.rolledBack === false &&
+      baseline.appliedSteps >= 1
+    if (!resolveAdopted && !normalBaseline) {
+      failures.push("baseline migration record does not match resolve-adopted or normal baseline contract")
+    }
+  }
+
+  // Target migration: strict checks, no exceptions.
+  const targetRecords = nonBaselineRecords.filter((r) => r.name === input.migrationName)
+  if (targetRecords.length !== 1) {
+    failures.push("target migration record count is not exactly one")
+  } else {
+    const target = targetRecords[0]
+    if (target.checksum !== input.migrationChecksum) failures.push("target migration checksum mismatch")
+    if (!target.finished) failures.push("target migration is not finished")
+    if (target.rolledBack) failures.push("target migration is rolled back")
+    if (target.appliedSteps < 1) failures.push("target migration applied_steps_count must be >= 1")
+  }
+
+  // Unexpected records: anything not baseline and not the target.
+  const unexpectedRecords = nonBaselineRecords.filter((r) => r.name !== input.migrationName)
+  if (unexpectedRecords.length > 0) failures.push("unexpected migration records found")
   if (!input.prismaStatusUpToDate) failures.push("Prisma migration status is not up to date")
   if (!input.schemaDiffEmpty) failures.push("canonical Prisma schema diff is not empty")
 
