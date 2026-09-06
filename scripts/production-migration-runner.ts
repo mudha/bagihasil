@@ -275,11 +275,12 @@ export function validatePreDeployBaseline(record: MigrationRecord): void {
  * Run the full critical section: guards → capture baseline → validate →
  * deploy → postcondition → audit.
  *
- * Designed to be called EITHER from the production flock subprocess
- * (via --critical-section flag) OR directly from unit tests with
- * optional captureBaseline / observe seams.
+ * Production calls this only through executeFixedDeploy() after
+ * acquireLock() succeeds. Unit tests may call it directly with optional
+ * captureBaseline / observe seams.
  *
- * Lock is held by the caller (the flock subprocess wrapper).
+ * In production, the caller holds the inherited-FD flock until this
+ * function returns or throws, then releases it in finally.
  */
 export function executeCriticalSection(
   input: ExecutionInput,
