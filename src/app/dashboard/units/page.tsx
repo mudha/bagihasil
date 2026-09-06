@@ -1222,7 +1222,7 @@ function UnitsPageContent() {
                                             </section>
                                             </div>
                                             <div className="safe-pb shrink-0 border-t border-border bg-card/95 px-4 pt-3 shadow-[var(--mudha-shadow-sm)] backdrop-blur sm:px-6 sm:pb-4">
-                                                <Button type="submit" className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-800">{editingUnit ? "Simpan Perubahan" : "Simpan Unit"}</Button>
+                                                <Button type="submit" disabled={form.formState.isSubmitting} className="h-12 w-full rounded-xl bg-teal-600 text-base font-black shadow-lg shadow-teal-600/20 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-800 disabled:opacity-50">{form.formState.isSubmitting ? "Menyimpan..." : editingUnit ? "Simpan Perubahan" : "Simpan Unit"}</Button>
                                             </div>
                                         </form>
                                     </Form>

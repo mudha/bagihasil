@@ -16,6 +16,7 @@ export async function POST(req: Request) {
 
         let successCount = 0
         const errors: string[] = []
+        const seenCodes = new Set<string>()
 
         // Pre-fetch all investors to minimize DB calls
         const investors = await prisma.investor.findMany()
@@ -35,6 +36,14 @@ export async function POST(req: Request) {
                 errors.push(`Row ${i + 1}: Investor '${investorName}' not found`)
                 continue
             }
+
+            // Cross-row duplicate detection
+            const normalizedCode = code.trim().toUpperCase()
+            if (seenCodes.has(normalizedCode)) {
+                errors.push(`Row ${i + 1}: Duplicate code '${code}' (already in this import)`)
+                continue
+            }
+            seenCodes.add(normalizedCode)
 
             try {
                 await prisma.unit.create({
