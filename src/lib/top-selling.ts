@@ -24,7 +24,8 @@ function stripBrandPrefix(raw: string, brand: string): string {
 
 /** Remove year, color, variant suffixes from a name to get the core model. */
 function stripVariants(raw: string): string {
-    return raw
+    const padded = ` ${raw}`
+    return padded
         // Remove Indonesian color phrases: "warna hijau", "warna merah", etc.
         .replace(/\s+warna\s+\S+/gi, "")
         // Remove variant suffixes: Old, Connected, Tech Max

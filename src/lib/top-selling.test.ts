@@ -55,6 +55,26 @@ describe("canonicalUnitName", () => {
         expect(canonicalUnitName("Kawasaki", null, "Kawasaki")).toBe("Kawasaki")
     })
 
+    it("treats variant-only model 'Connected' as missing, extracts XMAX from raw name", () => {
+        expect(canonicalUnitName("Yamaha", "Connected", "Yamaha XMAX Connected 2023 warna Hitam")).toBe("Yamaha XMAX")
+    })
+
+    it("treats variant-only model 'Old' as missing, extracts XMAX from raw name", () => {
+        expect(canonicalUnitName("Yamaha", "Old", "Yamaha XMAX Old 2022")).toBe("Yamaha XMAX")
+    })
+
+    it("treats variant-only model 'Tech Max' as missing, extracts XMAX from raw name", () => {
+        expect(canonicalUnitName("Yamaha", "Tech Max", "Yamaha XMAX Tech Max 2024")).toBe("Yamaha XMAX")
+    })
+
+    it("preserves valid model NMAX even when brand is Yamaha", () => {
+        expect(canonicalUnitName("Yamaha", "NMAX", "any")).toBe("Yamaha NMAX")
+    })
+
+    it("does not guess model when variant-only and raw name has no model", () => {
+        expect(canonicalUnitName("Yamaha", "Connected", "Yamaha Connected")).toBe("Yamaha")
+    })
+
     it("trims and normalizes whitespace", () => {
         expect(canonicalUnitName("  yamaha  ", "  xmax  ", "Any")).toBe("Yamaha xmax")
     })
@@ -208,6 +228,39 @@ describe("getTopSellingUnits", () => {
 
         const result = aggregateTopSellingUnits([...structured, ...rawFallback])
         expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 87, percentage: 100 })
+    })
+
+    it("regression: 11 XMAX + 1 variant-only Connected → 12 Yamaha XMAX (production evidence)", () => {
+        const xmax = Array.from({ length: 11 }, () =>
+            makeTx("Yamaha", "XMAX", "Yamaha XMAX 2023")
+        )
+        const connected = makeTx("Yamaha", "Connected", "Yamaha XMAX Connected 2023 warna Hitam")
+
+        const result = aggregateTopSellingUnits([...xmax, connected])
+        expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 12, percentage: 100 })
+    })
+
+    it("variant-only Old and Tech Max also merge into correct model", () => {
+        const rows = [
+            makeTx("Yamaha", "XMAX", "Yamaha XMAX 2024"),
+            makeTx("Yamaha", "Old", "Yamaha XMAX Old 2022"),
+            makeTx("Yamaha", "Tech Max", "Yamaha XMAX Tech Max 2024"),
+        ]
+        const result = aggregateTopSellingUnits(rows)
+        expect(result).toHaveLength(1)
+        expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 3, percentage: 100 })
+    })
+
+    it("valid model NMAX remains separate from XMAX even with variant-only model rows", () => {
+        const rows = [
+            makeTx("Yamaha", "XMAX", "Yamaha XMAX 2024"),
+            makeTx("Yamaha", "Connected", "Yamaha XMAX Connected 2023"),
+            makeTx("Yamaha", "NMAX", "Yamaha NMAX 2024"),
+        ]
+        const result = aggregateTopSellingUnits(rows)
+        expect(result).toHaveLength(2)
+        expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 2, percentage: 100 })
+        expect(result[1]).toEqual({ name: "Yamaha NMAX", count: 1, percentage: 50 })
     })
 
     it("does not merge unknown model with XMAX even if name contains XMAX substring", () => {
