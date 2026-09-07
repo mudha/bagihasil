@@ -35,7 +35,7 @@ const inventory = [
 ] as const
 const literalPattern = /(?<!dark:)(?:bg|text|border|from|via|to|ring|fill|stroke)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-[0-9]+)?(?:\/\d+)?/
 const exactUnpairedWhitelist = new Set([
-  "src/app/dashboard/layout.tsx::hidden h-full lg:fixed lg:inset-y-0 lg:z-[80] lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-teal-900/20 lg:bg-[#062f2d]",
+  "src/app/dashboard/layout.tsx::hidden lg:fixed lg:inset-y-0 lg:z-[80] lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-teal-900/20 lg:bg-[#062f2d]",
   "src/app/dashboard/page.tsx::grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4",
   "src/app/dashboard/page.tsx::grid grid-cols-2 gap-3 border-t border-white/10 pt-3",
   "src/app/dashboard/page.tsx::grid size-10 place-items-center rounded-lg bg-white text-teal-700",
@@ -185,5 +185,18 @@ describe("Phase 2 immutable behavior boundaries", () => {
   it("themes every dashboard tooltip content surface", () => {
     const source = readFileSync("src/app/dashboard/page.tsx", "utf8")
     expect((source.match(/contentStyle=\{\{ backgroundColor: chart\.tooltipBackground, borderColor: chart\.tooltipBorder, color: chart\.tooltipLabel \}\}/g) ?? []).length).toBe(5)
+  })
+  it("gives every investor ResponsiveContainer a positive initial size without changing responsive height", () => {
+    const charts = [
+      "src/app/dashboard/investor/InvestorMonthlyChart.tsx",
+      "src/app/dashboard/investor/InvestorRevenueChart.tsx",
+      "src/app/dashboard/investor/InvestorSalesTrendChart.tsx",
+    ]
+    for (const path of charts) {
+      const source = readFileSync(path, "utf8")
+      expect(source).toContain('className="h-[260px] min-w-0 w-full sm:h-[320px]"')
+      expect(source).toContain('width="100%" height="100%" minWidth={0} initialDimension={{ width: 1, height: 260 }}')
+      expect(source).not.toContain('height={260}')
+    }
   })
 })
