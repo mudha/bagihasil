@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 import { getInvestorDashboardData } from "@/lib/investor-data"
 import { legacyTransactionWithUnitSelect, legacyUnitWithInvestorSelect } from "../../../../lib/legacy-read-selects"
+import { getTopSellingUnits } from "@/lib/top-selling"
 
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -84,9 +85,12 @@ export async function GET(request: NextRequest) {
             orderBy: { paymentDate: "desc" }
         })
 
+        const topSellingUnits = await getTopSellingUnits(months, investor.id)
+
         return NextResponse.json({
             investor,
             stats,
+            topSellingUnits,
             monthlyChartData: data.monthlyChartData,
             monthlySalesTrend: data.monthlySalesTrend,
             monthlyRevenueData: data.monthlyRevenueData,

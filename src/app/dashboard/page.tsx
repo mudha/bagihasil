@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { LoadingState } from "@/components/mudha/LoadingState"
+import { TopSellingUnits } from "@/components/dashboard/TopSellingUnits"
 import { ErrorState } from "@/components/mudha/ErrorState"
 import { useTheme } from "next-themes"
 import {
@@ -99,6 +100,7 @@ interface DashboardStats {
     totalInvestorProfit: number
     totalManagerProfit: number
     totalCapitalDeployed: number
+    topSellingUnits: { name: string; count: number; percentage: number }[]
     investorStats: InvestorStat[]
     monthlyStats: MonthlyStat[]
     monthlyStatsHijri: MonthlyStat[]
@@ -251,6 +253,7 @@ export default function DashboardPage() {
                 if (!data.unitStatusDistribution) data.unitStatusDistribution = []
                 if (!data.monthlyStats) data.monthlyStats = []
                 if (!data.monthlyStatsHijri) data.monthlyStatsHijri = []
+                if (!data.topSellingUnits) data.topSellingUnits = []
                 if (!data.taxReminders) data.taxReminders = []
 
                 setStats(data)
@@ -716,6 +719,8 @@ export default function DashboardPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <TopSellingUnits data={stats.topSellingUnits || []} />
                 </div>
             </section>
         </div>
