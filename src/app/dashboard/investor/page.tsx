@@ -126,6 +126,7 @@ export default function InvestorDashboardPage() {
         <InvestorTabs
             investorName={data.investor.name}
             stats={data.stats}
+            topSellingUnits={data.topSellingUnits || []}
             monthlyChartData={data.monthlyChartData}
             monthlySalesTrend={data.monthlySalesTrend}
             monthlyRevenueData={data.monthlyRevenueData}

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma"
 
 import { getInvestorDashboardData } from "@/lib/investor-data"
 import { legacyTransactionWithUnitSelect, legacyUnitWithInvestorSelect } from "../../../../lib/legacy-read-selects"
+import { getTopSellingUnits } from "../../../../lib/top-selling"
+
+const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
 
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -15,7 +18,11 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const months = parseInt(searchParams.get("months") || "6", 10)
+    const monthsParam = searchParams.get("months")
+    const requestedMonths = monthsParam ? Number.parseInt(monthsParam, 10) : 6
+    const months = ALLOWED_MONTH_RANGES.has(requestedMonths) && String(requestedMonths) === (monthsParam ?? "6")
+        ? requestedMonths
+        : 6
 
     try {
         const data = await getInvestorDashboardData(session.user.id!, months)
@@ -84,9 +91,12 @@ export async function GET(request: NextRequest) {
             orderBy: { paymentDate: "desc" }
         })
 
+        const topSellingUnits = await getTopSellingUnits(months, investor.id)
+
         return NextResponse.json({
             investor,
             stats,
+            topSellingUnits,
             monthlyChartData: data.monthlyChartData,
             monthlySalesTrend: data.monthlySalesTrend,
             monthlyRevenueData: data.monthlyRevenueData,
