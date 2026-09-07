@@ -10,6 +10,7 @@ import { CheckCircle, DollarSign, Package, TrendingUp, Wallet } from "lucide-rea
 import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 import { InvestorRevenueChart } from "./InvestorRevenueChart"
+import { TopSellingUnits } from "@/components/dashboard/TopSellingUnits"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface InvestorTabsProps {
@@ -22,6 +23,7 @@ interface InvestorTabsProps {
         soldUnitsCount: number
         totalUnitsCount: number
     }
+    topSellingUnits: { name: string; count: number; percentage: number }[]
     monthlyChartData: any[]
     monthlySalesTrend: any[]
     monthlyRevenueData: any[]
@@ -95,6 +97,7 @@ function StatCard({
 export function InvestorTabs({
     investorName,
     stats,
+    topSellingUnits,
     monthlyChartData,
     monthlySalesTrend,
     monthlyRevenueData,
@@ -213,6 +216,8 @@ export function InvestorTabs({
                         </button>
                     </div>
                 </div>
+
+                <TopSellingUnits data={topSellingUnits || []} />
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
                     <InvestorRevenueChart data={currentMonthlyRevenueData} className="lg:col-span-3" />

@@ -4,23 +4,10 @@ import { NextResponse } from "next/server"
 import { getHijriMonthYear } from "@/lib/date-utils"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 import { investorStatsScope } from "@/lib/dashboard-access"
+import { getJakartaPeriodStart, getTopSellingUnits } from "../../../lib/top-selling"
 
 const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000
-
-function getJakartaPeriodStart(monthsRange: number) {
-    const now = new Date()
-    const dateParts = new Intl.DateTimeFormat("en-US", {
-        timeZone: "Asia/Jakarta",
-        year: "numeric",
-        month: "numeric",
-    }).formatToParts(now)
-    const year = Number(dateParts.find(part => part.type === "year")?.value)
-    const monthIndex = Number(dateParts.find(part => part.type === "month")?.value) - 1
-
-    // Jakarta is UTC+7 and does not observe daylight saving time.
-    return new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
-}
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -70,7 +57,7 @@ export async function GET(req: Request) {
             profitWhere.transaction.unit = { investorId }
         }
 
-        const [activeUnits, completedTransactions, profitStats] = await Promise.all([
+        const [activeUnits, completedTransactions, profitStats, topSellingUnits] = await Promise.all([
             prisma.unit.count({ where: unitWhere }),
             prisma.transaction.count({ where: transactionWhere }),
             prisma.profitSharing.aggregate({
@@ -80,7 +67,8 @@ export async function GET(req: Request) {
                     investorProfitAmount: true,
                     managerProfitAmount: true
                 }
-            })
+            }),
+            getTopSellingUnits(monthsRange, investorId),
         ])
 
         // 2. Investor Stats. Admin/viewer see the selector; investors only see their own row.
@@ -362,6 +350,7 @@ export async function GET(req: Request) {
             totalInvestorProfit: profitStats._sum.investorProfitAmount || 0,
             totalManagerProfit: profitStats._sum.managerProfitAmount || 0,
             totalCapitalDeployed,
+            topSellingUnits,
             investorStats,
             monthlyStats, // Gregorian
             monthlyStatsHijri,
