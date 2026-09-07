@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { InvestorTabs } from "./InvestorTabs"
 import { ErrorState } from "@/components/mudha/ErrorState"
+import type { DashboardPeriodValue } from "@/components/dashboard/DashboardPeriodFilter"
 
 export default function InvestorDashboardPage() {
     const router = useRouter()
@@ -12,7 +13,10 @@ export default function InvestorDashboardPage() {
     const [error, setError] = useState<string | null>(null)
     const [isAccessDenied, setIsAccessDenied] = useState(false)
     const [isNotFound, setIsNotFound] = useState(false)
-    const [monthsRange, setMonthsRange] = useState<string>("6")
+    const [periodValue, setPeriodValue] = useState<DashboardPeriodValue>("6")
+    const [periodQuery, setPeriodQuery] = useState("months=6")
+    const [customFrom, setCustomFrom] = useState("")
+    const [customTo, setCustomTo] = useState("")
     const [retryNonce, setRetryNonce] = useState(0)
 
     const fetchData = useCallback(async () => {
@@ -22,7 +26,7 @@ export default function InvestorDashboardPage() {
         setIsNotFound(false)
         setData(null)
         try {
-            const res = await fetch(`/api/investor/dashboard?months=${monthsRange}`)
+            const res = await fetch(`/api/investor/dashboard?${periodQuery}`)
             if (res.status === 401) {
                 router.push("/login")
                 return
@@ -58,7 +62,18 @@ export default function InvestorDashboardPage() {
         } finally {
             setLoading(false)
         }
-    }, [monthsRange, router])
+    }, [periodQuery, router])
+
+    const handlePeriodValueChange = (value: DashboardPeriodValue) => {
+        setPeriodValue(value)
+        if (value === "all") setPeriodQuery("range=all")
+        else if (value !== "custom") setPeriodQuery(`months=${value}`)
+    }
+
+    const applyCustomPeriod = () => {
+        if (!customFrom || !customTo || customFrom > customTo) return
+        setPeriodQuery(`range=custom&from=${encodeURIComponent(customFrom)}&to=${encodeURIComponent(customTo)}`)
+    }
 
     useEffect(() => {
         fetchData()
@@ -135,8 +150,13 @@ export default function InvestorDashboardPage() {
             monthlyRevenueDataHijri={data.monthlyRevenueDataHijri}
             investmentsData={data.investmentsData}
             paymentsData={data.paymentsData}
-            monthsRange={monthsRange}
-            onMonthsRangeChange={setMonthsRange}
+            periodValue={periodValue}
+            onPeriodValueChange={handlePeriodValueChange}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            onApplyCustom={applyCustomPeriod}
         />
     )
 }

@@ -38,7 +38,7 @@ function productionTsx(root: string): string[] {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name)
       if (statSync(path).isDirectory()) walk(path)
-      else if (path.endsWith(".tsx") && !path.endsWith(".test.tsx")) result.push(path)
+      else if (path.endsWith(".tsx") && !path.endsWith(".test.tsx")) result.push(path.replaceAll("\\", "/"))
     }
   }
   walk(root)
@@ -164,7 +164,7 @@ describe("Phase 3 charts, native controls, evidence, and behavior boundaries", (
   it("keeps login/auth, investor fetch, filters, sort, and date mode signatures", () => {
     expect(source("src/components/auth/LoginForm.tsx")).toContain('signIn("credentials", {')
     expect(source("src/components/auth/LoginForm.tsx")).toContain("redirect: false")
-    expect(source("src/app/dashboard/investor/page.tsx")).toContain('fetch(`/api/investor/dashboard?months=${monthsRange}`)')
+    expect(source("src/app/dashboard/investor/page.tsx")).toContain('fetch(`/api/investor/dashboard?${periodQuery}`)')
     expect(source("src/components/investor/ManagedCapitalSelfCard.tsx")).toContain('fetch("/api/investors/me/capital-summary", {')
     expect(source("src/app/dashboard/investor/profile/page.tsx")).toContain("const session = await auth()")
     expect(source("src/app/dashboard/investor/profile/page.tsx")).toContain("const investor = await prisma.investor.findUnique({")
@@ -189,5 +189,5 @@ describe("Phase 3 charts, native controls, evidence, and behavior boundaries", (
 })
 
 function switcherIconImport() {
-  return source("src/components/theme/ThemeSwitcher.tsx").split("\n").find((line) => line.includes('from "lucide-react"'))
+  return source("src/components/theme/ThemeSwitcher.tsx").split("\n").find((line) => line.includes('from "lucide-react"'))?.trim()
 }

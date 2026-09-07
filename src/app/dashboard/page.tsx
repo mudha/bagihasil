@@ -24,7 +24,7 @@ import {
     TrendingUp,
     Wallet,
 } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { format } from "date-fns"
@@ -42,6 +42,7 @@ import {
 import { toast } from "sonner"
 import { LoadingState } from "@/components/mudha/LoadingState"
 import { TopSellingUnits } from "@/components/dashboard/TopSellingUnits"
+import { DashboardPeriodFilter, type DashboardPeriodValue } from "@/components/dashboard/DashboardPeriodFilter"
 import { ErrorState } from "@/components/mudha/ErrorState"
 import { useTheme } from "next-themes"
 import {
@@ -214,7 +215,10 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null)
     const [selectedInvestorId, setSelectedInvestorId] = useState<string>("all")
     const [exportingReport, setExportingReport] = useState(false)
-    const [monthsRange, setMonthsRange] = useState<string>("6")
+    const [periodValue, setPeriodValue] = useState<DashboardPeriodValue>("6")
+    const [periodQuery, setPeriodQuery] = useState("months=6")
+    const [customFrom, setCustomFrom] = useState("")
+    const [customTo, setCustomTo] = useState("")
     const [calendarMode, setCalendarMode] = useState<"gregorian" | "hijri">("gregorian")
     const [retryNonce, setRetryNonce] = useState(0)
 
@@ -230,7 +234,7 @@ export default function DashboardPage() {
             setStats(null)
             setError(null)
             try {
-                let url = `/api/dashboard?months=${monthsRange}`
+                let url = `/api/dashboard?${periodQuery}`
                 if (selectedInvestorId && selectedInvestorId !== "all") {
                     url += `&investorId=${selectedInvestorId}`
                 }
@@ -279,7 +283,7 @@ export default function DashboardPage() {
             window.clearTimeout(timeoutId)
             controller.abort()
         }
-    }, [selectedInvestorId, monthsRange, retryNonce])
+    }, [selectedInvestorId, periodQuery, retryNonce])
 
     if (error && !stats) return <div className="space-y-4 pb-20"><ErrorState title="Gagal memuat dashboard" description={error} onRetry={() => setRetryNonce((value) => value + 1)} /></div>
     if (!stats) {
@@ -368,6 +372,33 @@ export default function DashboardPage() {
     const heroLabel = selectedInvestor ? selectedInvestor.name : "Semua Investor"
     const bestInvestor = [...stats.investorStats].sort((a, b) => b.totalProfit - a.totalProfit)[0]
     const totalSharedProfit = stats.totalInvestorProfit + stats.totalManagerProfit
+    const topInvestorProfit = Math.max(stats.investorStats[0]?.totalProfit ?? 0, 1)
+
+    const handlePeriodValueChange = (value: DashboardPeriodValue) => {
+        setPeriodValue(value)
+        if (value === "all") setPeriodQuery("range=all")
+        else if (value !== "custom") setPeriodQuery(`months=${value}`)
+    }
+
+    const applyCustomPeriod = () => {
+        if (!customFrom || !customTo || customFrom > customTo) {
+            toast.error("Pilih rentang tanggal yang valid")
+            return
+        }
+        setPeriodQuery(`range=custom&from=${encodeURIComponent(customFrom)}&to=${encodeURIComponent(customTo)}`)
+    }
+
+    const appliedPeriodParams = new URLSearchParams(periodQuery)
+    const appliedMonths = appliedPeriodParams.get("months") ?? "6"
+    const periodDescription = appliedPeriodParams.get("range") === "all"
+        ? "seluruh waktu"
+        : appliedPeriodParams.get("range") === "custom"
+            ? `${appliedPeriodParams.get("from")} – ${appliedPeriodParams.get("to")}`
+            : appliedMonths === "12"
+                ? "1 tahun terakhir"
+                : appliedMonths === "24"
+                    ? "2 tahun terakhir"
+                    : "6 bulan terakhir"
 
     const quickActions = [
         { label: "Unit", href: "/dashboard/units", icon: Car },
@@ -454,16 +485,16 @@ export default function DashboardPage() {
                     </TabsList>
                 </Tabs>
 
-                <Select value={monthsRange} onValueChange={setMonthsRange}>
-                    <SelectTrigger className="h-11 w-full rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] lg:w-[170px]">
-                        <SelectValue placeholder="Rentang Waktu" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="6">6 Bulan Terakhir</SelectItem>
-                        <SelectItem value="12">1 Tahun Terakhir</SelectItem>
-                        <SelectItem value="24">2 Tahun Terakhir</SelectItem>
-                    </SelectContent>
-                </Select>
+                <DashboardPeriodFilter
+                    value={periodValue}
+                    onValueChange={handlePeriodValueChange}
+                    customFrom={customFrom}
+                    customTo={customTo}
+                    onCustomFromChange={setCustomFrom}
+                    onCustomToChange={setCustomTo}
+                    onApplyCustom={applyCustomPeriod}
+                    className={periodValue === "custom" ? "sm:col-span-2 lg:col-span-4" : ""}
+                />
 
                 {selectedInvestorId !== "all" && (
                     <DropdownMenu>
@@ -659,63 +690,42 @@ export default function DashboardPage() {
                     <Card className="rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
                         <CardHeader>
                             <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">Performa Pemodal</CardTitle>
-                            <p className="text-xs text-[var(--mudha-text-muted)]">Ranking berdasarkan bagi hasil 30 hari terakhir.</p>
+                            <p className="text-xs text-[var(--mudha-text-muted)]">Ranking bagi hasil untuk {periodDescription}.</p>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-3">
+                            <div className="space-y-4" role="list" aria-label="Peringkat performa pemodal">
                                 {stats.investorStats?.slice(0, 5).map((investor, index) => (
-                                    <div key={investor.id} className="flex items-center gap-3">
-                                        <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)] text-xs font-bold text-[var(--mudha-primary-700)]">
-                                            {index + 1}
+                                    <div key={investor.id} className="space-y-2" role="listitem">
+                                        <div className="flex items-center gap-3">
+                                            <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--mudha-surface-subtle)] text-xs font-bold text-[var(--mudha-primary-700)]">
+                                                {index + 1}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-black text-foreground">{investor.name}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {investor.activeUnits} aktif • {investor.completedTransactions} selesai
+                                                </p>
+                                            </div>
+                                            <div className="text-right text-sm font-black text-foreground">{formatCurrencyShort(investor.totalProfit)}</div>
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-black text-foreground">{investor.name}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {investor.activeUnits} aktif • {investor.completedTransactions} selesai
-                                            </p>
+                                        <div
+                                            className="ml-11 h-2 overflow-hidden rounded-full bg-[var(--mudha-surface-subtle)]"
+                                            role="progressbar"
+                                            aria-label={`${investor.name}: ${formatCurrency(investor.totalProfit)} bagi hasil`}
+                                            aria-valuemin={0}
+                                            aria-valuemax={topInvestorProfit}
+                                            aria-valuenow={Math.max(0, investor.totalProfit)}
+                                        >
+                                            <div
+                                                className="h-full rounded-full bg-[var(--mudha-primary-600)] transition-[width]"
+                                                style={{ width: `${Math.max(0, Math.min(100, (investor.totalProfit / topInvestorProfit) * 100))}%` }}
+                                            />
                                         </div>
-                                        <div className="text-right text-sm font-black text-foreground">{formatCurrencyShort(investor.totalProfit)}</div>
                                     </div>
                                 ))}
                                 {stats.investorStats.length === 0 && (
                                     <p className="py-6 text-center text-sm text-muted-foreground">Belum ada data pemodal.</p>
                                 )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)]">
-                        <CardHeader>
-                            <CardTitle className="text-base font-bold text-[var(--mudha-text-main)]">Status Unit</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid min-w-0 grid-cols-[120px_1fr] items-center gap-3">
-                                <MeasuredChartBox className="h-[120px] min-h-[120px] w-full min-w-0">
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={120} initialDimension={{ width: 120, height: 120 }}>
-                                        <PieChart>
-                                            <Pie data={stats.unitStatusDistribution} dataKey="value" nameKey="name" innerRadius={36} outerRadius={56} paddingAngle={3}>
-                                                {stats.unitStatusDistribution.map((entry, index) => (
-                                                    <Cell key={`cell-${entry.name}`} fill={chart.pie[index % chart.pie.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(value: number) => [`${value} Unit`, "Jumlah"]} contentStyle={{ backgroundColor: chart.tooltipBackground, borderColor: chart.tooltipBorder, color: chart.tooltipLabel }} labelStyle={{ color: chart.tooltipLabel }} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </MeasuredChartBox>
-                                <div className="space-y-2">
-                                    {stats.unitStatusDistribution.slice(0, 5).map((item, index) => (
-                                        <div key={item.name} className="flex items-center justify-between gap-3 text-xs">
-                                            <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
-                                                <span className="size-2 rounded-full" style={{ backgroundColor: chart.pie[index % chart.pie.length] }} />
-                                                <span className="truncate">{item.name}</span>
-                                            </span>
-                                            <span className="font-black text-foreground">{item.value}</span>
-                                        </div>
-                                    ))}
-                                    {stats.unitStatusDistribution.length === 0 && (
-                                        <p className="text-sm text-muted-foreground">Belum ada data unit.</p>
-                                    )}
-                                </div>
                             </div>
                         </CardContent>
                     </Card>
