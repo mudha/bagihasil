@@ -186,4 +186,17 @@ describe("Phase 2 immutable behavior boundaries", () => {
     const source = readFileSync("src/app/dashboard/page.tsx", "utf8")
     expect((source.match(/contentStyle=\{\{ backgroundColor: chart\.tooltipBackground, borderColor: chart\.tooltipBorder, color: chart\.tooltipLabel \}\}/g) ?? []).length).toBe(5)
   })
+  it("gives every investor ResponsiveContainer a positive initial size without changing responsive height", () => {
+    const charts = [
+      "src/app/dashboard/investor/InvestorMonthlyChart.tsx",
+      "src/app/dashboard/investor/InvestorRevenueChart.tsx",
+      "src/app/dashboard/investor/InvestorSalesTrendChart.tsx",
+    ]
+    for (const path of charts) {
+      const source = readFileSync(path, "utf8")
+      expect(source).toContain('className="h-[260px] min-w-0 w-full sm:h-[320px]"')
+      expect(source).toContain('width="100%" height="100%" minWidth={0} initialDimension={{ width: 1, height: 260 }}')
+      expect(source).not.toContain('height={260}')
+    }
+  })
 })

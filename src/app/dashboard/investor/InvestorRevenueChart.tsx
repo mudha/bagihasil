@@ -35,8 +35,8 @@ export function InvestorRevenueChart({ data, className }: InvestorRevenueChartPr
                 <p className="text-sm text-muted-foreground">Volume penjualan per periode</p>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                <div className="h-[260px] min-w-0 w-full">
-                    <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                <div className="h-[260px] min-w-0 w-full sm:h-[320px]">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 1, height: 260 }}>
                         <BarChart data={data} margin={{ top: 10, right: 12, left: 8, bottom: 8 }}>
                             <XAxis
                                 dataKey="month"
