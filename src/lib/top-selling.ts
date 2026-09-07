@@ -8,7 +8,11 @@ export interface TopSellingUnit {
     percentage: number
 }
 
-type SoldUnitRow = {
+/**
+ * Shape returned by Prisma after the select in getTopSellingUnits.
+ * Matches: select { unit: { select: { brand, model, name } } }
+ */
+export type SoldUnitRow = {
     unit: {
         brand: string | null
         model: string | null
@@ -16,21 +20,27 @@ type SoldUnitRow = {
     }
 }
 
-/** Strip a brand prefix (case-insensitive) from a raw name. */
+// ─── Strip helpers ─────────────────────────────────────────────
+
+/** Known variant-only tokens that some old records have as their sole `model` value. */
+const VARIANT_ONLY_TOKENS = /^(?:old|connected|tech\s*max)$/i
+
+/** Remove a brand prefix (case-insensitive) from a raw name. */
 function stripBrandPrefix(raw: string, brand: string): string {
-    const regex = new RegExp(`^${brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*`, "i")
-    return raw.replace(regex, "").trim()
+    const escaped = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    return raw.replace(new RegExp(`^${escaped}\\s*`, "i"), "").trim()
 }
 
-/** Remove year, color, variant suffixes from a name to get the core model. */
+/** Remove year, color phrases, and variant suffixes from a string. */
 function stripVariants(raw: string): string {
+    // Pad with leading space so regex \s+ anchors always match.
     const padded = ` ${raw}`
     return padded
-        // Remove Indonesian color phrases: "warna hijau", "warna merah", etc.
+        // Indonesian color phrases: "warna hijau", "warna merah", etc.
         .replace(/\s+warna\s+\S+/gi, "")
-        // Remove variant suffixes: Old, Connected, Tech Max
+        // Variant suffixes: Old, Connected, Tech Max
         .replace(/\s+(?:old|connected|tech\s*max)\b/gi, "")
-        // Remove trailing year and everything after: "2024", "2023 warna hijau", "2024 Matte Black"
+        // Trailing year and everything after it.
         .replace(/\s+(?:19|20)\d{2}\b.*$/u, "")
         .trim()
 }
@@ -40,48 +50,58 @@ function cleanPart(value: string | null): string | null {
     return cleaned || null
 }
 
-function canonicalModel(value: string | null): string | null {
-    const model = cleanPart(value)
-    if (!model) return null
-    return stripVariants(model)
+/**
+ * Return true if the structured model is a variant-only token
+ * (e.g. "Connected", "Old", "Tech Max") that doesn't represent
+ * an actual model and should not be used as the canonical model.
+ */
+function isVariantOnly(model: string | null): boolean {
+    return model !== null && VARIANT_ONLY_TOKENS.test(model.trim())
 }
 
-/** Normalize a raw name to its canonical form (brand + core model). */
-function normalizeRawName(raw: string): string {
-    const cleaned = raw.trim().replace(/\s+/g, " ")
-    return stripVariants(cleaned)
-}
+// ─── Core canonicalizer ────────────────────────────────────────
 
 /**
  * Canonical unit name derived from structured brand + model fields.
- * Falls back to normalized raw name when structured fields are incomplete.
+ *
+ * Priority:
+ *   1. If structured brand + model are both real → use them.
+ *   2. If structured model is variant-only → ignore it, extract from raw name.
+ *   3. If structured brand exists but model is missing/null → extract from raw name.
+ *   4. If nothing structured → normalize raw name.
+ *
+ * The raw unit name (`unit.name`) is the same field displayed in the
+ * transaction list, so it is the authoritative fallback source.
  */
 export function canonicalUnitName(brand: string | null, model: string | null, fallbackName: string): string {
     const cleanBrand = cleanPart(brand)
-    const cleanModel = canonicalModel(model)
+    const structuredModel = cleanPart(model)
 
-    if (cleanBrand && cleanModel) {
-        return [titleCase(cleanBrand), cleanModel].join(" ")
+    // Path 1: Both brand and a real model are present.
+    if (cleanBrand && structuredModel && !isVariantOnly(model)) {
+        return [titleCase(cleanBrand), stripVariants(structuredModel)].join(" ")
     }
 
-    if (cleanBrand && !cleanModel) {
-        // Brand is known but model is missing — extract model from raw name.
+    // Path 2 or 3: Brand is present, but model is missing or variant-only.
+    // Extract model from the raw unit name (same field shown in the transaction list).
+    if (cleanBrand) {
         const rawCore = stripBrandPrefix(fallbackName, cleanBrand)
         const extractedModel = stripVariants(rawCore)
         if (extractedModel) {
             return [titleCase(cleanBrand), extractedModel].join(" ")
         }
-        // Only brand left after stripping.
         return titleCase(cleanBrand)
     }
 
-    // No structured brand/model — normalize the raw name.
-    return normalizeRawName(fallbackName)
+    // Path 4: No structured brand — normalize the raw name as-is.
+    return stripVariants(fallbackName.trim().replace(/\s+/g, " "))
 }
 
 function titleCase(s: string): string {
     return s.toLocaleLowerCase("id-ID").replace(/\b\p{L}/gu, c => c.toLocaleUpperCase("id-ID"))
 }
+
+// ─── Period helper (shared with dashboard route) ───────────────
 
 /** Start of the earliest included calendar month in Jakarta, inclusive. */
 export function getJakartaPeriodStart(monthsRange: number, now = new Date()): Date {
@@ -94,6 +114,8 @@ export function getJakartaPeriodStart(monthsRange: number, now = new Date()): Da
     const monthIndex = Number(parts.find(part => part.type === "month")?.value) - 1
     return new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
 }
+
+// ─── Aggregator ────────────────────────────────────────────────
 
 export function aggregateTopSellingUnits(rows: SoldUnitRow[], topN = 5): TopSellingUnit[] {
     const groups = new Map<string, { name: string; count: number }>()
@@ -116,6 +138,8 @@ export function aggregateTopSellingUnits(rows: SoldUnitRow[], topN = 5): TopSell
     }))
 }
 
+// ─── Database query ────────────────────────────────────────────
+
 export async function getTopSellingUnits(
     monthsRange: number,
     investorId: string | null = null,
@@ -131,6 +155,7 @@ export async function getTopSellingUnits(
         where,
         select: {
             unit: {
+                // Only three fields needed — same data shown in the transaction list.
                 select: { brand: true, model: true, name: true },
             },
         },
