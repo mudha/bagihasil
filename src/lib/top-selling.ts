@@ -16,6 +16,24 @@ type SoldUnitRow = {
     }
 }
 
+/** Strip a brand prefix (case-insensitive) from a raw name. */
+function stripBrandPrefix(raw: string, brand: string): string {
+    const regex = new RegExp(`^${brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*`, "i")
+    return raw.replace(regex, "").trim()
+}
+
+/** Remove year, color, variant suffixes from a name to get the core model. */
+function stripVariants(raw: string): string {
+    return raw
+        // Remove Indonesian color phrases: "warna hijau", "warna merah", etc.
+        .replace(/\s+warna\s+\S+/gi, "")
+        // Remove variant suffixes: Old, Connected, Tech Max
+        .replace(/\s+(?:old|connected|tech\s*max)\b/gi, "")
+        // Remove trailing year and everything after: "2024", "2023 warna hijau", "2024 Matte Black"
+        .replace(/\s+(?:19|20)\d{2}\b.*$/u, "")
+        .trim()
+}
+
 function cleanPart(value: string | null): string | null {
     const cleaned = value?.trim().replace(/\s+/g, " ")
     return cleaned || null
@@ -24,21 +42,44 @@ function cleanPart(value: string | null): string | null {
 function canonicalModel(value: string | null): string | null {
     const model = cleanPart(value)
     if (!model) return null
-    return model
-        .replace(/\s+(?:tech\s*max|connected|old)\b.*$/iu, "")
-        .replace(/\s+(?:19|20)\d{2}\b.*$/u, "")
-        .trim()
+    return stripVariants(model)
 }
 
-/** Structured brand/model are authoritative. Raw name is fallback only. */
+/** Normalize a raw name to its canonical form (brand + core model). */
+function normalizeRawName(raw: string): string {
+    const cleaned = raw.trim().replace(/\s+/g, " ")
+    return stripVariants(cleaned)
+}
+
+/**
+ * Canonical unit name derived from structured brand + model fields.
+ * Falls back to normalized raw name when structured fields are incomplete.
+ */
 export function canonicalUnitName(brand: string | null, model: string | null, fallbackName: string): string {
     const cleanBrand = cleanPart(brand)
     const cleanModel = canonicalModel(model)
-    if (!cleanBrand && !cleanModel) return fallbackName.trim().replace(/\s+/g, " ")
-    const displayBrand = cleanBrand
-        ? cleanBrand.toLocaleLowerCase("id-ID").replace(/\b\p{L}/gu, character => character.toLocaleUpperCase("id-ID"))
-        : null
-    return [displayBrand, cleanModel].filter(Boolean).join(" ")
+
+    if (cleanBrand && cleanModel) {
+        return [titleCase(cleanBrand), cleanModel].join(" ")
+    }
+
+    if (cleanBrand && !cleanModel) {
+        // Brand is known but model is missing — extract model from raw name.
+        const rawCore = stripBrandPrefix(fallbackName, cleanBrand)
+        const extractedModel = stripVariants(rawCore)
+        if (extractedModel) {
+            return [titleCase(cleanBrand), extractedModel].join(" ")
+        }
+        // Only brand left after stripping.
+        return titleCase(cleanBrand)
+    }
+
+    // No structured brand/model — normalize the raw name.
+    return normalizeRawName(fallbackName)
+}
+
+function titleCase(s: string): string {
+    return s.toLocaleLowerCase("id-ID").replace(/\b\p{L}/gu, c => c.toLocaleUpperCase("id-ID"))
 }
 
 /** Start of the earliest included calendar month in Jakarta, inclusive. */

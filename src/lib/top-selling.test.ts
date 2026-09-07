@@ -31,12 +31,28 @@ describe("canonicalUnitName", () => {
         expect(canonicalUnitName("honda", "PCX", "Any")).toBe("Honda PCX")
     })
 
-    it("falls back to raw name when both null", () => {
-        expect(canonicalUnitName(null, null, "Yamaha XMAX 256")).toBe("Yamaha XMAX 256")
+    it("falls back to normalized raw name when both structured fields are null", () => {
+        expect(canonicalUnitName(null, null, "Yamaha XMAX 2023 warna hijau")).toBe("Yamaha XMAX")
     })
 
-    it("uses brand only when model is null", () => {
-        expect(canonicalUnitName("Kawasaki", null, "Any")).toBe("Kawasaki")
+    it("extracts model from raw name when brand is present but model is null", () => {
+        expect(canonicalUnitName("Yamaha", null, "Yamaha XMAX 2023 warna hijau")).toBe("Yamaha XMAX")
+    })
+
+    it("strips year from raw fallback", () => {
+        expect(canonicalUnitName(null, null, "Honda PCX 2024")).toBe("Honda PCX")
+    })
+
+    it("strips color from raw fallback", () => {
+        expect(canonicalUnitName(null, null, "Yamaha XMAX warna merah")).toBe("Yamaha XMAX")
+    })
+
+    it("strips variant from raw fallback", () => {
+        expect(canonicalUnitName(null, null, "Yamaha XMAX Connected")).toBe("Yamaha XMAX")
+    })
+
+    it("returns brand-only when raw name has no model", () => {
+        expect(canonicalUnitName("Kawasaki", null, "Kawasaki")).toBe("Kawasaki")
     })
 
     it("trims and normalizes whitespace", () => {
@@ -176,6 +192,31 @@ describe("getTopSellingUnits", () => {
             { name: "Yamaha XMAX", count: 5, percentage: 100 },
             { name: "Yamaha NMAX", count: 1, percentage: 20 },
         ])
+    })
+
+    it("regression: merges 84 structured + 3 raw-name into 87 Yamaha XMAX (production evidence)", () => {
+        // 84 units with brand=Yamaha, model=XMAX
+        const structured = Array.from({ length: 84 }, () =>
+            makeTx("Yamaha", "XMAX", "Yamaha XMAX 2024")
+        )
+        // 3 units with brand=Yamaha, model=null, name contains year/color
+        const rawFallback = [
+            makeTx("Yamaha", null, "Yamaha XMAX 2023 warna hijau"),
+            makeTx("Yamaha", null, "Yamaha XMAX 2023 warna biru"),
+            makeTx("Yamaha", null, "Yamaha XMAX 2023 warna hitam"),
+        ]
+
+        const result = aggregateTopSellingUnits([...structured, ...rawFallback])
+        expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 87, percentage: 100 })
+    })
+
+    it("does not merge unknown model with XMAX even if name contains XMAX substring", () => {
+        const result = aggregateTopSellingUnits([
+            makeTx("Yamaha", "XMAX", "Yamaha XMAX 2024"),
+            makeTx("Yamaha", null, "Yamaha XMAX Neo"),
+        ])
+        // "XMAX Neo" is a distinct model — stripped only if known suffix
+        expect(result).toHaveLength(2)
     })
 
     it("uses the same inclusive Jakarta month boundary as the dashboard", () => {
