@@ -1,6 +1,9 @@
 import type { Prisma } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
+import { getJakartaPeriodStart, periodDateFilter, type DashboardPeriod } from "./dashboard-period"
+
+export { getJakartaPeriodStart } from "./dashboard-period"
 
 export interface TopSellingUnit {
     name: string
@@ -101,20 +104,6 @@ function titleCase(s: string): string {
     return s.toLocaleLowerCase("id-ID").replace(/\b\p{L}/gu, c => c.toLocaleUpperCase("id-ID"))
 }
 
-// ─── Period helper (shared with dashboard route) ───────────────
-
-/** Start of the earliest included calendar month in Jakarta, inclusive. */
-export function getJakartaPeriodStart(monthsRange: number, now = new Date()): Date {
-    const parts = new Intl.DateTimeFormat("en-US", {
-        timeZone: "Asia/Jakarta",
-        year: "numeric",
-        month: "numeric",
-    }).formatToParts(now)
-    const year = Number(parts.find(part => part.type === "year")?.value)
-    const monthIndex = Number(parts.find(part => part.type === "month")?.value) - 1
-    return new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
-}
-
 // ─── Aggregator ────────────────────────────────────────────────
 
 export function aggregateTopSellingUnits(rows: SoldUnitRow[], topN = 5): TopSellingUnit[] {
@@ -141,13 +130,16 @@ export function aggregateTopSellingUnits(rows: SoldUnitRow[], topN = 5): TopSell
 // ─── Database query ────────────────────────────────────────────
 
 export async function getTopSellingUnits(
-    monthsRange: number,
+    periodOrMonths: DashboardPeriod | number,
     investorId: string | null = null,
     topN = 5,
 ): Promise<TopSellingUnit[]> {
+    const sellDate = typeof periodOrMonths === "number"
+        ? { gte: getJakartaPeriodStart(periodOrMonths) }
+        : periodDateFilter(periodOrMonths)
     const where: Prisma.TransactionWhereInput = {
         status: "COMPLETED",
-        sellDate: { gte: getJakartaPeriodStart(monthsRange) },
+        ...(sellDate ? { sellDate } : {}),
         ...(investorId ? { unit: { investorId } } : {}),
     }
 

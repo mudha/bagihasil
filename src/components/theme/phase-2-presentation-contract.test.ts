@@ -145,7 +145,7 @@ describe("Phase 2 evidence pixels remain untouched", () => {
 describe("Phase 2 immutable behavior boundaries", () => {
   it("retains dashboard GET endpoints and four chart data sources", () => {
     const source = readFileSync("src/app/dashboard/page.tsx", "utf8")
-    expect(source).toContain("`/api/dashboard?months=${monthsRange}`")
+    expect(source).toContain("`/api/dashboard?${periodQuery}`")
     expect(source).toContain("monthlyStatsHijri")
     expect(source).toContain("unitStatusDistribution")
     expect(source).toContain("investorStats")
@@ -184,7 +184,7 @@ describe("Phase 2 immutable behavior boundaries", () => {
   })
   it("themes every dashboard tooltip content surface", () => {
     const source = readFileSync("src/app/dashboard/page.tsx", "utf8")
-    expect((source.match(/contentStyle=\{\{ backgroundColor: chart\.tooltipBackground, borderColor: chart\.tooltipBorder, color: chart\.tooltipLabel \}\}/g) ?? []).length).toBe(5)
+    expect((source.match(/contentStyle=\{\{ backgroundColor: chart\.tooltipBackground, borderColor: chart\.tooltipBorder, color: chart\.tooltipLabel \}\}/g) ?? []).length).toBe(4)
   })
   it("gives every investor ResponsiveContainer a positive initial size without changing responsive height", () => {
     const charts = [

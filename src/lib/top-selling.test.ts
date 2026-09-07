@@ -317,14 +317,14 @@ describe("topSellingUnits response contract", () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/api/dashboard/route.ts", "utf8")
         expect(src).toContain("topSellingUnits")
-        expect(src).toContain('getTopSellingUnits(monthsRange, investorId)')
+        expect(src).toContain('getTopSellingUnits(period, investorId)')
     })
 
     it("investor API returns topSellingUnits as additive field", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
         expect(src).toContain("topSellingUnits")
-        expect(src).toContain('getTopSellingUnits(months, investor.id)')
+        expect(src).toContain('getTopSellingUnits(period, investor.id)')
     })
 
     it("admin dashboard page uses TopSellingUnits component", async () => {
@@ -338,17 +338,17 @@ describe("topSellingUnits response contract", () => {
     it("investor page refetches and passes fresh topSellingUnits whenever period changes", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/dashboard/investor/page.tsx", "utf8")
-        expect(src).toContain('fetch(`/api/investor/dashboard?months=${monthsRange}`)')
-        expect(src).toContain('[monthsRange, router]')
+        expect(src).toContain('fetch(`/api/investor/dashboard?${periodQuery}`)')
+        expect(src).toContain('[periodQuery, router]')
         expect(src).toContain('topSellingUnits={data.topSellingUnits || []}')
     })
 
     it("admin page refetches on both active filters", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/dashboard/page.tsx", "utf8")
-        expect(src).toContain('`/api/dashboard?months=${monthsRange}`')
+        expect(src).toContain('`/api/dashboard?${periodQuery}`')
         expect(src).toContain('`&investorId=${selectedInvestorId}`')
-        expect(src).toContain('[selectedInvestorId, monthsRange, retryNonce]')
+        expect(src).toContain('[selectedInvestorId, periodQuery, retryNonce]')
     })
 
     it("preserves every legacy response key and adds only topSellingUnits", async () => {
@@ -366,17 +366,19 @@ describe("topSellingUnits response contract", () => {
     it("keeps investor identity server-authoritative and query-client immutable", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
-        expect(src).toContain("getInvestorDashboardData(session.user.id!, months)")
-        expect(src).toContain("getTopSellingUnits(months, investor.id)")
+        expect(src).toContain("getInvestorDashboardData(session.user.id!, period)")
+        expect(src).toContain("getTopSellingUnits(period, investor.id)")
         expect(src).not.toMatch(/searchParams\.get\(["']investorId["']\)/)
     })
 
-    it("validates investor periods against the same 6/12/24 allowlist", async () => {
+    it("validates investor periods through the shared preset/all/custom parser", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
-        expect(src).toContain("new Set([6, 12, 24])")
-        expect(src).toContain("String(requestedMonths) === (monthsParam ?? \"6\")")
-        expect(src).toContain(": 6")
+        const shared = readFileSync("src/lib/dashboard-period.ts", "utf8")
+        expect(src).toContain("parseDashboardPeriod(searchParams)")
+        expect(shared).toContain("new Set([6, 12, 24])")
+        expect(shared).toContain('range === "all"')
+        expect(shared).toContain('range === "custom"')
     })
 
     it("renders accessible relative bars and a clear empty state", async () => {

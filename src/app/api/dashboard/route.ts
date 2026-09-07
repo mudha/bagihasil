@@ -4,10 +4,14 @@ import { NextResponse } from "next/server"
 import { getHijriMonthYear } from "@/lib/date-utils"
 import { canReadAdminData, getInvestorForSession } from "@/lib/api-auth"
 import { investorStatsScope } from "@/lib/dashboard-access"
-import { getJakartaPeriodStart, getTopSellingUnits } from "../../../lib/top-selling"
-
-const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
-const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000
+import { getTopSellingUnits } from "../../../lib/top-selling"
+import {
+    buildPeriodBucketKeys,
+    parseDashboardPeriod,
+    periodBucketKey,
+    periodBucketLabel,
+    periodDateFilter,
+} from "../../../lib/dashboard-period"
 
 export async function GET(req: Request) {
     const session = await auth()
@@ -16,11 +20,12 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url)
         let investorId = searchParams.get('investorId')
-        const monthsParam = searchParams.get('months')
-        const requestedMonths = monthsParam ? Number.parseInt(monthsParam, 10) : 6
-        const monthsRange = ALLOWED_MONTH_RANGES.has(requestedMonths) ? requestedMonths : 6
-        const startDate = getJakartaPeriodStart(monthsRange)
-        const investorPerformanceStartDate = new Date(Date.now() - THIRTY_DAYS_IN_MS)
+        const parsedPeriod = parseDashboardPeriod(searchParams)
+        if (!parsedPeriod.ok) {
+            return NextResponse.json({ error: parsedPeriod.error }, { status: 400 })
+        }
+        const { period } = parsedPeriod
+        const dateFilter = periodDateFilter(period)
 
         if (session.user.role === "INVESTOR") {
             const investor = await getInvestorForSession(session)
@@ -36,18 +41,18 @@ export async function GET(req: Request) {
             transactions: {
                 some: {
                     status: "ON_PROCESS",
-                    buyDate: { gte: startDate }
+                    ...(dateFilter ? { buyDate: dateFilter } : {}),
                 }
             }
         }
         const transactionWhere: any = {
             status: "COMPLETED",
-            sellDate: { gte: startDate }
+            ...(dateFilter ? { sellDate: dateFilter } : {}),
         }
         const profitWhere: any = {
             transaction: {
                 status: "COMPLETED",
-                sellDate: { gte: startDate }
+                ...(dateFilter ? { sellDate: dateFilter } : {}),
             }
         }
 
@@ -68,7 +73,7 @@ export async function GET(req: Request) {
                     managerProfitAmount: true
                 }
             }),
-            getTopSellingUnits(monthsRange, investorId),
+            getTopSellingUnits(period, investorId),
         ])
 
         // 2. Investor Stats. Admin/viewer see the selector; investors only see their own row.
@@ -83,8 +88,8 @@ export async function GET(req: Request) {
                         transactions: {
                             where: {
                                 OR: [
-                                    { status: 'ON_PROCESS', buyDate: { gte: startDate } },
-                                    { status: 'COMPLETED', sellDate: { gte: startDate } }
+                                    { status: 'ON_PROCESS', ...(dateFilter ? { buyDate: dateFilter } : {}) },
+                                    { status: 'COMPLETED', ...(dateFilter ? { sellDate: dateFilter } : {}) }
                                 ]
                             },
                             select: {
@@ -106,7 +111,7 @@ export async function GET(req: Request) {
         const investorStats = investors.map(investor => {
             let activeUnitsCount = 0
             let completedTransactionsCount = 0
-            let totalInvestorProfitLast30Days = 0
+            let totalInvestorProfit = 0
             let totalCapitalDeployed = 0 // Capital in completed transactions
 
             investor.units.forEach(unit => {
@@ -118,12 +123,7 @@ export async function GET(req: Request) {
                     if (tx.status !== 'COMPLETED') return
                     completedTransactionsCount++
                     if (tx.profitSharing) {
-                        const sellDate = tx.sellDate ? new Date(tx.sellDate) : null
-
-                        if (sellDate && sellDate >= investorPerformanceStartDate) {
-                            totalInvestorProfitLast30Days += tx.profitSharing.investorProfitAmount
-                        }
-
+                        totalInvestorProfit += tx.profitSharing.investorProfitAmount
                         totalCapitalDeployed += tx.profitSharing.totalCapitalInvestor
                     }
                 })
@@ -134,7 +134,7 @@ export async function GET(req: Request) {
                 name: investor.name,
                 activeUnits: activeUnitsCount,
                 completedTransactions: completedTransactionsCount,
-                totalProfit: totalInvestorProfitLast30Days,
+                totalProfit: totalInvestorProfit,
                 totalCapital: totalCapitalDeployed
             }
         }).sort((a, b) => {
@@ -146,9 +146,7 @@ export async function GET(req: Request) {
         const monthlyWhere: any = {
             transaction: {
                 status: 'COMPLETED',
-                sellDate: {
-                    gte: startDate
-                }
+                ...(dateFilter ? { sellDate: dateFilter } : {}),
             }
         }
 
@@ -177,13 +175,16 @@ export async function GET(req: Request) {
 
         const monthlyStatsMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number, totalRevenue: number }>()
 
-        // Initialize last N months with 0
-        for (let i = 0; i < monthsRange; i++) {
-            const d = new Date()
-            d.setDate(1)
-            d.setMonth(d.getMonth() - i)
-            const key = d.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) // e.g., "Dec 2025"
-            monthlyStatsMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
+        const sellDates = monthlyProfits.flatMap(profit => profit.transaction?.sellDate ? [new Date(profit.transaction.sellDate)] : [])
+        for (const key of buildPeriodBucketKeys(period, sellDates)) {
+            monthlyStatsMap.set(key, {
+                month: periodBucketLabel(key, period.granularity),
+                totalMargin: 0,
+                investorShare: 0,
+                managerShare: 0,
+                unitsSold: 0,
+                totalRevenue: 0,
+            })
         }
 
         // Gregorian Grouping
@@ -191,7 +192,7 @@ export async function GET(req: Request) {
             const sellDate = profit.transaction?.sellDate
             if (!sellDate) return // Skip if no sell date
 
-            const key = sellDate.toLocaleString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
+            const key = periodBucketKey(sellDate, period.granularity)
             if (monthlyStatsMap.has(key)) {
                 const current = monthlyStatsMap.get(key)!
                 current.totalMargin += profit.netMargin
@@ -205,16 +206,15 @@ export async function GET(req: Request) {
         // Hijri Grouping
         const monthlyStatsHijriMap = new Map<string, { month: string, totalMargin: number, investorShare: number, managerShare: number, unitsSold: number, totalRevenue: number }>()
 
-        // We can't easily iterate "last 6 Hijri months" without a complex library, 
-        // effectively we will just group the fetched profits by Hijri month.
-        // The query "monthsRange" still applies to the calculatedAt date in Gregorian, 
-        // which roughly corresponds to the recent period.
+        // The selected Gregorian/Jakarta date window remains authoritative; the
+        // fetched rows are then labelled and grouped in the chosen Hijri view.
 
         monthlyProfits.forEach(profit => {
             const sellDate = profit.transaction?.sellDate
             if (!sellDate) return
 
-            const { key } = getHijriMonthYear(sellDate)
+            const hijri = getHijriMonthYear(sellDate)
+            const key = period.granularity === "year" ? `${hijri.year} H` : hijri.key
 
             if (!monthlyStatsHijriMap.has(key)) {
                 monthlyStatsHijriMap.set(key, { month: key, totalMargin: 0, investorShare: 0, managerShare: 0, unitsSold: 0, totalRevenue: 0 })
@@ -236,11 +236,7 @@ export async function GET(req: Request) {
         // Given we fetch by date ascending, the insertion order in Map should be correct.
 
         // Convert map to array and sort by date
-        const monthlyStats = Array.from(monthlyStatsMap.values()).sort((a, b) => {
-            const dateA = new Date(a.month)
-            const dateB = new Date(b.month)
-            return dateA.getTime() - dateB.getTime()
-        })
+        const monthlyStats = Array.from(monthlyStatsMap.values())
 
         // 4. Unit Status Distribution
         const unitStatusStats = await prisma.unit.groupBy({
@@ -292,7 +288,7 @@ export async function GET(req: Request) {
         const activeTransactions = await prisma.transaction.findMany({
             where: {
                 status: 'ON_PROCESS',
-                buyDate: { gte: startDate },
+                ...(dateFilter ? { buyDate: dateFilter } : {}),
                 ...(investorId ? { unit: { investorId } } : {})
             },
             select: {

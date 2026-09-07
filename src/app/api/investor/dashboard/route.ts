@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getInvestorDashboardData } from "@/lib/investor-data"
 import { legacyTransactionWithUnitSelect, legacyUnitWithInvestorSelect } from "../../../../lib/legacy-read-selects"
 import { getTopSellingUnits } from "../../../../lib/top-selling"
-
-const ALLOWED_MONTH_RANGES = new Set([6, 12, 24])
+import { parseDashboardPeriod } from "../../../../lib/dashboard-period"
 
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -18,14 +17,14 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const monthsParam = searchParams.get("months")
-    const requestedMonths = monthsParam ? Number.parseInt(monthsParam, 10) : 6
-    const months = ALLOWED_MONTH_RANGES.has(requestedMonths) && String(requestedMonths) === (monthsParam ?? "6")
-        ? requestedMonths
-        : 6
+    const parsedPeriod = parseDashboardPeriod(searchParams)
+    if (!parsedPeriod.ok) {
+        return NextResponse.json({ error: parsedPeriod.error }, { status: 400 })
+    }
+    const { period } = parsedPeriod
 
     try {
-        const data = await getInvestorDashboardData(session.user.id!, months)
+        const data = await getInvestorDashboardData(session.user.id!, period)
 
         if (!data) {
             return NextResponse.json({ error: "Investor not found" }, { status: 404 })
@@ -91,7 +90,7 @@ export async function GET(request: NextRequest) {
             orderBy: { paymentDate: "desc" }
         })
 
-        const topSellingUnits = await getTopSellingUnits(months, investor.id)
+        const topSellingUnits = await getTopSellingUnits(period, investor.id)
 
         return NextResponse.json({
             investor,

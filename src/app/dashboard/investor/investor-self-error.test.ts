@@ -16,8 +16,8 @@ const source = readFileSync(
 )
 
 describe("Investor self-view page — baseline contract", () => {
-    it("fetches from /api/investor/dashboard with months parameter", () => {
-        expect(source).toContain('/api/investor/dashboard?months=')
+    it("fetches from /api/investor/dashboard with the validated period query", () => {
+        expect(source).toContain('/api/investor/dashboard?${periodQuery}')
     })
 
     it("redirects to /login on 401", () => {
@@ -41,9 +41,10 @@ describe("Investor self-view page — baseline contract", () => {
         }
     })
 
-    it("accepts monthsRange prop for range selection", () => {
-        expect(source).toContain('monthsRange={monthsRange}')
-        expect(source).toContain('onMonthsRangeChange={setMonthsRange}')
+    it("passes preset, all-time, and custom period controls", () => {
+        expect(source).toContain('periodValue={periodValue}')
+        expect(source).toContain('onPeriodValueChange={handlePeriodValueChange}')
+        expect(source).toContain('onApplyCustom={applyCustomPeriod}')
     })
 
     it("sets loading=true at start and loading=false in finally", () => {
@@ -85,7 +86,7 @@ describe("Investor self-view page — privacy and error handling (F1)", () => {
 
     it("clears prior financial data before every read", () => {
         expect(source).toContain("setData(null)")
-        expect(source).toContain("setData(null)\n        try")
+        expect(source).toMatch(/setData\(null\)\r?\n\s+try/)
     })
 
     it("validates the response envelope and collection shapes before rendering", () => {

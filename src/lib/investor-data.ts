@@ -2,12 +2,23 @@ import { prisma } from "@/lib/prisma"
 
 import { getHijriMonthYear } from "@/lib/date-utils"
 import {
+    buildPeriodBucketKeys,
+    createPresetDashboardPeriod,
+    isDateWithinPeriod,
+    periodBucketKey,
+    periodBucketLabel,
+    type DashboardPeriod,
+} from "./dashboard-period"
+import {
     legacyInvestorDashboardSelect,
     legacyTransactionForDashboardSelect,
     legacyUnitWithTransactionsSelect,
 } from "./legacy-read-selects"
 
-export async function getInvestorDashboardData(userId: string, months: number = 6) {
+export async function getInvestorDashboardData(userId: string, periodOrMonths: DashboardPeriod | number = 6) {
+    const period = typeof periodOrMonths === "number"
+        ? createPresetDashboardPeriod(periodOrMonths)
+        : periodOrMonths
     // 1. Find Investor attached to this User
     const investor = await prisma.investor.findUnique({
         where: { userId },
@@ -57,7 +68,12 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     }
 
     // Total Profit Calculation (From ProfitSharing table)
-    for (const trx of transactions) {
+    const periodTransactions = transactions.filter(trx => {
+        if (trx.status !== "COMPLETED" || !trx.sellDate) return false
+        return isDateWithinPeriod(new Date(trx.sellDate), period)
+    })
+
+    for (const trx of periodTransactions) {
         if (trx.profitSharing && trx.profitSharing.investorProfitAmount > 0) {
             totalProfit += trx.profitSharing.investorProfitAmount
         }
@@ -76,14 +92,12 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     const monthlyRevenueStatsHijriMap = new Map<string, { month: string, revenue: number, rank: number }>()
     const monthlySalesStatsHijriMap = new Map<string, { month: string, count: number, rank: number }>()
 
-    const now = new Date()
+    const periodDates = periodTransactions.flatMap(trx => trx.sellDate ? [new Date(trx.sellDate)] : [])
+    const buckets = buildPeriodBucketKeys(period, periodDates)
     const monthsArray = []
 
-    // Initialize months based on parameter (including current) for Gregorian
-    for (let i = months - 1; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-        const key = `${d.getFullYear()}-${d.getMonth() + 1}`
-        const label = d.toLocaleDateString("id-ID", { month: "short", year: "numeric" })
+    for (const key of buckets) {
+        const label = periodBucketLabel(key, period.granularity, "id-ID")
         monthlyIncomeStats.set(key, 0)
         monthlyRevenueStats.set(key, 0)
         monthlySalesStats.set(key, 0)
@@ -91,12 +105,12 @@ export async function getInvestorDashboardData(userId: string, months: number = 
     }
 
     // Use Transactions for Monthly Stats (Based on PROFIT SHARING)
-    transactions.forEach(trx => {
+    periodTransactions.forEach(trx => {
         if (!trx.sellDate) return
         const d = new Date(trx.sellDate)
 
         // Gregorian Key
-        const key = `${d.getFullYear()}-${d.getMonth() + 1}`
+        const key = periodBucketKey(d, period.granularity)
 
         // Income (Investor's Profit Share)
         if (monthlyIncomeStats.has(key) && trx.profitSharing) {
@@ -115,7 +129,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
 
         // --- Hijri Grouping ---
         const hijri = getHijriMonthYear(d)
-        const hijriKey = hijri.key
+        const hijriKey = period.granularity === "year" ? `${hijri.year} H` : hijri.key
 
         // Initialize if not exists
         if (!monthlyIncomeStatsHijriMap.has(hijriKey)) {
@@ -178,7 +192,7 @@ export async function getInvestorDashboardData(userId: string, months: number = 
             totalProfit,
             totalReceived,
             activeUnitsCount,
-            soldUnitsCount: await prisma.unit.count({ where: { investorId: investor.id, status: "SOLD" } }),
+            soldUnitsCount: periodTransactions.length,
             totalUnitsCount
         },
         monthlyChartData,

@@ -11,7 +11,7 @@ import { InvestorMonthlyChart } from "./InvestorMonthlyChart"
 import { InvestorSalesTrendChart } from "./InvestorSalesTrendChart"
 import { InvestorRevenueChart } from "./InvestorRevenueChart"
 import { TopSellingUnits } from "@/components/dashboard/TopSellingUnits"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DashboardPeriodFilter, type DashboardPeriodValue } from "@/components/dashboard/DashboardPeriodFilter"
 
 interface InvestorTabsProps {
     investorName: string
@@ -32,8 +32,13 @@ interface InvestorTabsProps {
     monthlyRevenueDataHijri: any[]
     investmentsData: any[]
     paymentsData: any[]
-    monthsRange: string
-    onMonthsRangeChange: (months: string) => void
+    periodValue: DashboardPeriodValue
+    onPeriodValueChange: (value: DashboardPeriodValue) => void
+    customFrom: string
+    customTo: string
+    onCustomFromChange: (value: string) => void
+    onCustomToChange: (value: string) => void
+    onApplyCustom: () => void
 }
 
 function formatCurrency(value: number) {
@@ -106,8 +111,13 @@ export function InvestorTabs({
     monthlyRevenueDataHijri,
     investmentsData,
     paymentsData,
-    monthsRange,
-    onMonthsRangeChange
+    periodValue,
+    onPeriodValueChange,
+    customFrom,
+    customTo,
+    onCustomFromChange,
+    onCustomToChange,
+    onApplyCustom,
 }: InvestorTabsProps) {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [investmentFilter, setInvestmentFilter] = useState("")
@@ -182,16 +192,16 @@ export function InvestorTabs({
                 </div>
 
                 <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                    <Select value={monthsRange} onValueChange={onMonthsRangeChange}>
-                        <SelectTrigger className="h-11 w-full rounded-lg border-border sm:w-[200px]">
-                            <SelectValue placeholder="Rentang Waktu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="6">6 Bulan Terakhir</SelectItem>
-                            <SelectItem value="12">1 Tahun Terakhir</SelectItem>
-                            <SelectItem value="24">2 Tahun Terakhir</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <DashboardPeriodFilter
+                        value={periodValue}
+                        onValueChange={onPeriodValueChange}
+                        customFrom={customFrom}
+                        customTo={customTo}
+                        onCustomFromChange={onCustomFromChange}
+                        onCustomToChange={onCustomToChange}
+                        onApplyCustom={onApplyCustom}
+                        className="w-full sm:w-auto"
+                    />
 
                     <div className="grid grid-cols-2 items-center gap-1 rounded-lg bg-primary/5 p-1">
                         <button

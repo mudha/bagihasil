@@ -65,19 +65,21 @@ describe("Dashboard operational alignment", () => {
     expect(source).toContain("stats.totalCapitalDeployed")
   })
 
-  it("preserves all sections", () => {
+  it("preserves dashboard sections while temporarily hiding Status Unit", () => {
     expect(source).toContain("taxReminders")
     expect(source).toContain("recentTransactions")
     expect(source).toContain("investorStats")
     expect(source).toContain("unitStatusDistribution")
     expect(source).toContain("currentMonthlyStats")
-    expect(source).toContain("PieChart")
+    expect(source).not.toContain("PieChart")
+    expect(source).not.toContain('>Status Unit</')
     expect(source).toContain("BarChart")
   })
 
   it("preserves all filters and quick-action routes", () => {
     expect(source).toContain("selectedInvestorId")
-    expect(source).toContain("monthsRange")
+    expect(source).toContain("periodQuery")
+    expect(source).toContain("DashboardPeriodFilter")
     expect(source).toContain("calendarMode")
     expect(source).toContain("/dashboard/units")
     expect(source).toContain("/dashboard/transactions")
