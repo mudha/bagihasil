@@ -262,9 +262,20 @@ describe("topSellingUnits response contract", () => {
         expect(src).not.toMatch(/searchParams\.get\(["']investorId["']\)/)
     })
 
+    it("validates investor periods against the same 6/12/24 allowlist", async () => {
+        const { readFileSync } = await import("node:fs")
+        const src = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
+        expect(src).toContain("new Set([6, 12, 24])")
+        expect(src).toContain("String(requestedMonths) === (monthsParam ?? \"6\")")
+        expect(src).toContain(": 6")
+    })
+
     it("renders accessible relative bars and a clear empty state", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/components/dashboard/TopSellingUnits.tsx", "utf8")
+        expect(src).toContain('<ol className="space-y-3">')
+        expect(src).toContain('<li key={item.name}')
+        expect(src).toContain('aria-hidden="true"')
         expect(src).toContain('role="progressbar"')
         expect(src).toContain("aria-valuenow={item.percentage}")
         expect(src).toContain('style={{ width: `${item.percentage}%` }}')

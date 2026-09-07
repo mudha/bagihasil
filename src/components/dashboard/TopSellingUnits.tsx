@@ -29,20 +29,20 @@ export function TopSellingUnits({ data, className }: TopSellingUnitsProps) {
         <Card className={`rounded-lg border-[var(--mudha-border-default)] bg-[var(--mudha-surface-primary)] shadow-[var(--mudha-shadow-xs)] ${className ?? ""}`}>
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base font-bold text-[var(--mudha-text-main)]">
-                    <Trophy className="size-4 text-amber-500" />
+                    <Trophy aria-hidden="true" className="size-4 text-amber-500" />
                     Top 5 Unit Terlaris
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 {data.length === 0 ? (
                     <div className="py-6 text-center">
-                        <Trophy className="mx-auto mb-2 size-8 text-muted-foreground/40" />
+                        <Trophy aria-hidden="true" className="mx-auto mb-2 size-8 text-muted-foreground/40" />
                         <p className="text-sm text-muted-foreground">Belum ada penjualan pada periode ini.</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <ol className="space-y-3">
                         {data.map((item, index) => (
-                            <div key={item.name} className="flex items-center gap-3">
+                            <li key={item.name} className="flex items-center gap-3">
                                 <RankBadge rank={index} />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-black text-foreground">{item.name}</p>
@@ -61,9 +61,9 @@ export function TopSellingUnits({ data, className }: TopSellingUnitsProps) {
                                         style={{ width: `${item.percentage}%` }}
                                     />
                                 </div>
-                            </div>
+                            </li>
                         ))}
-                    </div>
+                    </ol>
                 )}
             </CardContent>
         </Card>
