@@ -19,7 +19,7 @@ vi.mock("@/lib/prisma", () => ({
 }))
 
 // Import AFTER mock setup (same pattern as managed-capital-read-query.test.ts)
-import { canonicalUnitName, getTopSellingUnits } from "./top-selling"
+import { aggregateTopSellingUnits, canonicalUnitName, getJakartaPeriodStart, getTopSellingUnits } from "./top-selling"
 
 // ─── Test canonicalUnitName (pure function, no mock needed) ───
 describe("canonicalUnitName", () => {
@@ -162,19 +162,43 @@ describe("getTopSellingUnits", () => {
         expect(result[1].name).toBe("Yamaha XMAX")
     })
 
-    it("merges variants of same model", async () => {
-        mocks.findMany.mockResolvedValue([
-            makeTx("Yamaha", "XMAX", "XMAX 2023"),
-            makeTx("Yamaha", "XMAX", "XMAX 2024"),
-            makeTx("Yamaha", "XMAX", "XMAX Connected"),
-            makeTx("Yamaha", "XMAX", "XMAX Tech Max"),
-            makeTx("Yamaha", "XMAX", "XMAX Old"),
+    it("merges structured model variants but keeps different models separate", () => {
+        const result = aggregateTopSellingUnits([
+            makeTx("Yamaha", "XMAX", "ignored"),
+            makeTx("Yamaha", "XMAX Old", "ignored"),
+            makeTx("Yamaha", "XMAX Connected", "ignored"),
+            makeTx("Yamaha", "XMAX Tech Max", "ignored"),
+            makeTx("Yamaha", "XMAX 2024 Matte Black", "ignored"),
+            makeTx("Yamaha", "NMAX", "ignored"),
         ])
 
-        const result = await getTopSellingUnits(6, null)
+        expect(result).toEqual([
+            { name: "Yamaha XMAX", count: 5, percentage: 100 },
+            { name: "Yamaha NMAX", count: 1, percentage: 20 },
+        ])
+    })
 
-        expect(result).toHaveLength(1)
-        expect(result[0]).toEqual({ name: "Yamaha XMAX", count: 5, percentage: 100 })
+    it("uses the same inclusive Jakarta month boundary as the dashboard", () => {
+        expect(getJakartaPeriodStart(6, new Date("2026-09-30T18:00:00.000Z"))).toEqual(
+            new Date("2026-04-30T17:00:00.000Z"),
+        )
+    })
+
+    it("uses one minimal query with exact filter and selection", async () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date("2026-09-07T00:00:00.000Z"))
+        mocks.findMany.mockResolvedValue([])
+        await getTopSellingUnits(6, "investor-auth")
+        expect(mocks.findMany).toHaveBeenCalledTimes(1)
+        expect(mocks.findMany.mock.calls[0][0]).toEqual({
+            where: {
+                status: "COMPLETED",
+                sellDate: { gte: new Date("2026-03-31T17:00:00.000Z") },
+                unit: { investorId: "investor-auth" },
+            },
+            select: { unit: { select: { brand: true, model: true, name: true } } },
+        })
+        vi.useRealTimers()
     })
 })
 
@@ -202,9 +226,49 @@ describe("topSellingUnits response contract", () => {
         expect(src).toContain('stats.topSellingUnits')
     })
 
-    it("investor page passes topSellingUnits to InvestorTabs", async () => {
+    it("investor page refetches and passes fresh topSellingUnits whenever period changes", async () => {
         const { readFileSync } = await import("node:fs")
         const src = readFileSync("src/app/dashboard/investor/page.tsx", "utf8")
+        expect(src).toContain('fetch(`/api/investor/dashboard?months=${monthsRange}`)')
+        expect(src).toContain('[monthsRange, router]')
         expect(src).toContain('topSellingUnits={data.topSellingUnits || []}')
+    })
+
+    it("admin page refetches on both active filters", async () => {
+        const { readFileSync } = await import("node:fs")
+        const src = readFileSync("src/app/dashboard/page.tsx", "utf8")
+        expect(src).toContain('`/api/dashboard?months=${monthsRange}`')
+        expect(src).toContain('`&investorId=${selectedInvestorId}`')
+        expect(src).toContain('[selectedInvestorId, monthsRange, retryNonce]')
+    })
+
+    it("preserves every legacy response key and adds only topSellingUnits", async () => {
+        const { readFileSync } = await import("node:fs")
+        const admin = readFileSync("src/app/api/dashboard/route.ts", "utf8")
+        const investor = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
+        for (const key of ["activeUnits", "completedTransactions", "totalMargin", "totalInvestorProfit", "totalManagerProfit", "totalCapitalDeployed", "investorStats", "monthlyStats", "monthlyStatsHijri", "unitStatusDistribution", "recentTransactions", "taxReminders", "topSellingUnits"]) {
+            expect(admin).toMatch(new RegExp(`\\b${key}\\b`))
+        }
+        for (const key of ["investor", "stats", "monthlyChartData", "monthlySalesTrend", "monthlyRevenueData", "monthlyChartDataHijri", "monthlySalesTrendHijri", "monthlyRevenueDataHijri", "investmentsData", "paymentsData", "topSellingUnits"]) {
+            expect(investor).toMatch(new RegExp(`\\b${key}\\b`))
+        }
+    })
+
+    it("keeps investor identity server-authoritative and query-client immutable", async () => {
+        const { readFileSync } = await import("node:fs")
+        const src = readFileSync("src/app/api/investor/dashboard/route.ts", "utf8")
+        expect(src).toContain("getInvestorDashboardData(session.user.id!, months)")
+        expect(src).toContain("getTopSellingUnits(months, investor.id)")
+        expect(src).not.toMatch(/searchParams\.get\(["']investorId["']\)/)
+    })
+
+    it("renders accessible relative bars and a clear empty state", async () => {
+        const { readFileSync } = await import("node:fs")
+        const src = readFileSync("src/components/dashboard/TopSellingUnits.tsx", "utf8")
+        expect(src).toContain('role="progressbar"')
+        expect(src).toContain("aria-valuenow={item.percentage}")
+        expect(src).toContain('style={{ width: `${item.percentage}%` }}')
+        expect(src).toContain("Belum ada penjualan pada periode ini.")
+        expect(src).toContain("dark:")
     })
 })

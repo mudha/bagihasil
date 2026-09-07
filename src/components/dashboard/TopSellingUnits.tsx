@@ -48,8 +48,14 @@ export function TopSellingUnits({ data, className }: TopSellingUnitsProps) {
                                     <p className="truncate text-sm font-black text-foreground">{item.name}</p>
                                     <p className="text-xs text-muted-foreground">{item.count} unit terjual</p>
                                 </div>
-                                {/* Mini horizontal bar */}
-                                <div className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-[var(--mudha-surface-subtle)]">
+                                <div
+                                    role="progressbar"
+                                    aria-label={`${item.name}: ${item.count} unit terjual`}
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={item.percentage}
+                                    className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-[var(--mudha-surface-subtle)] sm:w-28"
+                                >
                                     <div
                                         className="h-full rounded-full bg-teal-500 transition-all dark:bg-teal-400"
                                         style={{ width: `${item.percentage}%` }}

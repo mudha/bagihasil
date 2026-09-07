@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 import { getInvestorDashboardData } from "@/lib/investor-data"
 import { legacyTransactionWithUnitSelect, legacyUnitWithInvestorSelect } from "../../../../lib/legacy-read-selects"
-import { getTopSellingUnits } from "@/lib/top-selling"
+import { getTopSellingUnits } from "../../../../lib/top-selling"
 
 export async function GET(request: NextRequest) {
     const session = await auth()

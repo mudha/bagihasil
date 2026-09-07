@@ -1,89 +1,98 @@
-import { prisma } from "@/lib/prisma"
+import type { Prisma } from "@prisma/client"
 
-/**
- * Canonical unit name derived from structured brand + model fields.
- * Falls back to the raw unit name if brand/model are missing.
- */
-export function canonicalUnitName(brand: string | null, model: string | null, fallbackName: string): string {
-    const parts: string[] = []
-    if (brand) parts.push(brand.trim())
-    if (model) parts.push(model.trim())
-    if (parts.length === 0) return fallbackName
-    // Title-case the brand, keep model as-is (already canonical in DB)
-    parts[0] = parts[0].replace(/\b\w/g, (c) => c.toUpperCase())
-    return parts.join(" ")
-}
+import { prisma } from "@/lib/prisma"
 
 export interface TopSellingUnit {
     name: string
     count: number
-    percentage: number // relative to rank 1 (0–100)
+    percentage: number
 }
 
-/**
- * Fetch the top N best-selling unit models within a date range.
- *
- * @param monthsRange  Number of months to look back (6, 12, or 24).
- * @param investorId   If provided, only count transactions for this investor.
- * @param topN         Maximum items to return (default 5).
- */
-export async function getTopSellingUnits(
-    monthsRange: number,
-    investorId: string | null = null,
-    topN: number = 5,
-): Promise<TopSellingUnit[]> {
-    // Compute Jakarta-aware period start (same logic as dashboard route).
-    const now = new Date()
-    const dateParts = new Intl.DateTimeFormat("en-US", {
+type SoldUnitRow = {
+    unit: {
+        brand: string | null
+        model: string | null
+        name: string
+    }
+}
+
+function cleanPart(value: string | null): string | null {
+    const cleaned = value?.trim().replace(/\s+/g, " ")
+    return cleaned || null
+}
+
+function canonicalModel(value: string | null): string | null {
+    const model = cleanPart(value)
+    if (!model) return null
+    return model
+        .replace(/\s+(?:tech\s*max|connected|old)\b.*$/iu, "")
+        .replace(/\s+(?:19|20)\d{2}\b.*$/u, "")
+        .trim()
+}
+
+/** Structured brand/model are authoritative. Raw name is fallback only. */
+export function canonicalUnitName(brand: string | null, model: string | null, fallbackName: string): string {
+    const cleanBrand = cleanPart(brand)
+    const cleanModel = canonicalModel(model)
+    if (!cleanBrand && !cleanModel) return fallbackName.trim().replace(/\s+/g, " ")
+    const displayBrand = cleanBrand
+        ? cleanBrand.toLocaleLowerCase("id-ID").replace(/\b\p{L}/gu, character => character.toLocaleUpperCase("id-ID"))
+        : null
+    return [displayBrand, cleanModel].filter(Boolean).join(" ")
+}
+
+/** Start of the earliest included calendar month in Jakarta, inclusive. */
+export function getJakartaPeriodStart(monthsRange: number, now = new Date()): Date {
+    const parts = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Jakarta",
         year: "numeric",
         month: "numeric",
     }).formatToParts(now)
-    const year = Number(dateParts.find((p) => p.type === "year")?.value)
-    const monthIndex = Number(dateParts.find((p) => p.type === "month")?.value) - 1
-    const startDate = new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
+    const year = Number(parts.find(part => part.type === "year")?.value)
+    const monthIndex = Number(parts.find(part => part.type === "month")?.value) - 1
+    return new Date(Date.UTC(year, monthIndex - (monthsRange - 1), 1, -7))
+}
 
-    // Fetch COMPLETED transactions within period, joining unit for brand/model.
-    const where: any = {
-        status: "COMPLETED",
-        sellDate: { gte: startDate },
+export function aggregateTopSellingUnits(rows: SoldUnitRow[], topN = 5): TopSellingUnit[] {
+    const groups = new Map<string, { name: string; count: number }>()
+    for (const row of rows) {
+        const name = canonicalUnitName(row.unit.brand, row.unit.model, row.unit.name)
+        const key = name.toLocaleLowerCase("id-ID")
+        const current = groups.get(key)
+        if (current) current.count += 1
+        else groups.set(key, { name, count: 1 })
     }
-    if (investorId) {
-        where.unit = { investorId }
+
+    const ranked = [...groups.values()]
+        .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name, "id-ID"))
+        .slice(0, topN)
+    const leaderCount = ranked[0]?.count ?? 1
+
+    return ranked.map(item => ({
+        ...item,
+        percentage: Math.round((item.count / leaderCount) * 100),
+    }))
+}
+
+export async function getTopSellingUnits(
+    monthsRange: number,
+    investorId: string | null = null,
+    topN = 5,
+): Promise<TopSellingUnit[]> {
+    const where: Prisma.TransactionWhereInput = {
+        status: "COMPLETED",
+        sellDate: { gte: getJakartaPeriodStart(monthsRange) },
+        ...(investorId ? { unit: { investorId } } : {}),
     }
 
     const rows = await prisma.transaction.findMany({
         where,
         select: {
             unit: {
-                select: {
-                    brand: true,
-                    model: true,
-                    name: true,
-                },
+                select: { brand: true, model: true, name: true },
             },
         },
     })
 
-    if (rows.length === 0) return []
-
-    // Group by canonical name.
-    const counts = new Map<string, number>()
-    for (const row of rows) {
-        const canonical = canonicalUnitName(row.unit.brand, row.unit.model, row.unit.name)
-        counts.set(canonical, (counts.get(canonical) ?? 0) + 1)
-    }
-
-    // Sort: count desc, then name asc (tie-breaker).
-    const sorted = [...counts.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "id-ID"))
-        .slice(0, topN)
-
-    const topCount = sorted[0]?.[1] ?? 1
-
-    return sorted.map(([name, count]) => ({
-        name,
-        count,
-        percentage: Math.round((count / topCount) * 100),
-    }))
+    return aggregateTopSellingUnits(rows, topN)
 }
