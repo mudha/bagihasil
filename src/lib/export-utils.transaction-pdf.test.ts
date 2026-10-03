@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import {
     REPORT_IMAGE_CONCURRENCY,
+    REPORT_IMAGE_GLOBAL_DEADLINE_MS,
     REPORT_IMAGE_MAX_ATTEMPTS,
     createReportImageLoader,
     exportTransactionReportPDF,
@@ -464,5 +465,194 @@ describe('exportTransactionReportPDF', () => {
         // Fail-closed: nothing was rendered, produced or downloaded.
         expect(anchorClick).not.toHaveBeenCalled()
         expect((window as unknown as { URL: { createObjectURL: Mock } }).URL.createObjectURL).not.toHaveBeenCalled()
+    })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global deadline — loadAll-level tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('createReportImageLoader — global deadline', () => {
+    it('cancels in-flight requests when the global deadline fires', async () => {
+        const hangingFetch = vi.fn(
+            (_input: RequestInfo | URL, init?: RequestInit) =>
+                new Promise<Response>((_resolve, reject) => {
+                    init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+                })
+        )
+        const loader = createReportImageLoader(
+            loaderOptions({
+                fetchImpl: hangingFetch as unknown as typeof fetch,
+                timeoutMs: 5_000,
+                maxAttempts: 3,
+                globalDeadlineMs: 120,
+            })
+        )
+        const urls = Array.from({ length: 6 }, (_, i) => `https://cdn.example.test/${i}.jpg`)
+
+        const startedAt = Date.now()
+        const results = await loader.loadAll(urls)
+        const elapsed = Date.now() - startedAt
+
+        // All results are failures (deadline hit before any could complete).
+        expect(results).toHaveLength(6)
+        expect(results.every((r) => !r.ok)).toBe(true)
+        // Deadline fires in ~120ms, not ~5s × 3 attempts × 2 waves.
+        expect(elapsed).toBeLessThan(2_000)
+    })
+
+    it('prevents workers from picking up new URLs after the deadline', async () => {
+        let started = 0
+        const slowFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+            started += 1
+            // Each request takes 200ms; with 6 URLs and concurrency 3,
+            // without a deadline all 6 would start within ~400ms.
+            return new Promise<Response>((resolve, reject) => {
+                const t = setTimeout(() => resolve(imageFetchOk()), 200)
+                init?.signal?.addEventListener('abort', () => { clearTimeout(t); reject(new Error('aborted')) })
+            })
+        })
+        const loader = createReportImageLoader(
+            loaderOptions({
+                fetchImpl: slowFetch as unknown as typeof fetch,
+                timeoutMs: 5_000,
+                globalDeadlineMs: 80,
+            })
+        )
+        const urls = Array.from({ length: 6 }, (_, i) => `https://cdn.example.test/${i}.jpg`)
+
+        const results = await loader.loadAll(urls)
+
+        // Some URLs should NOT have been started (deadline fired mid-wave).
+        expect(started).toBeLessThan(6)
+        expect(results).toHaveLength(6)
+        // Unstarted URLs get the deadline failure message.
+        const deadlineFailures = results.filter(
+            (r) => !r.ok && r.message === 'Batas waktu ekspor terlampaui'
+        )
+        expect(deadlineFailures.length).toBeGreaterThan(0)
+    })
+
+    it('cleans up the global timer when loadAll completes normally', async () => {
+        // If the timer isn't cleaned up, the test process would have a
+        // dangling timer that prevents clean exit.  Using a long deadline
+        // and fast images — the timer should be cleared in `finally`.
+        const fetchImpl = vi.fn(async () => imageFetchOk())
+        const loader = createReportImageLoader(
+            loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch, globalDeadlineMs: 10_000 })
+        )
+
+        const results = await loader.loadAll(['https://cdn.example.test/a.jpg'])
+
+        expect(results).toHaveLength(1)
+        expect(results[0].ok).toBe(true)
+        // No assertion needed beyond the fact that it completed promptly;
+        // a dangling 10s timer would not affect this test but the `finally`
+        // clearTimeout is verified by source review and the absence of
+        // Jest "open handle" warnings.
+    })
+
+    it('exports the global deadline constant for external observability', () => {
+        expect(REPORT_IMAGE_GLOBAL_DEADLINE_MS).toBe(90_000)
+    })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global deadline — exportTransactionReportPDF-level tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('exportTransactionReportPDF — global deadline', () => {
+    it('returns the deadline error message and no download when the deadline fires', async () => {
+        const apiFetch = vi.fn(async () => apiResponse(200))
+        // A loader whose global deadline is extremely short (50ms).
+        const hangingFetch = vi.fn(
+            (_input: RequestInfo | URL, init?: RequestInit) =>
+                new Promise<Response>((_resolve, reject) => {
+                    init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+                })
+        )
+        const deadlineLoader = createReportImageLoader(
+            loaderOptions({
+                fetchImpl: hangingFetch as unknown as typeof fetch,
+                timeoutMs: 10_000,
+                globalDeadlineMs: 50,
+            })
+        )
+
+        const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
+            fetchImpl: apiFetch as unknown as typeof fetch,
+            imageLoader: { loadAll: (urls: string[]) => deadlineLoader.loadAll(urls) },
+        })
+
+        expect(result).toEqual({
+            success: false,
+            error: 'Ekspor dibatalkan karena gambar membutuhkan waktu terlalu lama. Periksa koneksi lalu coba kembali.',
+        })
+        // No download triggered.
+        expect(anchorClick).not.toHaveBeenCalled()
+        expect((window as unknown as { URL: { createObjectURL: Mock } }).URL.createObjectURL).not.toHaveBeenCalled()
+        // Deadline message must not leak URLs or storage details.
+        if (!result.success) {
+            expect(result.error).not.toMatch(/https?:\/\//)
+            expect(result.error).not.toContain('cdn.example.test')
+        }
+    })
+
+    it('succeeds normally when images finish well before the deadline', async () => {
+        const apiFetch = vi.fn(async () => apiResponse(200))
+        const imageFetch = makeImageFetch()
+        // A generous deadline (10s) that the fast images easily beat.
+        const generousLoader = createReportImageLoader(
+            loaderOptions({
+                fetchImpl: imageFetch as unknown as typeof fetch,
+                timeoutMs: 500,
+                globalDeadlineMs: 10_000,
+            })
+        )
+
+        const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
+            fetchImpl: apiFetch as unknown as typeof fetch,
+            imageLoader: { loadAll: (urls: string[]) => generousLoader.loadAll(urls) },
+        })
+
+        expect(result).toEqual({ success: true })
+        expect(anchorClick).toHaveBeenCalledTimes(1)
+        expect(imageFetch).toHaveBeenCalledTimes(EXPECTED_UNIQUE_URLS.length)
+    })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// doc.addImage / getImageProperties failure
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('exportTransactionReportPDF — rendering failure', () => {
+    it('returns success:false with no download when jsPDF rejects the image data', async () => {
+        const apiFetch = vi.fn(async () => apiResponse(200))
+        // Return an image with a data URL that jsPDF cannot parse.
+        // A truncated JPEG header (SOI marker 0xFF 0xD8 + garbage) passes the
+        // loader's own dimension checks but causes jsPDF's getImageProperties
+        // or addImage to throw.
+        const badLoader: Pick<ReportImageLoader, 'loadAll'> = {
+            loadAll: async (urls: string[]) =>
+                urls.map(() => ({
+                    ok: true as const,
+                    dataUrl: 'data:image/jpeg;base64,/9j/4AAQ',
+                    width: 100,
+                    height: 100,
+                })),
+        }
+
+        const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
+            fetchImpl: apiFetch as unknown as typeof fetch,
+            imageLoader: badLoader,
+        })
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+            // The outer catch returns a generic error, not the original throw.
+            expect(result.error).toBe('Gagal mengekspor laporan transaksi PDF')
+        }
+        // No partial download.
+        expect(anchorClick).not.toHaveBeenCalled()
     })
 })

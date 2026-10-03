@@ -80,14 +80,18 @@ const formatCurrency = (value: number) => {
 // - ImageKit URLs get a bounded-width transform (max 800px, q-75) while every
 //   existing query parameter is preserved byte-for-byte; when the transformed
 //   URL fails, the loader falls back once to the original URL.
+// - A global deadline (REPORT_IMAGE_GLOBAL_DEADLINE_MS) bounds the entire
+//   loadAll phase: when it fires, all in-flight requests are aborted and no
+//   new URL is started, so the export never hangs indefinitely.
 // - Outcomes are structured results ({ ok } / { ok:false, code }) — no silent
 //   catch, no partial success.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const REPORT_IMAGE_TIMEOUT_MS = 15_000
+export const REPORT_IMAGE_TIMEOUT_MS = 8_000
 export const REPORT_IMAGE_MAX_ATTEMPTS = 3 // 1 initial attempt + max 2 retries
 export const REPORT_IMAGE_RETRY_DELAYS_MS: readonly number[] = [500, 1500]
 export const REPORT_IMAGE_CONCURRENCY = 3
+export const REPORT_IMAGE_GLOBAL_DEADLINE_MS = 90_000
 
 const IMAGEKIT_TRANSFORM_VALUE = 'w-800,q-75'
 
@@ -118,6 +122,7 @@ export interface ReportImageLoaderOptions {
     retryDelaysMs?: readonly number[]
     sleep?: (ms: number) => Promise<void>
     transformUrl?: (url: string) => string
+    globalDeadlineMs?: number
 }
 
 export function resolveReportImageUrl(rawUrl: string): string {
@@ -247,6 +252,7 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
     const retryDelaysMs = options.retryDelaysMs ?? REPORT_IMAGE_RETRY_DELAYS_MS
     const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
     const transformUrl = options.transformUrl ?? transformReportImageUrl
+    const globalDeadlineMs = options.globalDeadlineMs ?? REPORT_IMAGE_GLOBAL_DEADLINE_MS
 
     type Failure = Extract<ReportImageResult, { ok: false }>
     type Success = Extract<ReportImageResult, { ok: true }>
@@ -255,9 +261,14 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
     const failure = (code: ReportImageErrorCode, message: string, httpStatus?: number): Failure =>
         httpStatus === undefined ? { ok: false, code, message } : { ok: false, code, message, httpStatus }
 
-    const attemptCandidate = async (url: string): Promise<AttemptOutcome> => {
+    const attemptCandidate = async (url: string, globalSignal?: AbortSignal): Promise<AttemptOutcome> => {
+        if (globalSignal?.aborted) {
+            return { ok: false, failure: failure('timeout', 'Batas waktu ekspor terlampaui'), retryable: false }
+        }
         const controller = new AbortController()
         const timer = setTimeout(() => controller.abort(), timeoutMs)
+        const onGlobalAbort = () => controller.abort()
+        globalSignal?.addEventListener('abort', onGlobalAbort)
         try {
             const response = await fetchImpl(url, { signal: controller.signal })
             if (!response.ok) {
@@ -280,15 +291,19 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
             return { ok: true, result: { ok: true, dataUrl: decoded.dataUrl, width: decoded.width, height: decoded.height } }
         } catch (error) {
             if (controller.signal.aborted) {
+                if (globalSignal?.aborted) {
+                    return { ok: false, failure: failure('timeout', 'Batas waktu ekspor terlampaui'), retryable: false }
+                }
                 return { ok: false, failure: failure('timeout', 'Permintaan gambar melebihi batas waktu'), retryable: true }
             }
             return { ok: false, failure: failure('network', toErrorMessage(error, 'Jaringan gagal memuat gambar')), retryable: true }
         } finally {
             clearTimeout(timer)
+            globalSignal?.removeEventListener('abort', onGlobalAbort)
         }
     }
 
-    const load = async (url: string): Promise<ReportImageResult> => {
+    const load = async (url: string, globalSignal?: AbortSignal): Promise<ReportImageResult> => {
         const transformed = transformUrl(url)
         const candidates = transformed !== url ? [transformed, url] : [url]
         let attempt = 0
@@ -296,14 +311,16 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
         let last: ReportImageResult = failure('network', 'Gambar tidak dapat dimuat')
 
         while (attempt < maxAttempts) {
+            if (globalSignal?.aborted) break
             if (attempt > 0) {
                 const delayIndex = Math.min(attempt - 1, Math.max(retryDelaysMs.length - 1, 0))
                 const delay = retryDelaysMs[retryDelaysMs.length === 0 ? -1 : delayIndex] ?? 0
                 if (delay > 0) await sleep(delay)
             }
+            if (globalSignal?.aborted) break
             const candidate = candidates[Math.min(candidateIndex, candidates.length - 1)]
             attempt++
-            const outcome = await attemptCandidate(candidate)
+            const outcome = await attemptCandidate(candidate, globalSignal)
             if (outcome.ok) return outcome.result
             last = outcome.failure
             if (!outcome.retryable) {
@@ -322,16 +339,35 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
     const loadAll = async (urls: string[]): Promise<ReportImageResult[]> => {
         const uniqueUrls = Array.from(new Set(urls))
         const results = new Map<string, ReportImageResult>()
+        if (uniqueUrls.length === 0) return urls.map((url) => results.get(url) as ReportImageResult)
+
+        const globalController = new AbortController()
+        const globalTimer = setTimeout(() => globalController.abort(), globalDeadlineMs)
+
         let nextIndex = 0
         const workers = Array.from({ length: Math.min(REPORT_IMAGE_CONCURRENCY, uniqueUrls.length) }, async () => {
             while (nextIndex < uniqueUrls.length) {
+                if (globalController.signal.aborted) break
                 const current = nextIndex
                 nextIndex += 1
                 const url = uniqueUrls[current]
-                results.set(url, await load(url))
+                results.set(url, await load(url, globalController.signal))
             }
         })
-        await Promise.all(workers)
+
+        try {
+            await Promise.all(workers)
+        } finally {
+            clearTimeout(globalTimer)
+        }
+
+        // Any URL not started (deadline prevented it) gets a deadline failure.
+        for (const url of uniqueUrls) {
+            if (!results.has(url)) {
+                results.set(url, failure('timeout', 'Batas waktu ekspor terlampaui'))
+            }
+        }
+
         return urls.map((url) => results.get(url) as ReportImageResult)
     }
 
@@ -861,6 +897,15 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         ]))
         const imageLoader = deps.imageLoader ?? createReportImageLoader({ fetchImpl })
         const imageResults = await imageLoader.loadAll(expectedImageUrls)
+
+        // Global deadline: if any result is a deadline timeout, abort the export.
+        const deadlineHit = imageResults.some((r) => !r.ok && r.message === 'Batas waktu ekspor terlampaui')
+        if (deadlineHit) {
+            return {
+                success: false,
+                error: 'Ekspor dibatalkan karena gambar membutuhkan waktu terlalu lama. Periksa koneksi lalu coba kembali.',
+            }
+        }
 
         const imagesByUri = new Map<string, { ok: true } & DecodedReportImage>()
         let failedImageCount = 0
