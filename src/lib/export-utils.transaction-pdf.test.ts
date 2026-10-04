@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import nextConfig from '../../next.config'
 import {
     REPORT_IMAGE_CONCURRENCY,
     REPORT_IMAGE_GLOBAL_DEADLINE_MS,
-    REPORT_IMAGE_MAX_ATTEMPTS,
     createReportImageLoader,
     exportTransactionReportPDF,
     transformReportImageUrl,
@@ -37,6 +37,7 @@ const imageFetchFail = (status: number, blobType = 'text/html') =>
 const noSleep = async () => {}
 
 const callUrls = (fn: Mock) => fn.mock.calls.map((call) => String(call[0]))
+const callInit = (fn: Mock, index: number) => fn.mock.calls[index][1] as RequestInit
 
 const loaderOptions = (partial: Partial<ReportImageLoaderOptions> = {}): ReportImageLoaderOptions => ({
     decodeBlob: async () => okDecode(),
@@ -63,7 +64,7 @@ describe('createReportImageLoader', () => {
             expect(result.height).toBeGreaterThan(0)
         }
         expect(fetchImpl).toHaveBeenCalledTimes(1)
-        expect(callUrls(fetchImpl)).toEqual(['https://cdn.example.test/a.jpg'])
+        expect(callUrls(fetchImpl)).toEqual([new URL('/_next/image?url=https%3A%2F%2Fcdn.example.test%2Fa.jpg&w=800&q=75', 'https://app.example.test').toString()])
     })
 
     it('bounds a hanging image with a per-attempt timeout instead of hanging the export', async () => {
@@ -83,7 +84,7 @@ describe('createReportImageLoader', () => {
 
         expect(result).toMatchObject({ ok: false, code: 'timeout' })
         // Initial attempt + max 2 retries — never an unbounded hang.
-        expect(hangingFetch).toHaveBeenCalledTimes(REPORT_IMAGE_MAX_ATTEMPTS)
+        expect(hangingFetch).toHaveBeenCalledTimes(2)
         expect(elapsed).toBeLessThan(1500)
     })
 
@@ -111,7 +112,7 @@ describe('createReportImageLoader', () => {
         const result = await loader.load('https://cdn.example.test/down.jpg')
 
         expect(result).toMatchObject({ ok: false, code: 'network' })
-        expect(fetchImpl).toHaveBeenCalledTimes(REPORT_IMAGE_MAX_ATTEMPTS)
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
     })
 
     it('rejects a non-image body without retrying', async () => {
@@ -121,7 +122,7 @@ describe('createReportImageLoader', () => {
         const result = await loader.load('https://cdn.example.test/error-page.jpg')
 
         expect(result).toMatchObject({ ok: false, code: 'mime' })
-        expect(fetchImpl).toHaveBeenCalledTimes(1)
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
     })
 
     it('fails when decode reports zero dimensions', async () => {
@@ -133,7 +134,7 @@ describe('createReportImageLoader', () => {
         const result = await loader.load('https://cdn.example.test/zero.jpg')
 
         expect(result).toMatchObject({ ok: false, code: 'decode' })
-        expect(fetchImpl).toHaveBeenCalledTimes(1)
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
     })
 
     it('fails when decoding throws', async () => {
@@ -145,7 +146,7 @@ describe('createReportImageLoader', () => {
         const result = await loader.load('https://cdn.example.test/corrupt.jpg')
 
         expect(result).toMatchObject({ ok: false, code: 'decode' })
-        expect(fetchImpl).toHaveBeenCalledTimes(1)
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
     })
 
     it('loads each unique URL only once (dedup)', async () => {
@@ -158,7 +159,10 @@ describe('createReportImageLoader', () => {
 
         expect(results).toHaveLength(3)
         expect(results.every((result) => result.ok)).toBe(true)
-        expect(callUrls(fetchImpl)).toEqual([first, second])
+        expect(callUrls(fetchImpl)).toEqual([
+            new URL('/_next/image', 'https://app.example.test').toString() + '?url=https%3A%2F%2Fcdn.example.test%2F1.jpg&w=800&q=75',
+            new URL('/_next/image', 'https://app.example.test').toString() + '?url=https%3A%2F%2Fcdn.example.test%2F2.jpg&w=800&q=75',
+        ])
     })
 
     it('never runs more than 3 image requests concurrently', async () => {
@@ -182,6 +186,96 @@ describe('createReportImageLoader', () => {
         expect(fetchImpl).toHaveBeenCalledTimes(6)
         expect(maxInFlight).toBeLessThanOrEqual(3)
         expect(maxInFlight).toBeGreaterThanOrEqual(2)
+    })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Next.js same-origin image optimizer — remote image fetch policy
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('createReportImageLoader — Next.js optimizer', () => {
+    it('allows the required 800px optimizer width in Next configuration', () => {
+        expect(nextConfig.images?.imageSizes).toContain(800)
+    })
+
+    const original = 'https://ik.imagekit.io/acct/proof.jpg?token=a%20b&v=2#preview'
+    const optimizerUrl = (src: string) => {
+        const url = new URL('/_next/image', 'https://app.example.test')
+        url.searchParams.set('url', src)
+        url.searchParams.set('w', '800')
+        url.searchParams.set('q', '75')
+        return url.toString()
+    }
+
+    it.each([
+        ['ImageKit', 'https://ik.imagekit.io/acct/a.jpg'],
+        ['Cloudinary', 'https://res.cloudinary.com/acct/image/upload/a.jpg'],
+    ])('%s uses the same-origin optimizer before the CDN', async (_name, source) => {
+        const fetchImpl = vi.fn(async () => imageFetchOk())
+        const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
+
+        const result = await loader.load(source)
+
+        expect(result.ok).toBe(true)
+        expect(callUrls(fetchImpl)).toEqual([optimizerUrl(source)])
+        expect(callInit(fetchImpl, 0)).toMatchObject({ credentials: 'same-origin' })
+    })
+
+    it('encodes the complete original URL, including query and hash, without changing it', async () => {
+        const fetchImpl = vi.fn(async () => imageFetchOk())
+        const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
+
+        await loader.load(original)
+
+        const requested = new URL(callUrls(fetchImpl)[0])
+        expect(requested.origin).toBe('https://app.example.test')
+        expect(requested.pathname).toBe('/_next/image')
+        expect(requested.searchParams.get('url')).toBe(original)
+        expect(requested.searchParams.get('w')).toBe('800')
+        expect(requested.searchParams.get('q')).toBe('75')
+    })
+
+    it('uses optimizer success without contacting ImageKit CDN or adding a second transform', async () => {
+        const fetchImpl = vi.fn(async () => imageFetchOk())
+        const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
+
+        const result = await loader.load('https://ik.imagekit.io/acct/a.jpg')
+
+        expect(result.ok).toBe(true)
+        expect(fetchImpl).toHaveBeenCalledTimes(1)
+        expect(new URL(callUrls(fetchImpl)[0]).searchParams.get('url')).toBe('https://ik.imagekit.io/acct/a.jpg')
+    })
+
+    it.each([
+        ['HTML', async () => ({ ok: true, status: 200, blob: async () => new Blob(['<html>'], { type: 'text/html' }) })],
+        ['redirect', async () => ({ ok: false, status: 302, blob: async () => new Blob([], { type: 'text/html' }) })],
+    ])('falls back once to the CDN when optimizer returns %s', async (_kind, optimizerResponse) => {
+        const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+            String(input).includes('/_next/image') ? (await optimizerResponse()) as unknown as Response : imageFetchOk()
+        )
+        const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
+
+        const result = await loader.load('https://res.cloudinary.com/acct/image/upload/a.jpg')
+
+        expect(result.ok).toBe(true)
+        expect(callUrls(fetchImpl)).toEqual([
+            optimizerUrl('https://res.cloudinary.com/acct/image/upload/a.jpg'),
+            'https://res.cloudinary.com/acct/image/upload/a.jpg',
+        ])
+        expect(callInit(fetchImpl, 0)).toMatchObject({ credentials: 'same-origin', redirect: 'manual' })
+        expect(callInit(fetchImpl, 1)).toMatchObject({ credentials: 'omit' })
+    })
+
+    it('bounds optimizer and direct CDN TypeError failures with no repeated CDN requests', async () => {
+        const fetchImpl = vi.fn(async () => { throw new TypeError('Failed to fetch') })
+        const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
+
+        const result = await loader.load('https://res.cloudinary.com/acct/image/upload/a.jpg')
+
+        expect(result).toMatchObject({ ok: false, code: 'network' })
+        expect(fetchImpl).toHaveBeenCalledTimes(2)
+        expect(callInit(fetchImpl, 0)).toMatchObject({ credentials: 'same-origin' })
+        expect(callInit(fetchImpl, 1)).toMatchObject({ credentials: 'omit' })
     })
 })
 
@@ -237,8 +331,9 @@ describe('createReportImageLoader — ImageKit fallback', () => {
         const original = 'https://ik.imagekit.io/acct/profit-sharing-app/payment-proofs/x.jpg'
         const transformed = `${original}?tr=w-800,q-75`
         const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
-            const url = String(input)
-            if (url.includes('tr=')) return imageFetchFail(400)
+            const requested = String(input)
+            if (requested.includes('/_next/image')) return imageFetchFail(500)
+            if (requested.includes('tr=')) return imageFetchFail(400)
             return imageFetchOk()
         })
         const loader = createReportImageLoader(loaderOptions({ fetchImpl: fetchImpl as unknown as typeof fetch }))
@@ -246,7 +341,11 @@ describe('createReportImageLoader — ImageKit fallback', () => {
         const result = await loader.load(original)
 
         expect(result.ok).toBe(true)
-        expect(callUrls(fetchImpl)).toEqual([transformed, original])
+        expect(callUrls(fetchImpl)).toEqual([
+            new URL('/_next/image?url=' + encodeURIComponent(original) + '&w=800&q=75', 'https://app.example.test').toString(),
+            transformed,
+            original,
+        ])
     })
 })
 
@@ -442,9 +541,11 @@ describe('exportTransactionReportPDF', () => {
 
     it('one of several images fails: no partial download, success:false with counts only', async () => {
         const apiFetch = vi.fn(async () => apiResponse(200))
-        const imageFetch = vi.fn(async (input: RequestInfo | URL) =>
-            String(input) === IMG.sell ? imageFetchFail(404) : imageFetchOk()
-        )
+        const imageFetch = vi.fn(async (input: RequestInfo | URL) => {
+            const requested = String(input)
+            const original = requested.includes('/_next/image') ? new URL(requested).searchParams.get('url') : requested
+            return original === IMG.sell ? imageFetchFail(404) : imageFetchOk()
+        })
         const loadAll = vi.fn((urls: string[]) => makeLoader(imageFetch).loadAll(urls))
 
         const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
@@ -463,6 +564,63 @@ describe('exportTransactionReportPDF', () => {
             expect(result.error).not.toContain('.jpg')
         }
         // Fail-closed: nothing was rendered, produced or downloaded.
+        expect(anchorClick).not.toHaveBeenCalled()
+        expect((window as unknown as { URL: { createObjectURL: Mock } }).URL.createObjectURL).not.toHaveBeenCalled()
+    })
+
+    it('loads eight unique optimizer images and downloads exactly one PDF', async () => {
+        const report = makeReport()
+        report.unit.imageUrl = ''
+        report.transaction.proofs = Array.from({ length: 8 }, (_, index) => ({
+            proofType: index < 4 ? 'BUY' : 'SELL',
+            imageUrl: `https://cdn.example.test/proof/${index + 1}.jpg`,
+            description: `Bukti ${index + 1}`,
+        }))
+        report.costs.items = []
+        report.payment.histories[0].proofImageUrl = ''
+        const apiFetch = vi.fn(async () => apiResponse(200, report))
+        const imageFetch = makeImageFetch()
+        const loader = makeLoader(imageFetch)
+
+        const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
+            fetchImpl: apiFetch as unknown as typeof fetch,
+            imageLoader: { loadAll: (urls) => loader.loadAll(urls) },
+        })
+
+        expect(result).toEqual({ success: true })
+        expect(imageFetch).toHaveBeenCalledTimes(8)
+        expect(callUrls(imageFetch).every((url) => new URL(url).pathname === '/_next/image')).toBe(true)
+        expect(anchorClick).toHaveBeenCalledTimes(1)
+    })
+
+    it('one of eight optimizer images and CDN fallbacks fails: no PDF download', async () => {
+        const report = makeReport()
+        report.unit.imageUrl = ''
+        report.transaction.proofs = Array.from({ length: 8 }, (_, index) => ({
+            proofType: index < 4 ? 'BUY' : 'SELL',
+            imageUrl: `https://cdn.example.test/proof/${index + 1}.jpg`,
+            description: `Bukti ${index + 1}`,
+        }))
+        report.costs.items = []
+        report.payment.histories[0].proofImageUrl = ''
+        const apiFetch = vi.fn(async () => apiResponse(200, report))
+        const failedUrl = 'https://cdn.example.test/proof/6.jpg'
+        const imageFetch = vi.fn(async (input: RequestInfo | URL) => {
+            const requested = String(input)
+            const original = requested.includes('/_next/image') ? new URL(requested).searchParams.get('url') : requested
+            return original === failedUrl ? imageFetchFail(404) : imageFetchOk()
+        })
+        const loader = makeLoader(imageFetch)
+
+        const result = await exportTransactionReportPDF('tx-1', 'TRX-2026-001', {
+            fetchImpl: apiFetch as unknown as typeof fetch,
+            imageLoader: { loadAll: (urls) => loader.loadAll(urls) },
+        })
+
+        expect(result).toEqual({
+            success: false,
+            error: '1 dari 8 gambar gagal dimuat. Ekspor dibatalkan agar laporan tidak terbit tanpa bukti. Silakan coba lagi.',
+        })
         expect(anchorClick).not.toHaveBeenCalled()
         expect((window as unknown as { URL: { createObjectURL: Mock } }).URL.createObjectURL).not.toHaveBeenCalled()
     })

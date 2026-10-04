@@ -74,12 +74,18 @@ const formatCurrency = (value: number) => {
 //
 // - Every fetch attempt is bounded by a per-attempt timeout built on
 //   AbortController (compatible with browsers that lack AbortSignal.timeout).
-// - At most REPORT_IMAGE_MAX_ATTEMPTS attempts per URL (1 initial + max 2
-//   retries); retries happen ONLY for timeout/network failures, never for
-//   HTTP/MIME/decode errors.
-// - ImageKit URLs get a bounded-width transform (max 800px, q-75) while every
-//   existing query parameter is preserved byte-for-byte; when the transformed
-//   URL fails, the loader falls back once to the original URL.
+// - Remote HTTP(S) images get exactly one optimizer attempt first, then at most
+//   two direct ImageKit fallback candidates (transformed + original), for a hard
+//   ceiling of three network requests per original URL. CDN CORS/network errors
+//   are not retried. Non-remote resources keep the bounded attempt setting.
+// - Remote HTTP(S) images are fetched through the same-origin Next.js image
+//   optimizer first. The original URL is encoded with URLSearchParams so query,
+//   fragment, and escaping remain intact; optimizer URLs are never ImageKit-
+//   transformed a second time.
+// - Only after an optimizer failure do we make one bounded direct-CDN fallback
+//   request (or ImageKit rendition + original, still capped at three attempts).
+//   Optimizer requests use same-origin credentials; cross-origin CDN requests
+//   explicitly omit credentials so application cookies are never sent.
 // - A global deadline (REPORT_IMAGE_GLOBAL_DEADLINE_MS) bounds the entire
 //   loadAll phase: when it fires, all in-flight requests are aborted and no
 //   new URL is started, so the export never hangs indefinitely.
@@ -162,6 +168,22 @@ export function transformReportImageUrl(url: string): string {
     const hash = hashIndex >= 0 ? url.slice(hashIndex) : ''
     const separator = parsed.search ? '&' : '?'
     return `${base}${separator}tr=${IMAGEKIT_TRANSFORM_VALUE}${hash}`
+}
+
+function buildNextImageOptimizerUrl(rawUrl: string): string | null {
+    if (!/^https?:\/\//i.test(rawUrl)) return null
+    try {
+        const source = new URL(rawUrl)
+        const appOrigin = window.location.origin
+        if (source.origin === appOrigin) return null
+        const optimizer = new URL('/_next/image', appOrigin)
+        optimizer.searchParams.set('url', rawUrl)
+        optimizer.searchParams.set('w', '800')
+        optimizer.searchParams.set('q', '75')
+        return optimizer.toString()
+    } catch {
+        return null
+    }
 }
 
 function toErrorMessage(error: unknown, fallback: string): string {
@@ -261,7 +283,13 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
     const failure = (code: ReportImageErrorCode, message: string, httpStatus?: number): Failure =>
         httpStatus === undefined ? { ok: false, code, message } : { ok: false, code, message, httpStatus }
 
-    const attemptCandidate = async (url: string, globalSignal?: AbortSignal): Promise<AttemptOutcome> => {
+    const attemptCandidate = async (
+        url: string,
+        globalSignal?: AbortSignal,
+        credentials: RequestCredentials = 'omit',
+        redirect: RequestRedirect = 'follow',
+        requireImageMime = false
+    ): Promise<AttemptOutcome> => {
         if (globalSignal?.aborted) {
             return { ok: false, failure: failure('timeout', 'Batas waktu ekspor terlampaui'), retryable: false }
         }
@@ -270,14 +298,14 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
         const onGlobalAbort = () => controller.abort()
         globalSignal?.addEventListener('abort', onGlobalAbort)
         try {
-            const response = await fetchImpl(url, { signal: controller.signal })
+            const response = await fetchImpl(url, { signal: controller.signal, credentials, redirect })
             if (!response.ok) {
                 // Non-2xx is definitive for this URL: no retry, fallback candidate only.
                 return { ok: false, failure: failure('http', `HTTP ${response.status}`, response.status), retryable: false }
             }
             const blob = await response.blob()
-            if (blob.type && !blob.type.startsWith('image/')) {
-                return { ok: false, failure: failure('mime', `Konten bukan gambar (${blob.type})`), retryable: false }
+            if (requireImageMime ? !blob.type.startsWith('image/') : Boolean(blob.type && !blob.type.startsWith('image/'))) {
+                return { ok: false, failure: failure('mime', `Konten bukan gambar (${blob.type || 'tipe tidak diketahui'})`), retryable: false }
             }
             let decoded: DecodedReportImage
             try {
@@ -304,12 +332,32 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
     }
 
     const load = async (url: string, globalSignal?: AbortSignal): Promise<ReportImageResult> => {
+        const optimizerUrl = buildNextImageOptimizerUrl(url)
         const transformed = transformUrl(url)
-        const candidates = transformed !== url ? [transformed, url] : [url]
-        let attempt = 0
-        let candidateIndex = 0
+        const directUrls = transformed !== url ? [transformed, url] : [url]
         let last: ReportImageResult = failure('network', 'Gambar tidak dapat dimuat')
 
+        if (optimizerUrl) {
+            // Remote HTTP(S): exactly one same-origin optimizer request first,
+            // followed only on failure by bounded direct-CDN fallback candidates.
+            const optimizerOutcome = await attemptCandidate(optimizerUrl, globalSignal, 'same-origin', 'manual', true)
+            if (optimizerOutcome.ok) return optimizerOutcome.result
+            last = optimizerOutcome.failure
+            if (globalSignal?.aborted) return last
+
+            for (const candidateUrl of directUrls.slice(0, 2)) {
+                const outcome = await attemptCandidate(candidateUrl, globalSignal, 'omit')
+                if (outcome.ok) return outcome.result
+                last = outcome.failure
+                if (globalSignal?.aborted) return last
+            }
+            return last
+        }
+
+        // Same-origin, relative, or non-HTTP resources retain bounded retries.
+        let attempt = 0
+        let candidateIndex = 0
+        const candidates = transformed !== url ? [transformed, url] : [url]
         while (attempt < maxAttempts) {
             if (globalSignal?.aborted) break
             if (attempt > 0) {
@@ -318,19 +366,16 @@ export function createReportImageLoader(options: ReportImageLoaderOptions = {}):
                 if (delay > 0) await sleep(delay)
             }
             if (globalSignal?.aborted) break
-            const candidate = candidates[Math.min(candidateIndex, candidates.length - 1)]
+            const candidateUrl = candidates[Math.min(candidateIndex, candidates.length - 1)]
             attempt++
-            const outcome = await attemptCandidate(candidate, globalSignal)
+            const outcome = await attemptCandidate(candidateUrl, globalSignal, 'same-origin')
             if (outcome.ok) return outcome.result
             last = outcome.failure
             if (!outcome.retryable) {
-                // This URL is definitively bad (HTTP/MIME/decode): never retry it,
-                // move straight to the fallback candidate when one exists.
                 candidateIndex += 1
                 if (candidateIndex >= candidates.length) break
                 continue
             }
-            // Timeout/network: prefer an untried original URL, otherwise retry.
             if (candidateIndex < candidates.length - 1) candidateIndex += 1
         }
         return last
