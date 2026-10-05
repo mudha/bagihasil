@@ -69,42 +69,354 @@ const formatCurrency = (value: number) => {
     }).format(value)
 }
 
-// Helper function to convert image URL to base64 with compression
-async function convertImageToBase64(url: string): Promise<string> {
+// ─────────────────────────────────────────────────────────────────────────────
+// Resilient image pipeline for the transaction PDF export (fail-closed).
+//
+// - Every fetch attempt is bounded by a per-attempt timeout built on
+//   AbortController (compatible with browsers that lack AbortSignal.timeout).
+// - Remote HTTP(S) images get exactly one optimizer attempt first, then at most
+//   two direct ImageKit fallback candidates (transformed + original), for a hard
+//   ceiling of three network requests per original URL. CDN CORS/network errors
+//   are not retried. Non-remote resources keep the bounded attempt setting.
+// - Remote HTTP(S) images are fetched through the same-origin Next.js image
+//   optimizer first. The original URL is encoded with URLSearchParams so query,
+//   fragment, and escaping remain intact; optimizer URLs are never ImageKit-
+//   transformed a second time.
+// - Only after an optimizer failure do we make one bounded direct-CDN fallback
+//   request (or ImageKit rendition + original, still capped at three attempts).
+//   Optimizer requests use same-origin credentials; cross-origin CDN requests
+//   explicitly omit credentials so application cookies are never sent.
+// - A global deadline (REPORT_IMAGE_GLOBAL_DEADLINE_MS) bounds the entire
+//   loadAll phase: when it fires, all in-flight requests are aborted and no
+//   new URL is started, so the export never hangs indefinitely.
+// - Outcomes are structured results ({ ok } / { ok:false, code }) — no silent
+//   catch, no partial success.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const REPORT_IMAGE_TIMEOUT_MS = 8_000
+export const REPORT_IMAGE_MAX_ATTEMPTS = 3 // 1 initial attempt + max 2 retries
+export const REPORT_IMAGE_RETRY_DELAYS_MS: readonly number[] = [500, 1500]
+export const REPORT_IMAGE_CONCURRENCY = 3
+export const REPORT_IMAGE_GLOBAL_DEADLINE_MS = 90_000
+
+const IMAGEKIT_TRANSFORM_VALUE = 'w-800,q-75'
+
+export type ReportImageErrorCode = 'timeout' | 'network' | 'http' | 'mime' | 'decode'
+
+export interface DecodedReportImage {
+    dataUrl: string
+    width: number
+    height: number
+}
+
+export type ReportImageResult =
+    | ({ ok: true } & DecodedReportImage)
+    | { ok: false; code: ReportImageErrorCode; message: string; httpStatus?: number }
+
+export type ReportImageDecoder = (blob: Blob, timeoutMs: number) => Promise<DecodedReportImage>
+
+export interface ReportImageLoader {
+    load(url: string): Promise<ReportImageResult>
+    loadAll(urls: string[]): Promise<ReportImageResult[]>
+}
+
+export interface ReportImageLoaderOptions {
+    fetchImpl?: typeof fetch
+    decodeBlob?: ReportImageDecoder
+    timeoutMs?: number
+    maxAttempts?: number
+    retryDelaysMs?: readonly number[]
+    sleep?: (ms: number) => Promise<void>
+    transformUrl?: (url: string) => string
+    globalDeadlineMs?: number
+}
+
+export function resolveReportImageUrl(rawUrl: string): string {
+    return rawUrl.startsWith('http') ? rawUrl : `${window.location.origin}${rawUrl}`
+}
+
+function isImageKitUrl(parsed: URL): boolean {
+    if (parsed.hostname === 'ik.imagekit.io' || parsed.hostname.endsWith('.imagekit.io')) {
+        return true
+    }
+    const endpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
+    if (!endpoint) return false
+    try {
+        return parsed.origin === new URL(endpoint).origin
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Ask ImageKit for a bounded rendition (max width 800px, reasonable quality)
+ * while keeping every existing query parameter byte-for-byte. Non-ImageKit
+ * URLs (Cloudinary, legacy, relative, data:) are returned unchanged.
+ */
+export function transformReportImageUrl(url: string): string {
+    if (!/^https?:\/\//i.test(url)) return url
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return url
+    }
+    if (!isImageKitUrl(parsed)) return url
+    if (parsed.searchParams.has('tr')) return url // already transformed — leave it alone
+    const hashIndex = url.indexOf('#')
+    const base = hashIndex >= 0 ? url.slice(0, hashIndex) : url
+    const hash = hashIndex >= 0 ? url.slice(hashIndex) : ''
+    const separator = parsed.search ? '&' : '?'
+    return `${base}${separator}tr=${IMAGEKIT_TRANSFORM_VALUE}${hash}`
+}
+
+function buildNextImageOptimizerUrl(rawUrl: string): string | null {
+    if (!/^https?:\/\//i.test(rawUrl)) return null
+    try {
+        const source = new URL(rawUrl)
+        const appOrigin = window.location.origin
+        if (source.origin === appOrigin) return null
+        const optimizer = new URL('/_next/image', appOrigin)
+        optimizer.searchParams.set('url', rawUrl)
+        optimizer.searchParams.set('w', '800')
+        optimizer.searchParams.set('q', '75')
+        return optimizer.toString()
+    } catch {
+        return null
+    }
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error && error.message ? error.message : fallback
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), timeoutMs)
+        promise.then(
+            (value) => {
+                clearTimeout(timer)
+                resolve(value)
+            },
+            (error) => {
+                clearTimeout(timer)
+                reject(error)
+            }
+        )
+    })
+}
+
+function loadHtmlImage(src: string, timeoutMs: number): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const img = new Image()
-        img.crossOrigin = 'Anonymous'
+        const timer = setTimeout(() => {
+            img.onload = null
+            img.onerror = null
+            reject(new Error('Decode gambar melebihi batas waktu'))
+        }, timeoutMs)
         img.onload = () => {
-            // Target dimensions
-            const maxWidth = 800
-            let width = img.width
-            let height = img.height
-
-            // Calculate new dimensions if image is larger than maxWidth
-            if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width)
-                width = maxWidth
-            }
-
-            const canvas = document.createElement('canvas')
-            canvas.width = width
-            canvas.height = height
-
-            const ctx = canvas.getContext('2d')
-            if (!ctx) {
-                reject(new Error('Could not get canvas context'))
-                return
-            }
-
-            // Draw and compress
-            ctx.drawImage(img, 0, 0, width, height)
-
-            // Return compressed JPEG
-            resolve(canvas.toDataURL('image/jpeg', 0.5))
+            clearTimeout(timer)
+            img.onload = null
+            img.onerror = null
+            resolve(img)
         }
-        img.onerror = (error) => reject(error)
-        img.src = url
+        img.onerror = () => {
+            clearTimeout(timer)
+            img.onload = null
+            img.onerror = null
+            reject(new Error('Gambar tidak dapat dibaca'))
+        }
+        img.src = src
     })
+}
+
+/**
+ * Default decoder (browser): decode the fetched blob and re-encode it as a
+ * compressed JPEG capped at 800px wide — the same visual output this export
+ * has always embedded in the PDF. Zero dimensions and decode failures throw,
+ * so the loader reports them instead of hiding them.
+ */
+async function defaultDecodeReportImageBlob(blob: Blob, timeoutMs: number): Promise<DecodedReportImage> {
+    const objectUrl = URL.createObjectURL(blob)
+    try {
+        const img = await loadHtmlImage(objectUrl, timeoutMs)
+        const naturalWidth = img.naturalWidth || img.width
+        const naturalHeight = img.naturalHeight || img.height
+        if (!(naturalWidth > 0) || !(naturalHeight > 0)) {
+            throw new Error('Dimensi gambar tidak valid')
+        }
+        const maxWidth = 800
+        let width = naturalWidth
+        let height = naturalHeight
+        if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width)
+            width = maxWidth
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+            throw new Error('Canvas context tidak tersedia')
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        return { dataUrl: canvas.toDataURL('image/jpeg', 0.5), width, height }
+    } finally {
+        URL.revokeObjectURL(objectUrl)
+    }
+}
+
+export function createReportImageLoader(options: ReportImageLoaderOptions = {}): ReportImageLoader {
+    const fetchImpl = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init))
+    const decodeBlob = options.decodeBlob ?? defaultDecodeReportImageBlob
+    const timeoutMs = options.timeoutMs ?? REPORT_IMAGE_TIMEOUT_MS
+    const maxAttempts = Math.max(1, options.maxAttempts ?? REPORT_IMAGE_MAX_ATTEMPTS)
+    const retryDelaysMs = options.retryDelaysMs ?? REPORT_IMAGE_RETRY_DELAYS_MS
+    const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+    const transformUrl = options.transformUrl ?? transformReportImageUrl
+    const globalDeadlineMs = options.globalDeadlineMs ?? REPORT_IMAGE_GLOBAL_DEADLINE_MS
+
+    type Failure = Extract<ReportImageResult, { ok: false }>
+    type Success = Extract<ReportImageResult, { ok: true }>
+    type AttemptOutcome = { ok: true; result: Success } | { ok: false; failure: Failure; retryable: boolean }
+
+    const failure = (code: ReportImageErrorCode, message: string, httpStatus?: number): Failure =>
+        httpStatus === undefined ? { ok: false, code, message } : { ok: false, code, message, httpStatus }
+
+    const attemptCandidate = async (
+        url: string,
+        globalSignal?: AbortSignal,
+        credentials: RequestCredentials = 'omit',
+        redirect: RequestRedirect = 'follow',
+        requireImageMime = false
+    ): Promise<AttemptOutcome> => {
+        if (globalSignal?.aborted) {
+            return { ok: false, failure: failure('timeout', 'Batas waktu ekspor terlampaui'), retryable: false }
+        }
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), timeoutMs)
+        const onGlobalAbort = () => controller.abort()
+        globalSignal?.addEventListener('abort', onGlobalAbort)
+        try {
+            const response = await fetchImpl(url, { signal: controller.signal, credentials, redirect })
+            if (!response.ok) {
+                // Non-2xx is definitive for this URL: no retry, fallback candidate only.
+                return { ok: false, failure: failure('http', `HTTP ${response.status}`, response.status), retryable: false }
+            }
+            const blob = await response.blob()
+            if (requireImageMime ? !blob.type.startsWith('image/') : Boolean(blob.type && !blob.type.startsWith('image/'))) {
+                return { ok: false, failure: failure('mime', `Konten bukan gambar (${blob.type || 'tipe tidak diketahui'})`), retryable: false }
+            }
+            let decoded: DecodedReportImage
+            try {
+                decoded = await withTimeout(decodeBlob(blob, timeoutMs), timeoutMs, 'Decode gambar melebihi batas waktu')
+            } catch (error) {
+                return { ok: false, failure: failure('decode', toErrorMessage(error, 'Gagal decode gambar')), retryable: false }
+            }
+            if (!(decoded.width > 0) || !(decoded.height > 0) || !decoded.dataUrl) {
+                return { ok: false, failure: failure('decode', 'Dimensi gambar tidak valid'), retryable: false }
+            }
+            return { ok: true, result: { ok: true, dataUrl: decoded.dataUrl, width: decoded.width, height: decoded.height } }
+        } catch (error) {
+            if (controller.signal.aborted) {
+                if (globalSignal?.aborted) {
+                    return { ok: false, failure: failure('timeout', 'Batas waktu ekspor terlampaui'), retryable: false }
+                }
+                return { ok: false, failure: failure('timeout', 'Permintaan gambar melebihi batas waktu'), retryable: true }
+            }
+            return { ok: false, failure: failure('network', toErrorMessage(error, 'Jaringan gagal memuat gambar')), retryable: true }
+        } finally {
+            clearTimeout(timer)
+            globalSignal?.removeEventListener('abort', onGlobalAbort)
+        }
+    }
+
+    const load = async (url: string, globalSignal?: AbortSignal): Promise<ReportImageResult> => {
+        const optimizerUrl = buildNextImageOptimizerUrl(url)
+        const transformed = transformUrl(url)
+        const directUrls = transformed !== url ? [transformed, url] : [url]
+        let last: ReportImageResult = failure('network', 'Gambar tidak dapat dimuat')
+
+        if (optimizerUrl) {
+            // Remote HTTP(S): exactly one same-origin optimizer request first,
+            // followed only on failure by bounded direct-CDN fallback candidates.
+            const optimizerOutcome = await attemptCandidate(optimizerUrl, globalSignal, 'same-origin', 'manual', true)
+            if (optimizerOutcome.ok) return optimizerOutcome.result
+            last = optimizerOutcome.failure
+            if (globalSignal?.aborted) return last
+
+            for (const candidateUrl of directUrls.slice(0, 2)) {
+                const outcome = await attemptCandidate(candidateUrl, globalSignal, 'omit')
+                if (outcome.ok) return outcome.result
+                last = outcome.failure
+                if (globalSignal?.aborted) return last
+            }
+            return last
+        }
+
+        // Same-origin, relative, or non-HTTP resources retain bounded retries.
+        let attempt = 0
+        let candidateIndex = 0
+        const candidates = transformed !== url ? [transformed, url] : [url]
+        while (attempt < maxAttempts) {
+            if (globalSignal?.aborted) break
+            if (attempt > 0) {
+                const delayIndex = Math.min(attempt - 1, Math.max(retryDelaysMs.length - 1, 0))
+                const delay = retryDelaysMs[retryDelaysMs.length === 0 ? -1 : delayIndex] ?? 0
+                if (delay > 0) await sleep(delay)
+            }
+            if (globalSignal?.aborted) break
+            const candidateUrl = candidates[Math.min(candidateIndex, candidates.length - 1)]
+            attempt++
+            const outcome = await attemptCandidate(candidateUrl, globalSignal, 'same-origin')
+            if (outcome.ok) return outcome.result
+            last = outcome.failure
+            if (!outcome.retryable) {
+                candidateIndex += 1
+                if (candidateIndex >= candidates.length) break
+                continue
+            }
+            if (candidateIndex < candidates.length - 1) candidateIndex += 1
+        }
+        return last
+    }
+
+    const loadAll = async (urls: string[]): Promise<ReportImageResult[]> => {
+        const uniqueUrls = Array.from(new Set(urls))
+        const results = new Map<string, ReportImageResult>()
+        if (uniqueUrls.length === 0) return urls.map((url) => results.get(url) as ReportImageResult)
+
+        const globalController = new AbortController()
+        const globalTimer = setTimeout(() => globalController.abort(), globalDeadlineMs)
+
+        let nextIndex = 0
+        const workers = Array.from({ length: Math.min(REPORT_IMAGE_CONCURRENCY, uniqueUrls.length) }, async () => {
+            while (nextIndex < uniqueUrls.length) {
+                if (globalController.signal.aborted) break
+                const current = nextIndex
+                nextIndex += 1
+                const url = uniqueUrls[current]
+                results.set(url, await load(url, globalController.signal))
+            }
+        })
+
+        try {
+            await Promise.all(workers)
+        } finally {
+            clearTimeout(globalTimer)
+        }
+
+        // Any URL not started (deadline prevented it) gets a deadline failure.
+        for (const url of uniqueUrls) {
+            if (!results.has(url)) {
+                results.set(url, failure('timeout', 'Batas waktu ekspor terlampaui'))
+            }
+        }
+
+        return urls.map((url) => results.get(url) as ReportImageResult)
+    }
+
+    return { load, loadAll }
 }
 
 import ExcelJS from 'exceljs'
@@ -508,15 +820,154 @@ export async function exportInvestorReportPDF(investorId: string, investorName: 
 // Mobile-friendly transaction report PDF with embedded proof images - Premium Design
 
 // Mobile-friendly transaction report PDF with embedded proof images - Premium Design
-export async function exportTransactionReportPDF(transactionId: string, transactionCode: string) {
-    try {
-        const response = await fetch(`/api/reports/transaction/${transactionId}`)
+// Attachments are collected before rendering so every expected image URL can
+// be preloaded (and validated) up front — the PDF is never rendered with a
+// hole where a proof should be.
+interface TransactionReportAttachment {
+    title: string
+    description?: string
+    imageUrl: string
+}
 
+function collectTransactionReportAttachments(data: any): TransactionReportAttachment[] {
+    const attachments: TransactionReportAttachment[] = []
+
+    // Helper to add attachment
+    const addAttachment = (title: string, desc: string | null | undefined, url: string) => {
+        if (url) {
+            attachments.push({
+                title,
+                description: desc || undefined,
+                imageUrl: resolveReportImageUrl(url)
+            })
+        }
+    }
+
+    // 1. Buy Proofs (Priority 1) - Avoid duplicates between legacy and modern fields
+    const buyProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'BUY') || []
+
+    if (buyProofs.length > 0) {
+        // Use modern proofs array if available
+        buyProofs.forEach((p: any) => {
+            addAttachment('Bukti Pembelian Unit ke Seller', p.description, p.imageUrl)
+        })
+    } else if (data.transaction.buyProofImageUrl) {
+        // Fallback to legacy field only if modern proofs don't exist
+        addAttachment('Bukti Pembelian Unit ke Seller', data.transaction.buyProofDescription, data.transaction.buyProofImageUrl)
+    }
+
+    // 2. Cost Proofs (Priority 2)
+    if (data.costs.items) {
+        data.costs.items.forEach((cost: any) => {
+            if (cost.proofs && cost.proofs.length > 0) {
+                cost.proofs.forEach((proof: any) => {
+                    addAttachment(`Bukti Biaya: ${getCostTypeLabel(cost.costType)} (${cost.description || '-'})`, proof.description, proof.imageUrl)
+                })
+            }
+        })
+    }
+
+    // 3. Sell Proofs (Priority 3) - Avoid duplicates between legacy and modern fields
+    const sellProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'SELL') || []
+
+    if (sellProofs.length > 0) {
+        // Use modern proofs array if available
+        sellProofs.forEach((p: any) => {
+            addAttachment('Bukti Pelunasan Unit dari Buyer', p.description, p.imageUrl)
+        })
+    } else if (data.transaction.sellProofImageUrl) {
+        // Fallback to legacy field only if modern proofs don't exist
+        const legacyUrl = data.transaction.sellProofImageUrl
+        const legacyDesc = data.transaction.sellProofDescription
+
+        if (legacyUrl.trim().startsWith('[') && legacyUrl.trim().endsWith(']')) {
+            try {
+                const urls = JSON.parse(legacyUrl)
+                if (Array.isArray(urls)) {
+                    urls.forEach((url: string) => {
+                        addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, url)
+                    })
+                }
+            } catch {
+                addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
+            }
+        } else {
+            addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
+        }
+    }
+
+    // 4. Payment Proofs (Priority 4 - Transfer Bagi Hasil)
+    if (data.payment.histories && data.payment.histories.length > 0) {
+        data.payment.histories.forEach((ph: any) => {
+            if (ph.proofImageUrl) {
+                addAttachment(`Bukti Transfer Bagi Hasil`, `Tanggal: ${format(new Date(ph.paymentDate), 'dd MMM yyyy')} - ${formatCurrency(ph.amount)}`, ph.proofImageUrl)
+            }
+        })
+    }
+
+    return attachments
+}
+
+export interface TransactionReportExportDeps {
+    fetchImpl?: typeof fetch
+    imageLoader?: Pick<ReportImageLoader, 'loadAll'>
+}
+
+export async function exportTransactionReportPDF(transactionId: string, transactionCode: string, deps: TransactionReportExportDeps = {}) {
+    try {
+        const fetchImpl = deps.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => globalThis.fetch(input, init))
+        const response = await fetchImpl(`/api/reports/transaction/${transactionId}`)
+
+        if (response.status === 401) {
+            return { success: false, error: 'Sesi Anda telah berakhir. Silakan login kembali lalu ekspor ulang.' }
+        }
+        if (response.status === 403) {
+            return { success: false, error: 'Anda tidak memiliki akses ke laporan ini.' }
+        }
         if (!response.ok) {
             throw new Error('Gagal menghasilkan laporan transaksi PDF')
         }
 
         const data: any = await response.json()
+
+        // ===== Fail-closed image preload =====
+        // Every image field that carries a URL is an image the report expects:
+        // the hero unit image plus every attachment. All of them must load
+        // (after bounded retries) before a single PDF page is rendered.
+        const attachments = collectTransactionReportAttachments(data)
+        const unitImageUrl = data.unit?.imageUrl ? resolveReportImageUrl(data.unit.imageUrl) : null
+        const expectedImageUrls = Array.from(new Set<string>([
+            ...(unitImageUrl ? [unitImageUrl] : []),
+            ...attachments.map((item) => item.imageUrl)
+        ]))
+        const imageLoader = deps.imageLoader ?? createReportImageLoader({ fetchImpl })
+        const imageResults = await imageLoader.loadAll(expectedImageUrls)
+
+        // Global deadline: if any result is a deadline timeout, abort the export.
+        const deadlineHit = imageResults.some((r) => !r.ok && r.message === 'Batas waktu ekspor terlampaui')
+        if (deadlineHit) {
+            return {
+                success: false,
+                error: 'Ekspor dibatalkan karena gambar membutuhkan waktu terlalu lama. Periksa koneksi lalu coba kembali.',
+            }
+        }
+
+        const imagesByUri = new Map<string, { ok: true } & DecodedReportImage>()
+        let failedImageCount = 0
+        expectedImageUrls.forEach((uri, index) => {
+            const result = imageResults[index]
+            if (result && result.ok) {
+                imagesByUri.set(uri, result)
+            } else {
+                failedImageCount++
+            }
+        })
+        if (failedImageCount > 0) {
+            return {
+                success: false,
+                error: `${failedImageCount} dari ${expectedImageUrls.length} gambar gagal dimuat. Ekspor dibatalkan agar laporan tidak terbit tanpa bukti. Silakan coba lagi.`
+            }
+        }
 
         // Colors Palette
         const COLORS = {
@@ -661,36 +1112,33 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         // C. UNIT IMAGE (RIGHT - Hero Style)
         const imgY = yPos - 5
         let imgActualHeight = 0
-        if (data.unit.imageUrl) {
-            try {
-                const imageUrl = data.unit.imageUrl.startsWith('http')
-                    ? data.unit.imageUrl
-                    : `${window.location.origin}${data.unit.imageUrl}`
-
-                const base64 = await convertImageToBase64(imageUrl)
-                const imgProps = doc.getImageProperties(base64)
-                const aspect = imgProps.height / imgProps.width
-
-                let renderW = imgWidth
-                let renderH = renderW * aspect
-
-                if (renderH > imgHeightMax) {
-                    renderH = imgHeightMax
-                    renderW = renderH / aspect
-                }
-
-                const imgX = pageWidth - margin - renderW
-
-                // Draw clean gray border
-                doc.setDrawColor(220, 220, 220)
-                doc.setLineWidth(0.1)
-                doc.rect(imgX, imgY, renderW, renderH)
-
-                doc.addImage(base64, 'JPEG', imgX, imgY, renderW, renderH)
-                imgActualHeight = renderH
-            } catch (e) {
-                console.error("Failed to render unit image", e)
+        if (unitImageUrl) {
+            const heroImage = imagesByUri.get(unitImageUrl)
+            if (!heroImage) {
+                // Unreachable: the preload step fail-closed above.
+                throw new Error('Gambar unit tidak tersedia')
             }
+            const base64 = heroImage.dataUrl
+            const imgProps = doc.getImageProperties(base64)
+            const aspect = imgProps.height / imgProps.width
+
+            let renderW = imgWidth
+            let renderH = renderW * aspect
+
+            if (renderH > imgHeightMax) {
+                renderH = imgHeightMax
+                renderW = renderH / aspect
+            }
+
+            const imgX = pageWidth - margin - renderW
+
+            // Draw clean gray border
+            doc.setDrawColor(220, 220, 220)
+            doc.setLineWidth(0.1)
+            doc.rect(imgX, imgY, renderW, renderH)
+
+            doc.addImage(base64, 'JPEG', imgX, imgY, renderW, renderH)
+            imgActualHeight = renderH
         }
 
         // Determine max height of this section
@@ -967,80 +1415,8 @@ export async function exportTransactionReportPDF(transactionId: string, transact
         }
 
         // ===== 7. LAMPIRAN - LAMPIRAN (ATTACHMENTS) =====
-        const attachments: { title: string, description?: string, imageUrl: string }[] = []
-
-        // Helper to add attachment
-        const addAttachment = (title: string, desc: string | null | undefined, url: string) => {
-            if (url) {
-                attachments.push({
-                    title,
-                    description: desc || undefined,
-                    imageUrl: url
-                })
-            }
-        }
-
-        // 1. Buy Proofs (Priority 1) - Avoid duplicates between legacy and modern fields
-        const buyProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'BUY') || []
-
-        if (buyProofs.length > 0) {
-            // Use modern proofs array if available
-            buyProofs.forEach((p: any) => {
-                addAttachment('Bukti Pembelian Unit ke Seller', p.description, p.imageUrl)
-            })
-        } else if (data.transaction.buyProofImageUrl) {
-            // Fallback to legacy field only if modern proofs don't exist
-            addAttachment('Bukti Pembelian Unit ke Seller', data.transaction.buyProofDescription, data.transaction.buyProofImageUrl)
-        }
-
-        // 2. Cost Proofs (Priority 2)
-        if (data.costs.items) {
-            data.costs.items.forEach((cost: any) => {
-                if (cost.proofs && cost.proofs.length > 0) {
-                    cost.proofs.forEach((proof: any) => {
-                        addAttachment(`Bukti Biaya: ${getCostTypeLabel(cost.costType)} (${cost.description || '-'})`, proof.description, proof.imageUrl)
-                    })
-                }
-            })
-        }
-
-        // 3. Sell Proofs (Priority 3) - Avoid duplicates between legacy and modern fields
-        const sellProofs = data.transaction.proofs?.filter((p: any) => p.proofType === 'SELL') || []
-
-        if (sellProofs.length > 0) {
-            // Use modern proofs array if available
-            sellProofs.forEach((p: any) => {
-                addAttachment('Bukti Pelunasan Unit dari Buyer', p.description, p.imageUrl)
-            })
-        } else if (data.transaction.sellProofImageUrl) {
-            // Fallback to legacy field only if modern proofs don't exist
-            const legacyUrl = data.transaction.sellProofImageUrl
-            const legacyDesc = data.transaction.sellProofDescription
-
-            if (legacyUrl.trim().startsWith('[') && legacyUrl.trim().endsWith(']')) {
-                try {
-                    const urls = JSON.parse(legacyUrl)
-                    if (Array.isArray(urls)) {
-                        urls.forEach((url: string) => {
-                            addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, url)
-                        })
-                    }
-                } catch {
-                    addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
-                }
-            } else {
-                addAttachment('Bukti Pelunasan Unit dari Buyer', legacyDesc, legacyUrl)
-            }
-        }
-
-        // 4. Payment Proofs (Priority 4 - Transfer Bagi Hasil)
-        if (data.payment.histories && data.payment.histories.length > 0) {
-            data.payment.histories.forEach((ph: any) => {
-                if (ph.proofImageUrl) {
-                    addAttachment(`Bukti Transfer Bagi Hasil`, `Tanggal: ${format(new Date(ph.paymentDate), 'dd MMM yyyy')} - ${formatCurrency(ph.amount)}`, ph.proofImageUrl)
-                }
-            })
-        }
+        // (attachments were collected before rendering, together with the
+        //  fail-closed image preload above)
 
         if (attachments.length > 0) {
             doc.addPage()
@@ -1077,49 +1453,47 @@ export async function exportTransactionReportPDF(transactionId: string, transact
                     // Title Height
                     innerY += 6 // font size 9 approx (Bold)
 
-                    // Image Height
+                    // Image Height — already preloaded and validated by the
+                    // fail-closed step, so this can no longer silently skip.
                     let imgData = null
-                    try {
-                        const imageUrl = item.imageUrl.startsWith('http')
-                            ? item.imageUrl
-                            : `${window.location.origin}${item.imageUrl}`
+                    const attachmentImage = imagesByUri.get(item.imageUrl)
+                    if (!attachmentImage) {
+                        // Unreachable: the preload step fail-closed above.
+                        throw new Error('Gambar lampiran tidak tersedia')
+                    }
+                    const base64 = attachmentImage.dataUrl
+                    const imgProps = doc.getImageProperties(base64)
+                    const aspect = imgProps.height / imgProps.width
 
-                        const base64 = await convertImageToBase64(imageUrl)
-                        const imgProps = doc.getImageProperties(base64)
-                        const aspect = imgProps.height / imgProps.width
+                    // Calculate dimensions maintaining aspect ratio for portrait images
+                    // Adjusted to 0.3 to ensure 2 rows fit comfortably
+                    const maxImgHeight = pageHeight * 0.3
+                    const maxImgWidth = colWidth - (padding * 2)
 
-                        // Calculate dimensions maintaining aspect ratio for portrait images
-                        // Adjusted to 0.3 to ensure 2 rows fit comfortably 
-                        const maxImgHeight = pageHeight * 0.3
-                        const maxImgWidth = colWidth - (padding * 2)
+                    let imgW = maxImgWidth
+                    let imgH = imgW * aspect
 
-                        let imgW = maxImgWidth
-                        let imgH = imgW * aspect
+                    // If height exceeds max, scale down by height instead
+                    if (imgH > maxImgHeight) {
+                        imgH = maxImgHeight
+                        imgW = imgH / aspect
+                    }
 
-                        // If height exceeds max, scale down by height instead
-                        if (imgH > maxImgHeight) {
-                            imgH = maxImgHeight
-                            imgW = imgH / aspect
-                        }
-
-                        // For portrait images, limit width to 70% to prevent stretching
-                        if (aspect > 1.2) { // Portrait orientation
-                            const maxPortraitWidth = maxImgWidth * 0.7
-                            if (imgW > maxPortraitWidth) {
-                                imgW = maxPortraitWidth
-                                imgH = imgW * aspect
-                                if (imgH > maxImgHeight) {
-                                    imgH = maxImgHeight
-                                    imgW = imgH / aspect
-                                }
+                    // For portrait images, limit width to 70% to prevent stretching
+                    if (aspect > 1.2) { // Portrait orientation
+                        const maxPortraitWidth = maxImgWidth * 0.7
+                        if (imgW > maxPortraitWidth) {
+                            imgW = maxPortraitWidth
+                            imgH = imgW * aspect
+                            if (imgH > maxImgHeight) {
+                                imgH = maxImgHeight
+                                imgW = imgH / aspect
                             }
                         }
-
-                        imgData = { base64, w: imgW, h: imgH, y: innerY }
-                        innerY += imgH + 3 // reduced space between img and desc
-                    } catch (e) {
-                        console.error("Error processing image:", e)
                     }
+
+                    imgData = { base64, w: imgW, h: imgH, y: innerY }
+                    innerY += imgH + 3 // reduced space between img and desc
 
                     // Desc Height
                     let descLines: string[] = []
@@ -1182,12 +1556,10 @@ export async function exportTransactionReportPDF(transactionId: string, transact
 
                     // Image
                     if (d.imgData) {
-                        try {
-                            // Center image horizontally within the border
-                            const imgX = x + (colWidth - d.imgData.w) / 2
-                            doc.addImage(d.imgData.base64, 'JPEG', imgX, localY, d.imgData.w, d.imgData.h)
-                            localY += d.imgData.h + 3
-                        } catch { }
+                        // Center image horizontally within the border
+                        const imgX = x + (colWidth - d.imgData.w) / 2
+                        doc.addImage(d.imgData.base64, 'JPEG', imgX, localY, d.imgData.w, d.imgData.h)
+                        localY += d.imgData.h + 3
                     }
 
                     // Description
