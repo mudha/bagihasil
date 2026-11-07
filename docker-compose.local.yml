@@ -1,0 +1,16 @@
+# Database PostgreSQL LOKAL untuk pengembangan. BUKAN untuk produksi.
+# Jalankan: docker compose -f docker-compose.local.yml up -d
+services:
+  db:
+    image: postgres:16
+    container_name: bagihasil-local-db
+    environment:
+      POSTGRES_USER: bagihasil
+      POSTGRES_PASSWORD: local_only_password
+      POSTGRES_DB: bagihasil_local
+    ports:
+      - "127.0.0.1:5433:5432"   # 5433 agar tidak bentrok dengan Postgres lain; hanya bisa diakses dari komputer ini
+    volumes:
+      - bagihasil_local_data:/var/lib/postgresql/data
+volumes:
+  bagihasil_local_data:

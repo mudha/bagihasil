@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "npm run prisma:generate:runtime && npm run prisma:verify:runtime",
+    "predev": "tsx scripts/assert-local-database.ts && npm run prisma:generate:runtime && npm run prisma:verify:runtime",
     "prisma:generate:runtime": "prisma generate --schema prisma/schema.runtime-legacy.prisma",
     "prisma:verify:runtime": "tsx scripts/verify-prisma-runtime-schema.ts",
     "build": "npm run prisma:generate:runtime && npm run prisma:verify:runtime && next build",
